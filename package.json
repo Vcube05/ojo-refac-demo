@@ -1,0 +1,13 @@
+{
+  "name": "ojo-demo",
+  "version": "1.0.0",
+  "description": "OJO — AI-native CRM/ERP demo (Home, Leads, Projects, HR, Accounts, Vendors, unified Tasks). Static app: HTML + CSS + vanilla JS, no build step.",
+  "scripts": {
+    "start": "npx -y serve -l 5173 .",
+    "dev": "npx -y live-server --port=5173 --no-browser ."
+  },
+  "private": true,
+  "devDependencies": {
+    "playwright": "^1.60.0"
+  }
+}

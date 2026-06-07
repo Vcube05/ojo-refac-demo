@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OJO · Demo — Leads + Projects</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ojo.css">
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <a class="rnav" id="navHome" onclick="go('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11 12 3l9 8"/><path d="M5 9.5V20h14V9.5"/></svg><span class="lb">Home</span></a>
+    <a class="rnav" id="navContacts" onclick="toast('Contacts — demo')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6"/></svg><span class="lb">Contacts</span></a>
+    <a class="rnav" id="navLeads" onclick="go('leads')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17 9 11l4 3 7-8"/><path d="M21 6v5M16 6h5"/></svg><span class="lb">Leads</span></a>
+    <a class="rnav" id="navProjects" onclick="go('projectsDash')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg><span class="lb">Projects</span></a>
+    <a class="rnav" id="navHR" onclick="go('hr')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M21 20a5 5 0 0 0-4-4.9"/></svg><span class="lb">HR</span></a>
+    <a class="rnav" id="navAccounts" onclick="go('account')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16"/></svg><span class="lb">Accounts</span></a>
+    <a class="rnav" id="navVendors" onclick="go('vendor')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9 5 4h14l2 5M4 9v11h16V9M4 9h16M9 13h6"/></svg><span class="lb">Vendors</span></a>
+  </aside>
+  <div class="stage"><div id="screen" style="flex:1;display:flex;justify-content:center;min-width:0"></div></div>
+  <aside class="flyout" id="flyout">
+    <div class="fly-resize" id="flyResize" title="Drag to resize"></div>
+    <div class="fly-head"><span class="ft" id="flyTitle"></span><div class="fr"><span id="flyExtra"></span><button class="ib" onclick="closeSection()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div></div>
+    <div class="fly-body" id="flyBody"></div>
+  </aside>
+  <div class="dock">
+    <button class="di genie" id="d-genie" onclick="openSection('genie')" title="Ojo Genie">✦</button>
+    <div class="ddiv"></div>
+    <button class="di" id="d-notif" onclick="openSection('notif')" title="Notifications"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dbadge">3</span></button>
+    <button class="di" id="d-chat" onclick="openSection('chat')" title="Chat"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
+    <button class="di" id="d-search" onclick="openSection('search')" title="Search"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></button>
+    <div class="ddiv"></div>
+    <button class="di profile" id="d-profile" onclick="openSection('profile')" title="Profile"><span class="dav">VV</span></button>
+  </div>
+</div>
+
+<div class="scrim" id="scrim" onclick="closePeek()"></div>
+<aside class="peek" id="peek">
+  <div class="peek-top"><span class="pt" id="peekTitle"></span><span class="pc" id="peekId"></span><span class="sp"></span>
+    <button title="Open full page" onclick="expandRecord()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+    <button title="Close" onclick="closePeek()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+  <div class="peekbody" id="peekBody"></div>
+</aside>
+<div class="toast" id="toast"></div>
+<div class="pop wpal" id="wpal"></div>
+<div class="pop docpal" id="docpal"></div>
+<div class="pop docpal" id="metpal"></div>
+
+<!-- ===== MOBILE shell: sheet scrim, Apps launcher sheet, bottom tab bar ===== -->
+<div class="mscrim" id="mscrim" onclick="mCloseAll()"></div>
+<div class="msheet" id="appsSheet">
+  <div class="msheet-card">
+    <div class="grip"></div>
+    <div class="ms-h">Apps<button class="ms-x" onclick="closeApps()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div class="appgrid">
+      <button onclick="toast('Contacts — demo')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6"/></svg>Contacts</button>
+      <button onclick="mApp('leads')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17 9 11l4 3 7-8"/><path d="M21 6v5M16 6h5"/></svg>Leads</button>
+      <button onclick="mApp('projectsDash')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg>Projects</button>
+      <button onclick="mApp('hr')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M21 20a5 5 0 0 0-4-4.9"/></svg>HR</button>
+      <button onclick="mApp('account')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16"/></svg>Accounts</button>
+      <button onclick="mApp('vendor')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9 5 4h14l2 5M4 9v11h16V9M4 9h16M9 13h6"/></svg>Vendors</button>
+      <button onclick="toast('Org Admin — demo')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="7" r="3"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>Org Admin</button>
+    </div>
+  </div>
+</div>
+<!-- floating info/comm bar — only shown on the project Overview page (mobile) -->
+<nav class="commdock" id="commdock" aria-hidden="true"></nav>
+<div class="msheet" id="commSheet">
+  <div class="msheet-card">
+    <div class="grip"></div>
+    <div class="ms-h"><span id="commSheetTitle">Info</span><button class="ms-x" onclick="closeCommSheet()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div id="commSheetBody" class="commsheet-body"></div>
+  </div>
+</div>
+<nav class="mbar" id="mbar">
+  <button class="mb" data-k="home" onclick="mTab('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11 12 3l9 8"/><path d="M5 9.5V20h14V9.5"/></svg><span>Home</span></button>
+  <button class="mb" data-k="chat" onclick="mTab('chat')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Chat</span></button>
+  <button class="mb ojo" data-k="genie" onclick="mTab('genie')"><span class="ojomark">✦</span><span>OJO</span></button>
+  <button class="mb" data-k="profile" onclick="mTab('profile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Profile</span></button>
+  <button class="mb" data-k="apps" onclick="openApps()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Apps</span></button>
+</nav>
+<script src="ojo.js"></script>
+</body>
+</html>
