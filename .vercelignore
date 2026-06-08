@@ -1,0 +1,5 @@
+node_modules
+screenshots.js
+package.json
+package-lock.json
+.gitignore

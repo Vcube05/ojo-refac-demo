@@ -520,7 +520,9 @@ function closeSection(){section=null;const fly=document.getElementById('flyout')
 function closeDrawer(){closeSection();}
 
 /* ===== MOBILE shell: bottom tab bar + bottom sheets (Apps launcher, Ask Ojo, comms) ===== */
-function mScrim(on){const s=document.getElementById('mscrim');if(s)s.classList.toggle('show',!!on&&(document.querySelector('.flyout.show')||document.querySelector('.msheet.show')));}
+function mScrim(on){const s=document.getElementById('mscrim');if(!s)return;
+  const mobile=window.matchMedia('(max-width:700px)').matches;
+  s.classList.toggle('show',!!on&&mobile&&(document.querySelector('.flyout.show')||document.querySelector('.msheet.show')));}
 function mbarActive(key){document.querySelectorAll('#mbar .mb').forEach(b=>b.classList.toggle('on',b.dataset.k===key));}
 function mTab(kind){if(kind==='home'){mCloseAll();go('home');mbarActive('home');return;}openSection(kind);}
 function openApps(){closeSection();document.getElementById('appsSheet')?.classList.add('show');mScrim(true);mbarActive('apps');}

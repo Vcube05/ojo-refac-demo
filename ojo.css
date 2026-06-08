@@ -730,6 +730,9 @@ td .nm,td .tt{font-weight:700;color:var(--navy)}td .co{color:var(--muted)}td.num
 .mbar{display:none}
 .mscrim{position:fixed;inset:0;background:rgba(11,22,39,.42);opacity:0;pointer-events:none;transition:opacity .25s var(--ease);z-index:48}
 .mscrim.show{opacity:1;pointer-events:auto}
+/* the dimming backdrop is only for mobile bottom-sheets; on desktop the dock flyout is a
+   docked side panel, so the backdrop must never block the main content */
+@media (min-width:701px){.mscrim{display:none!important}}
 .msheet{position:fixed;left:0;right:0;bottom:0;z-index:49;transform:translateY(101%);transition:transform .32s var(--ease);pointer-events:none}
 .msheet.show{transform:none;pointer-events:auto}
 .msheet-card{background:var(--surface);border-radius:24px 24px 0 0;box-shadow:0 -10px 30px rgba(16,24,40,.18);padding:6px 18px calc(22px + env(safe-area-inset-bottom));max-height:88dvh;overflow:auto}
