@@ -65,20 +65,24 @@ let modCollapsed=false, modFace='info';
 function curType(){return cm().views.find(v=>v.name===cm().active).type;}
 
 /* ============ ROUTER ============ */
-function setRail(id){['navHome','navLeads','navProjects','navHR','navAccounts','navVendors'].forEach(n=>{const e=document.getElementById(n);if(e)e.classList.remove('active');});if(id){const e=document.getElementById(id);if(e)e.classList.add('active');}}
+function setRail(id){['navHome','navLeads','navProjects','navHR','navAccounts','navVendors','navOrgAdmin'].forEach(n=>{const e=document.getElementById(n);if(e)e.classList.remove('active');});document.getElementById('r-profile')?.classList.toggle('on',id==='r-profile');if(id&&id!=='r-profile'){const e=document.getElementById(id);if(e)e.classList.add('active');}}
 let subCollapsed=false;
 function subItems(mod){const S=['settings','Settings',"toast('Settings — demo')"],tk=m=>['tasks','Tasks',"openTasks('"+m+"')"];
   return {leads:{title:'Leads',list:[['leads','Leads',"go('leads')"],tk('leads'),S]},project:{title:'Projects',list:[['projectsDash','Projects',"go('projectsDash')"],tk('project'),S]},account:{title:'Accounts',list:[['account','Accounts',"go('account')"],tk('account'),S]},vendor:{title:'Vendors',list:[['vendor','Vendors',"go('vendor')"],tk('vendor'),S]}}[mod];}
 function subToggle(){subCollapsed=!subCollapsed;const s=document.getElementById('shell');if(s)s.classList.toggle('navcollapsed',subCollapsed);}
 function renderShell(mod,active){const it=subItems(mod);
   document.getElementById('screen').innerHTML=`<div class="box hrbox ${subCollapsed?'navcollapsed':''}" id="shell"><aside class="hrnav"><div class="hrnav-top" style="justify-content:flex-end"><button class="hrcollapse" onclick="subToggle()" title="Collapse">${svg('<path d="m11 17-5-5 5-5M18 17l-5-5 5-5"/>',16)}</button></div>${it.list.map(i=>`<a class="${i[0]===active?'on':''}" onclick="${i[2]}">${i[1]}</a>`).join('')}</aside><div class="modbody" id="modcontent"></div><button class="hrreopen" onclick="subToggle()" title="Show menu">${svg('<path d="M3 6h18M3 12h18M3 18h18"/>',17)}</button></div>`;}
-function go(route){closePeek();closePops();closeDrawer();xpClose();hideCommDock();
+function go(route){closePeek();closePops();xpClose();hideCommDock();
+  /* keep the right panel persistently open across all pages/modules (desktop); default to Ojo Genie when nothing is open */
+  if(window.matchMedia('(min-width:701px)').matches){if(!(section&&document.getElementById('flyout')?.classList.contains('show')))openSection('genie');}else closeDrawer();
   if(route==='home'){setRail('navHome');mountHome();return;}
   if(route==='hr'){setRail('navHR');mountHR();return;}
   if(route==='leads'){curMod='leads';setRail('navLeads');renderShell('leads','leads');mountModule();}
   else if(route==='project'){curMod='project';setRail('navProjects');renderShell('project','projectsDash');mountModule();}
   else if(route==='projectsDash'){curMod='projdash';setRail('navProjects');renderShell('project','projectsDash');mountModule();}
   else if(route==='account'){setRail('navAccounts');mountAccounts();}
+  else if(route==='profile'){setRail('r-profile');mountProfile();}
+  else if(route==='admin'){setRail('navOrgAdmin');mountOrgAdmin();}
   else if(route==='vendor'){setRail('navVendors');renderShell('vendor','vendor');mountColl('vendor');}}
 
 function modTools(){return `<button class="mtool"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5h18M6 12h12M10 19h4"/></svg></button>
@@ -103,14 +107,13 @@ function mountModule(){const c=cm();
         <div class="crumbbar"><a onclick="go('projectsDash')">Projects</a> <span class="sep">‹</span> <b>${c.crumbName}</b></div>
         <div class="mc-top"><div class="title-wrap"><div class="picon">${svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/>',20)}</div><div><h1>${c.title}</h1><div class="sub">${c.sub}</div></div></div>
           <div class="sp"></div><span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span>${modNew()}
-          <button class="paneltoggle" onclick="modToggle()"><span id="modPtogTxt">${modCollapsed?'Show panel':'Hide panel'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
+          <button class="paneltoggle" onclick="modToggle()"><span id="modPtogTxt">${modCollapsed?'Show info':'Hide info'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
         ${modViewbar()}
         <div id="metricsBar" class="metrics" style="padding-left:22px;padding-right:22px"></div>
         <div class="work" id="work"></div>
       </div>
       <aside class="dpanel" id="modpanel">
         <div class="dpanel-head"><span class="nm">Apollo — Website Revamp</span><button class="ed" onclick="xpOpenFrom(this)" title="Expand">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button><button class="ed" style="margin-left:6px">${svg('<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',15)}</button></div>
-        <div class="xcfaces">${['info','chat','call','video','email'].map(f=>`<button class="xcface ${f===modFace?'on':''}" data-face="${f}" onclick="setModFace('${f}')">${faceIcon(f)}</button>`).join('')}</div>
         <div class="dpanel-body" id="modpanelbody"></div>
       </aside></div>`;
     document.getElementById('shell')?.classList.add('dockgut');
@@ -130,25 +133,25 @@ function mountModule(){const c=cm();
   renderVTabs();buildVMenu();buildVTypes();updateGroup();syncSizeToggle();renderWork();
 }
 /* project right info/comm panel (same expandable pattern as the detail page) */
-function modToggle(){modCollapsed=!modCollapsed;document.getElementById('modbox').classList.toggle('collapsed',modCollapsed);document.getElementById('modPtogTxt').textContent=modCollapsed?'Show panel':'Hide panel';}
+function modToggle(){modCollapsed=!modCollapsed;document.getElementById('modbox').classList.toggle('collapsed',modCollapsed);document.getElementById('modPtogTxt').textContent=modCollapsed?'Show info':'Hide info';}
 function setModFace(f){modFace=f;document.querySelectorAll('#modpanel .xcface').forEach(b=>b.classList.toggle('on',b.dataset.face===f));renderModInfo();}
-function projInfoBody(){const a=projScore();
-  return `<div class="xscore" style="background:var(--coral-soft);border:1px solid var(--coral-line)"><div class="xgauge">${ring(a[0],'var(--coral)',122)}<div class="pct" style="color:var(--coral-ink)">${a[0]}%</div></div><div class="r2"><span class="l">Project Score <span class="xderive">derive</span></span><span class="vv">${a[1]}</span></div></div>
-    <div class="xipanel"><div class="xirow"><span class="k">Budget</span><span class="v">₹4,80,000</span></div><div class="xirow"><span class="k">Status</span><span class="v" style="color:var(--ok)">● Active</span></div><div class="xirow"><span class="k">Start</span><span class="v">04 Jun 2026</span></div><div class="xirow"><span class="k">End</span><span class="v">20 Jul 2026</span></div></div>
-    <div class="xigroup"><div class="gh">Client ${chev2()}</div><div class="xipanel"><div class="xirow"><span class="k">Name</span><span class="v">Acme Co.</span></div><div class="xirow"><span class="k">Owner</span><span class="v">Priya Nair</span></div></div></div>
-    <div class="xigroup"><div class="gh">Milestones ${chev2()}</div><div class="xipanel">${MILESTONES.map(ms=>{const its=tasks.filter(t=>t.ms===ms);const d=its.filter(t=>t.st==='Done').length;return `<div class="xirow"><span class="k">${ms}</span><span class="v" style="color:${d===its.length&&its.length?'var(--ok)':'var(--muted)'}">${d}/${its.length}</span></div>`;}).join('')}</div></div>`;}
-function renderModInfo(){const el=document.getElementById('modpanelbody');if(!el)return;
-  if(modFace==='email'){el.innerHTML=emailListHTML();return;}
-  if(modFace!=='info'){el.innerHTML=`<div class="xchat">${modFace==='chat'?'No messages yet.':modFace==='call'?'No calls logged.':'No meetings yet.'}</div>`;return;}
-  el.innerHTML=projInfoBody();}
+function projInfoBody(){
+  return `<div class="xshare"><div><div class="xsh-t">Share with client</div><div class="xsh-s">When on, this project appears in the client portal.</div></div><span class="toggle on" onclick="this.classList.toggle('on')"></span></div>
+   <div class="xglabel2">Project Health Overview</div>
+   <div class="xblock"><div class="xb-row"><span class="xb-h">Project Health</span><span class="minigauge">${ring(0,'var(--line-3)',30)}</span></div><div class="xb-big" style="color:var(--ghost)">--</div></div>
+   <div class="xblock"><div class="xb-h">Timeline</div><div class="xb-big">0% complete</div><div class="xb-sub">12 May 2026 to 10 Jun 2026</div><div class="xprog"><div class="svcbar"><div class="svcfill" style="width:2%;background:var(--ok)"></div></div><span class="xprogv" style="color:var(--ok)">0%</span></div></div>
+   <div class="xblock"><div class="xb-h">Budget</div><div class="xb-big">₹3,80,000 remaining</div><div class="xb-sub">Within budget · Billed ₹0</div><div class="xprog"><div class="svcbar"><div class="svcfill" style="width:100%;background:var(--ok)"></div></div><span class="xprogv" style="color:var(--ok)">100%</span></div></div>
+   ${igroup('Contact',ipanel([['POC','Rajeeshlal'],['Phone','9769011309'],['Email','<span class="vmail">vinoth+lal@palpx.com</span>'],['Website','<span class="vlink">ojo.io</span>'],['Location','--']])+commQuick(),true)}
+   ${igroup('Vendor Details',`<div class="xvend"><span class="av" style="background:#E0533A1a;color:#E0533A">O</span><div><div class="xv-n">Ojo Dojo</div><div class="xv-s">Outsourced to</div></div></div>`+ipanel([['POC','ojodeveloper1'],['Email','<span class="vmail">ojodeveloper1@gmail.com</span>'],['Phone','+919019029123']]))}`;}
+function renderModInfo(){const el=document.getElementById('modpanelbody');if(!el)return;el.innerHTML=projInfoBody();}
 
 /* ---- floating info/comm bar: replaces the stacked info/comm panel on mobile (overview + detail pages) ----
    Each page registers a "comm host" describing its faces, current face, content renderer and (optionally) when it's visible. */
 const COMMFACE_LABEL={info:'Info',chat:'Chat',call:'Calls',video:'Meetings',email:'Email'};
 const COMMFACES=['info','chat','call','video','email'];
 let commHost=null;
-function commEmpty(f){return `<div class="xchat">${f==='chat'?'No messages yet.':f==='call'?'No calls logged.':'No meetings yet.'}</div>`;}
-function commSetHost(h){commHost=h;updateCommDock();}
+function commEmpty(f){return `<div class="xchat">${f==='chat'?'No messages yet.':f==='call'?'No calls logged.':f==='email'?'No emails yet.':'No meetings yet.'}</div>`;}
+function commSetHost(h){commHost=h;updateCommDock();if(section&&section.indexOf('comm-')===0&&document.getElementById('flyout')?.classList.contains('show')){document.getElementById('flyBody').innerHTML=commBody(section.slice(5));}}
 function buildCommDock(){const el=document.getElementById('commdock');if(!el)return;const h=commHost;
   if(!h){el.innerHTML='';return;}const cur=h.getFace?h.getFace():'info';
   el.innerHTML=(h.faces||COMMFACES).map(f=>`<button class="cdf ${f===cur?'on':''}" data-face="${f}" onclick="commTap('${f}')" title="${COMMFACE_LABEL[f]}">${faceIcon(f)}</button>`).join('');}
@@ -156,8 +159,26 @@ function updateCommDock(){const el=document.getElementById('commdock');if(!el)re
   const h=commHost,on=!!h&&(h.visible?h.visible():true);
   if(on)buildCommDock();
   el.classList.toggle('show',on);document.body.classList.toggle('comm-host',on);
-  if(!on)closeCommSheet();}
-function hideCommDock(){commHost=null;const el=document.getElementById('commdock');if(el){el.classList.remove('show');el.innerHTML='';}document.body.classList.remove('comm-host');closeCommSheet();}
+  if(!on)closeCommSheet();
+  buildDockComm();
+  if(section==='comm'){if(on&&h){const f=h.getFace?h.getFace():'info';document.getElementById('flyTitle').textContent=COMMFACE_LABEL[f]||'Info';document.getElementById('flyBody').innerHTML=h.content(f);}else{closeSection();}}}
+/* desktop floating dock: comm faces (info/chat/call/video/email) for the active record — opens the flyout side panel */
+const DOCK_COMMFACES=['chat','call','video','email'];
+function buildDockComm(){const el=document.getElementById('dockComm'),dv=document.getElementById('dockCommDiv');if(!el)return;
+  const h=commHost,on=!!h&&(h.visible?h.visible():true),cur=on&&h.getFace?h.getFace():'chat';
+  el.style.display=on?'flex':'none';if(dv)dv.style.display=on?'block':'none';
+  el.innerHTML=on?DOCK_COMMFACES.map(f=>`<button class="di dcf ${(section==='comm'&&f===cur)?'on':''}" data-face="${f}" onclick="openCommFace('${f}')" title="${COMMFACE_LABEL[f]}">${faceIcon(f)}</button>`).join(''):'';}
+function openCommFace(f){const h=commHost;if(!h)return;
+  if(section==='comm'&&(h.getFace?h.getFace():'info')===f){closeSection();return;}
+  section='comm';if(h.setFace)h.setFace(f);
+  document.querySelectorAll('.dock .di').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('#dockComm .dcf').forEach(b=>b.classList.toggle('on',b.dataset.face===f));
+  const fly=document.getElementById('flyout');fly.classList.remove('genie');
+  document.getElementById('flyTitle').textContent=COMMFACE_LABEL[f]||'Info';
+  document.getElementById('flyExtra').innerHTML='';
+  const body=document.getElementById('flyBody');body.className='fly-body';body.innerHTML=h.content(f);
+  flySize(flyW);fly.classList.add('show');closeApps();mScrim(true);}
+function hideCommDock(){commHost=null;const el=document.getElementById('commdock');if(el){el.classList.remove('show');el.innerHTML='';}document.body.classList.remove('comm-host');closeCommSheet();if(section&&section.indexOf('comm-')===0&&document.getElementById('flyout')?.classList.contains('show')){document.getElementById('flyBody').innerHTML=commBody(section.slice(5));}buildDockComm();}
 function commTap(f){const h=commHost;if(!h)return;
   if(h.setFace)h.setFace(f);
   document.querySelectorAll('#commdock .cdf').forEach(b=>b.classList.toggle('on',b.dataset.face===f));
@@ -165,13 +186,37 @@ function commTap(f){const h=commHost;if(!h)return;
   const b=document.getElementById('commSheetBody');if(b)b.innerHTML=h.content(f);
   document.getElementById('commSheet')?.classList.add('show');mScrim(true);}
 function closeCommSheet(){document.getElementById('commSheet')?.classList.remove('show');mScrim(false);}
-/* per-page content renderers (reuse the same info bodies as the side panel) */
-function commProjectContent(f){return f==='email'?emailListHTML():f==='info'?projInfoBody():commEmpty(f);}
-function commDetailContent(f){return f==='email'?emailListHTML():f==='info'?(rec&&rec.type==='lead'?leadInfo():taskInfo()):commEmpty(f);}
-function commEmpContent(f){return f==='email'?emailListHTML():f==='info'?empInfoBody():commEmpty(f);}
-function commTaskContent(f){return f==='email'?emailListHTML():f==='info'?tInfoBody():commEmpty(f);}
+/* per-page content renderers: info reuses the side-panel body; the comm channels show that record's own history */
+function commProjectContent(f){return f==='info'?projInfoBody():commChannel(f,'Rajeeshlal');}
+function commDetailContent(f){return f==='info'?(rec&&rec.type==='lead'?leadInfo():taskInfo()):commChannel(f,rec&&rec.ent?(rec.type==='lead'?rec.ent.nm:rec.ent.title):'this contact');}
+function commEmpContent(f){return f==='info'?empInfoBody():commChannel(f,hrEmp?hrEmp.name:'this contact');}
+function commTaskContent(f){return f==='info'?tInfoBody():commChannel(f,tRec?tRec.title:'this task');}
 let collFace='info';function collSetFace(f){collFace=f;}
-function commCollContent(f){return f==='email'?emailListHTML():f==='info'?collPanel(curColl(),curRec()):commEmpty(f);}
+function commCollContent(f){return f==='info'?collPanel(curColl(),curRec()):commChannel(f,curRec()?curRec().name:'this contact');}
+/* ---- contextual communication: per-record history as cells, with a back link to all communications ---- */
+const SVGPHONE='<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>';
+const SVGMAIL='<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>';
+const SVGVID='<rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4z"/>';
+const CDATA={
+  chat:[['in','Hi, following up on the proposal — any update?','Mon · 10:32 AM'],['out','Hi! Finalising the numbers, sending today.','Mon · 10:41 AM'],['in','Great, looking forward to it.','Mon · 10:43 AM'],['out','Shared the deck — let me know your thoughts.','Tue · 9:15 AM'],['in','Looks solid. Can we tweak the timeline?','Tue · 9:30 AM']],
+  call:[['out','Outgoing call','12m 48s','Today · 2:30 PM'],['in','Incoming call','4m 12s','03 Jun · 11:10 AM'],['missed','Missed call','—','31 May · 6:05 PM'],['out','Outgoing call','1m 02s','24 May · 4:00 PM']],
+  video:[['Proposal walkthrough','Google Meet · 30 min','Upcoming','10 Jun · 3:00 PM'],['Kickoff call','Zoom · 45 min','Completed','02 Jun · 11:00 AM'],['Discovery session','Microsoft Teams · 60 min','Completed','24 May · 2:00 PM']],
+  email:[['Meeting Invitation — Apparel Brand','You are invited to a Teams meeting to review the campaign and next steps.','03 Jun 2026'],['Proposal — Meta Ad Campaigns','Please find attached the proposal covering goals, budget and timeline.','31 May 2026'],['Invoice PROF/0006 from Reliance','Invoice PROF/0006 attached for your records. Payable within 14 days.','07 May 2026'],['Service Level Agreement','Please find attached the SLA for your review and sign-off.','07 May 2026']]
+};
+function commChannel(f,name){return `<div class="cpanel">
+   <button class="cpback" onclick="openSection('chat')">${svg('<path d="M15 18l-6-6 6-6"/>',15)} All communications</button>
+   <div class="cpwith">with <b>${name||'this contact'}</b></div>
+   ${cpBody(f,name)}</div>`;}
+function cpInitials(n){return (n||'?').replace(/[^A-Za-z ]/g,'').split(' ').filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase()||'?';}
+function cpBody(f,name){
+  if(f==='chat')return `<div class="cthread">${CDATA.chat.map(m=>`<div class="cmsg ${m[0]}">${m[0]==='in'?`<span class="cav">${cpInitials(name)}</span>`:''}<div class="cmw"><div class="cb">${m[1]}</div><div class="ct">${m[2]}</div></div></div>`).join('')}</div>
+     <div class="cbar"><input class="cbin" placeholder="Message ${name||''}…"><button class="cbsend" onclick="toast('Message sent')">${svg('<path d="M12 19V5M5 12l7-7 7 7"/>',16)}</button></div>`;
+  if(f==='call')return `<div class="clist">${CDATA.call.map(c=>`<div class="ccell"><span class="cic ${c[0]}">${svg(SVGPHONE,15)}</span><div class="cmn"><div class="cnt">${c[1]}</div><div class="csb">${c[3]}</div></div><div class="cmr">${c[2]}</div></div>`).join('')}</div>
+     <button class="cact" onclick="toast('Calling ${name||''}…')">${svg(SVGPHONE,15)} Call ${name||''}</button>`;
+  if(f==='video')return `<div class="clist">${CDATA.video.map(v=>`<div class="ccell"><span class="cic vid">${svg(SVGVID,15)}</span><div class="cmn"><div class="cnt">${v[0]}</div><div class="csb">${v[1]} · ${v[3]}</div></div><span class="cstat ${v[2]==='Upcoming'?'up':'done'}">${v[2]}</span></div>`).join('')}</div>
+     <button class="cact" onclick="toast('New meeting')">${svg('<path d="M12 5v14M5 12h14"/>',15)} New meeting</button>`;
+  return `<div class="cmaillab">Recent emails</div><div class="clist">${CDATA.email.map(e=>`<div class="ccell mail" onclick="toast('Open email')"><div class="cmh">${svg(SVGMAIL,14)} <span class="cmt">${e[0]}</span></div><div class="cms">${e[1]}</div><div class="cmd">${e[2]}</div></div>`).join('')}</div>
+     <button class="cact dark" onclick="toast('New mail')">${svg(SVGMAIL,15)} New Mail</button>`;}
 function mountDash(){
   document.getElementById('modcontent').innerHTML=`<div class="box">
     <div class="mc-top"><div class="title-wrap"><div class="picon">${svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/>',20)}</div><div><h1>Projects</h1><div class="sub">4 active · workspace dashboard</div></div></div>
@@ -311,13 +356,12 @@ function mountDetail(){const r=rec,isLead=r.type==='lead',e=r.ent;
     <div class="dbox ${detailCollapsed?'collapsed':''}" id="dbox">
       <div class="dmain">
         <div class="dtop"><div class="crumbs">${crumb}</div><div class="sp"></div>
-          <button class="paneltoggle" onclick="detailToggle()"><span id="ptogTxt">${detailCollapsed?'Show panel':'Hide panel'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
+          <button class="paneltoggle" onclick="detailToggle()"><span id="ptogTxt">${detailCollapsed?'Show info':'Hide info'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
         <div class="viewbar">${['Overview','Details','Notes','Activity'].map(x=>`<button class="vtab ${x===detailTab?'on':''}" onclick="detailSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[TABICON[x]],14)}</span>${x}</button>`).join('')}</div>
         <div class="dcenter"><div class="inner" id="dinner"></div></div>
       </div>
       <aside class="dpanel" id="dpanel">
         <div class="dpanel-head"><span class="nm">${ptitle}</span><button class="ed" onclick="xpOpenFrom(this)" title="Expand">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button><button class="ed" style="margin-left:6px">${svg('<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',15)}</button></div>
-        <div class="xcfaces">${['info','chat','call','video','email'].map(f=>`<button class="xcface ${f===detailFace?'on':''}" data-face="${f}" onclick="detailSetFace('${f}')">${faceIcon(f)}</button>`).join('')}</div>
         <div class="dpanel-body" id="dpanelbody"></div>
       </aside></div>
     <div class="dside">
@@ -326,7 +370,7 @@ function mountDetail(){const r=rec,isLead=r.type==='lead',e=r.ent;
     </div></div>`;
   renderRec();renderDetailInfo();
   commSetHost({getFace:()=>detailFace,setFace:detailSetFace,content:commDetailContent});}
-function detailToggle(){detailCollapsed=!detailCollapsed;document.getElementById('dbox').classList.toggle('collapsed',detailCollapsed);document.getElementById('ptogTxt').textContent=detailCollapsed?'Show panel':'Hide panel';}
+function detailToggle(){detailCollapsed=!detailCollapsed;document.getElementById('dbox').classList.toggle('collapsed',detailCollapsed);document.getElementById('ptogTxt').textContent=detailCollapsed?'Show info':'Hide info';}
 function detailClose(){const t=rec&&rec.type==='lead'?'leads':'project';trkReset();rec=null;recMode='';go(t);}
 function detailNav(dir){if(!rec)return;const arr=rec.type==='lead'?leads:tasks;const i=arr.findIndex(x=>x.id===rec.ent.id);if(i<0)return;const n=(i+dir+arr.length)%arr.length;const nr=newRec(rec.type,arr[n].id);if(!nr)return;rec=nr;detailFace='info';trkReset();xpClose();mountDetail();}
 document.addEventListener('keydown',e=>{if(recMode!=='detail'||!document.getElementById('dbox'))return;const t=e.target;if(t&&(t.tagName==='TEXTAREA'||t.tagName==='INPUT'||t.isContentEditable))return;if(e.key==='Escape'){if(xpShown()){xpClose();}else{detailClose();}}else if(e.key==='ArrowDown'){e.preventDefault();detailNav(1);}else if(e.key==='ArrowUp'){e.preventDefault();detailNav(-1);}});
@@ -334,15 +378,26 @@ function detailSetTab(t){detailTab=t;mountDetail();}
 function detailSetFace(f){detailFace=f;document.querySelectorAll('.xcface').forEach(b=>b.classList.toggle('on',b.dataset.face===f));renderDetailInfo();}
 function ring(pct,color,size){const r=(size-10)/2,c=2*Math.PI*r,off=c*(1-pct/100);return `<svg width="${size}" height="${size}" style="transform:rotate(-90deg)"><circle cx="${size/2}" cy="${size/2}" r="${r}" stroke="#E3E0DB" stroke-width="9" fill="none"/><circle cx="${size/2}" cy="${size/2}" r="${r}" stroke="${color}" stroke-width="9" fill="none" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"/></svg>`;}
 function chev2(){return `<span class="chev">${svg('<path d="m6 9 6 6 6-6"/>',14)}</span>`;}
-function renderDetailInfo(){const el=document.getElementById('dpanelbody');if(!el)return;
-  if(detailFace==='email'){el.innerHTML=emailListHTML();return;}
-  if(detailFace!=='info'){el.innerHTML=`<div class="xchat">${detailFace==='chat'?'No messages yet.':detailFace==='call'?'No calls logged.':'No meetings yet.'}</div>`;return;}
-  el.innerHTML=rec.type==='lead'?leadInfo():taskInfo();}
-function leadInfo(){const l=rec.ent;const sc=(SCORE[l.st]||[40,'Average']);return `
-  <div class="xscore" style="background:var(--coral-soft);border:1px solid var(--coral-line)"><div class="xgauge">${ring(sc[0],'var(--coral)',122)}<div class="pct" style="color:var(--coral-ink)">${sc[0]}%</div></div><div class="r2"><span class="l">Lead Score <span class="xderive">derive</span></span><span class="vv">${sc[1]}</span></div></div>
-  <div class="xipanel"><div class="xirow"><span class="k">Budget</span><span class="v">${fmt(l.val)}</span></div><div class="xirow"><span class="k">Stage</span><span class="v">${l.st}</span></div><div class="xirow"><span class="k">Source</span><span class="v">${l.src}</span></div></div>
-  <div class="xigroup"><div class="gh">Client ${chev2()}</div><div class="xipanel"><div class="xirow"><span class="k">Contact</span><span class="v">${l.nm}</span></div><div class="xirow"><span class="k">Owner</span><span class="v">${l.asg?PEOPLE[l.asg][2]:'Unassigned'}</span></div></div></div>
-  <div class="xigroup"><div class="gh">Service ${chev2()}</div><div class="xipanel"><div class="xirow"><span class="k">Meta Ad Campaigns</span><span class="v" style="color:var(--ok)">10/14</span></div><div class="xirow"><span class="k">Ad Creative</span><span class="v" style="color:var(--warn)">9/13</span></div></div></div>`;}
+function renderDetailInfo(){const el=document.getElementById('dpanelbody');if(!el)return;el.innerHTML=rec.type==='lead'?leadInfo():taskInfo();}
+function ipanel(rows){return `<div class="xipanel">${rows.map(r=>`<div class="xirow"><span class="k">${r[0]}</span><span class="v">${r[1]}</span></div>`).join('')}</div>`;}
+function igroup(title,inner,edit){return `<div class="xigroup"><div class="gh" onclick="xgToggle(this)">${title}${edit?`<button class="ed2" onclick="event.stopPropagation();toast('Edit ${title}')">${svg(SVS.pencil,13)}</button>`:''}${chev2()}</div><div class="xgbody">${inner}</div></div>`;}
+function xgToggle(el){el.closest('.xigroup').classList.toggle('collapsed');}
+/* inline communication package — sits next to contact details; opens that channel in the right panel (same order as the dock) */
+function commQuick(){return `<div class="commquick"><span class="cql">Reach out</span>
+  <button class="cq" onclick="openComm('chat')" title="Message">${faceIcon('chat')}</button>
+  <button class="cq" onclick="openComm('call')" title="Call">${faceIcon('call')}</button>
+  <button class="cq" onclick="openComm('video')" title="Meeting">${faceIcon('video')}</button>
+  <button class="cq" onclick="openComm('email')" title="Email">${faceIcon('email')}</button></div>`;}
+function leadInfo(){const l=rec.ent;const sc=(SCORE[l.st]||[40,'Average']);
+  const t=sc[0]>=70?['var(--ok)','var(--ok-soft)','#0C6B47']:sc[0]>=45?['var(--warn)','#FBF6E6','#8A5A14']:['var(--coral)','var(--coral-soft)','var(--coral-ink)'];
+  const own=l.asg?PEOPLE[l.asg]:null;const first=(l.nm||'contact').split(' ')[0].toLowerCase();
+  return `<div class="xscore" style="background:${t[1]};border:1px solid ${t[0]}33"><div class="xgauge">${ring(sc[0],t[0],122)}<div class="pct" style="color:${t[2]}">${sc[0]}%</div></div><div class="r2"><span class="l">Lead Score <span class="xderive">derive</span></span><span class="vv">${sc[1]}</span></div></div>
+   ${ipanel([['Budget',`<span class="money">${fmt(l.val)}</span>`],['Status',`<span class="statuschip ok">Active ${svg('<path d="m6 9 6 6 6-6"/>',11)}</span>`]])}
+   ${ipanel([['Start Date','17 May 2026']])}
+   ${igroup('Client',ipanel([['Name',l.nm],['Phone','8892384323'],['Email',`<span class="vmail">${first}@gmail.com</span>`]])+`<div class="xmore">${svg('<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6"/>',14)} +1 other contact</div>`+commQuick())}
+   ${igroup('Professional',ipanel([['Organisation',l.co],['Role','—'],['Department','—'],['Address','Bengaluru']]))}
+   ${igroup('Location',ipanel([['Contact Address','—']]))}
+   ${igroup('Lead Source',ipanel([['Source',l.src],['Added by','Vinoth V V']])+`<div class="asgwrap"><div class="asglab">Assigned to</div><div class="asgchip"><span class="av" style="background:${own?own[1]:'#C92F3A'}">${own?own[0]:'VV'}</span> ${own?own[2]:'Vinoth V V'} <button class="asgx" onclick="toast('Unassign')">${svg('<path d="M18 6 6 18M6 6l12 12"/>',11)}</button></div></div>`+ipanel([['Added on','07 May 2026']]))}`;}
 function taskInfo(){const t=rec.ent;const its=tasks.filter(x=>x.ms===t.ms);const pct=Math.round(its.filter(x=>x.st==='Done').length/its.length*100);return `
   <div class="xscore" style="background:var(--coral-soft);border:1px solid var(--coral-line)"><div class="xgauge">${ring(pct,'var(--coral)',122)}<div class="pct" style="color:var(--coral-ink)">${pct}%</div></div><div class="r2"><span class="l">Milestone progress <span class="xderive">derive</span></span><span class="vv">${t.ms}</span></div></div>
   <div class="xipanel"><div class="xirow"><span class="k">Project</span><span class="v">${PROJECT}</span></div><div class="xirow"><span class="k">Status</span><span class="v">${t.st}</span></div><div class="xirow"><span class="k">Priority</span><span class="v">${t.pri}</span></div><div class="xirow"><span class="k">Estimate</span><span class="v">${t.est}</span></div></div>
@@ -509,14 +564,25 @@ const SECT={
 };
 function openSection(s){if(section===s){closeSection();return;}section=s;
   document.querySelectorAll('.dock .di').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('#dockComm .dcf').forEach(b=>b.classList.remove('on'));
   document.getElementById('d-'+s)?.classList.add('on');
   const fly=document.getElementById('flyout');fly.classList.toggle('genie',s==='genie');
   const c=SECT[s];document.getElementById('flyTitle').textContent=c.title;
   document.getElementById('flyExtra').innerHTML=c.extra||'';
   const body=document.getElementById('flyBody');body.className='fly-body'+(s==='genie'?' genie':'');
   body.innerHTML=c.body();
-  flySize(flyW);fly.classList.add('show');closeApps();mScrim(true);mbarActive(s);}
-function closeSection(){section=null;const fly=document.getElementById('flyout');fly.classList.remove('show');flySize(0);document.querySelectorAll('.dock .di').forEach(b=>b.classList.remove('on'));mScrim(false);mbarActive(null);}
+  flySize(flyW);document.getElementById('rdock')?.classList.add('open');fly.classList.add('show');closeApps();mScrim(true);mbarActive(s);}
+/* contextual communication (call / video / email) — always openable from the dock; shows the active record's content or a generic empty state */
+function commBody(f){return commHost?commHost.content(f):commChannel(f,'');}
+function openComm(f){const sid='comm-'+f;if(section===sid){closeSection();return;}section=sid;
+  document.querySelectorAll('.dock .di').forEach(b=>b.classList.remove('on'));
+  document.getElementById('d-'+f)?.classList.add('on');
+  const fly=document.getElementById('flyout');fly.classList.remove('genie');
+  document.getElementById('flyTitle').textContent=COMMFACE_LABEL[f]||'';
+  document.getElementById('flyExtra').innerHTML='';
+  const body=document.getElementById('flyBody');body.className='fly-body';body.innerHTML=commBody(f);
+  flySize(flyW);document.getElementById('rdock')?.classList.add('open');fly.classList.add('show');closeApps();mScrim(true);mbarActive(null);}
+function closeSection(){section=null;const fly=document.getElementById('flyout');fly.classList.remove('show');document.getElementById('rdock')?.classList.remove('open');flySize(0);document.querySelectorAll('.dock .di').forEach(b=>b.classList.remove('on'));mScrim(false);mbarActive(null);}
 function closeDrawer(){closeSection();}
 
 /* ===== MOBILE shell: bottom tab bar + bottom sheets (Apps launcher, Ask Ojo, comms) ===== */
@@ -530,7 +596,7 @@ function closeApps(){document.getElementById('appsSheet')?.classList.remove('sho
 function mApp(route){closeApps();mbarActive('apps');go(route);}
 function mCloseAll(){closeApps();closeSection();closeCommSheet();if(typeof closePeek==='function')closePeek();const s=document.getElementById('mscrim');if(s)s.classList.remove('show');}
 
-function genieBody(){return `<div class="gwrap"><div class="gmsgs" id="gmsgs"><div class="genie-hi">Hello, Vinoth<br><span>How can I help you?</span></div></div>
+function genieBody(){return `<div class="gwrap"><div class="gmsgs" id="gmsgs"><div class="genie-hi"><img class="genie-logo" src="assets/ojo-logo.png" alt="OJO Genie">Hello, Vinoth<br><span>How can I help you?</span></div></div>
   <div class="gfoot"><div class="gsugg">
     <button onclick="genieAsk('Prioritize tasks for first half')">Prioritize tasks for first half</button>
     <button onclick="genieAsk('Show My Leads')">Show My Leads</button>
@@ -613,11 +679,10 @@ function hrOpenEmp(code){hrEmp=EMP.find(e=>e.code===code);hrEmpTab='Overview';mo
 function mountEmpRecord(){const e=hrEmp;const tabs=['Overview','Personal','Contact','Work','Salary','Documents','Activity'];
   document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dbox ${empPanelCollapsed?'collapsed':''}" id="empbox"><div class="dmain">
      <div class="crumbbar"><a onclick="go('hr')">Employee Directory</a> <span class="sep">‹</span> <b>${e.name}</b></div>
-     <div class="mc-top"><div class="title-wrap"><span class="eav" style="background:${e.color};width:40px;height:40px;font-size:15px">${e.av}</span><div><h1>${e.name}</h1><div class="sub">${e.role} · ${e.status}</div></div></div><div class="sp"></div><button class="paneltoggle" onclick="empToggle()"><span id="empPtog">${empPanelCollapsed?'Show panel':'Hide panel'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
+     <div class="mc-top"><div class="title-wrap"><span class="eav" style="background:${e.color};width:40px;height:40px;font-size:15px">${e.av}</span><div><h1>${e.name}</h1><div class="sub">${e.role} · ${e.status}</div></div></div><div class="sp"></div><button class="paneltoggle" onclick="empToggle()"><span id="empPtog">${empPanelCollapsed?'Show info':'Hide info'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
      <div class="emp-tabs" style="padding:0 22px 10px">${tabs.map(t=>`<button class="vtab ${t===hrEmpTab?'on':''}" onclick="hrEmpSetTab('${t}')">${t}</button>`).join('')}</div>
      <div class="dcenter"><div class="inner" id="empBody">${hrEmpBody(e)}</div></div></div>
    <aside class="dpanel" id="emppanel"><div class="dpanel-head"><span class="nm">${e.name}</span><button class="ed" onclick="xpOpenFrom(this)" title="Expand">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button><button class="ed" style="margin-left:6px">${svg(SVS.pencil,15)}</button></div>
-     <div class="xcfaces">${['info','chat','call','video','email'].map(f=>`<button class="xcface ${f===empFace?'on':''}" data-face="${f}" onclick="empSetFace('${f}')">${faceIcon(f)}</button>`).join('')}</div>
      <div class="dpanel-body" id="emppanelbody"></div></aside></div>
    <div class="dside"><button class="dctl x" onclick="empClose()" title="Close">${svg(SVS.x,19)}</button><div class="dnav"><button class="dctl" onclick="empNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="empNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div></div>`;
   renderEmpInfo();
@@ -625,31 +690,29 @@ function mountEmpRecord(){const e=hrEmp;const tabs=['Overview','Personal','Conta
 function empClose(){go('hr');}
 function empNav(dir){const i=EMP.findIndex(x=>x.code===hrEmp.code);if(i<0)return;const n=(i+dir+EMP.length)%EMP.length;hrEmp=EMP[n];empFace='info';xpClose();mountEmpRecord();}
 function hrEmpSetTab(t){hrEmpTab=t;document.getElementById('empBody').innerHTML=hrEmpBody(hrEmp);document.querySelectorAll('.emp-tabs .vtab').forEach(b=>b.classList.toggle('on',b.textContent===t));}
-function empToggle(){empPanelCollapsed=!empPanelCollapsed;document.getElementById('empbox').classList.toggle('collapsed',empPanelCollapsed);document.getElementById('empPtog').textContent=empPanelCollapsed?'Show panel':'Hide panel';}
+function empToggle(){empPanelCollapsed=!empPanelCollapsed;document.getElementById('empbox').classList.toggle('collapsed',empPanelCollapsed);document.getElementById('empPtog').textContent=empPanelCollapsed?'Show info':'Hide info';}
 function empSetFace(f){empFace=f;document.querySelectorAll('#emppanel .xcface').forEach(b=>b.classList.toggle('on',b.dataset.face===f));renderEmpInfo();}
 function empInfoBody(){const e=hrEmp,sc=({REL0006:62,REL0005:40,REL0003:78,REL0004:85,REL0001:90,REL0002:30}[e.code])||60,lbl=sc>=80?'Strong':sc>=50?'Average':'Needs focus';
   return `<div class="xscore" style="background:var(--ok-soft);border:1px solid #CFEEDF"><div class="xgauge">${ring(sc,'var(--ok)',122)}<div class="pct" style="color:var(--ok)">${sc}%</div></div><div class="r2"><span class="l">Performance <span class="xderive">derive</span></span><span class="vv">${lbl}</span></div></div>
    <div class="xipanel"><div class="xirow"><span class="k">Role</span><span class="v">${e.role}</span></div><div class="xirow"><span class="k">Department</span><span class="v">${e.dept}</span></div><div class="xirow"><span class="k">Status</span><span class="v" style="color:${EST[e.status]}">${e.status}</span></div></div>
    <div class="xigroup"><div class="gh">Contact ${chev2()}</div><div class="xipanel"><div class="xirow"><span class="k">Email</span><span class="v" style="font-size:13px">${e.email}</span></div><div class="xirow"><span class="k">Phone</span><span class="v">${e.phone}</span></div></div></div>
    <div class="xigroup"><div class="gh">Employment ${chev2()}</div><div class="xipanel"><div class="xirow"><span class="k">Code</span><span class="v">${e.code}</span></div><div class="xirow"><span class="k">Joined</span><span class="v">${e.join}</span></div></div></div>`;}
-function renderEmpInfo(){const el=document.getElementById('emppanelbody');if(!el)return;
-  if(empFace==='email'){el.innerHTML=emailListHTML();return;}
-  if(empFace!=='info'){el.innerHTML=commEmpty(empFace);return;}
-  el.innerHTML=empInfoBody();}
-function hrEmpBody(e){
-  if(hrEmpTab==='Overview')return hrPerfBlock()+hrFieldSec('Personal Details',[['Full Name',e.name],['Joining Date',e.join]])+hrFieldSec('Contact Details',[['Contact number',e.phone],['Work Email',e.email],['Address','—'],['City','—']]);
-  if(hrEmpTab==='Personal')return hrFieldSec('Personal Details',[['Full Name',e.name],['Joining Date',e.join],['Date of Birth','—'],['Gender','—']]);
-  if(hrEmpTab==='Contact')return hrFieldSec('Contact Details',[['Contact number',e.phone],['Emergency number','—'],['Work Email',e.email],['Personal Email','—'],['Address','—'],['City','—']]);
-  if(hrEmpTab==='Work')return hrFieldSec('Work Profile',[['Role',e.role],['Department',e.dept],['Manager',e.mgr],['Employee Code',e.code]]);
-  if(hrEmpTab==='Salary')return hrFieldSec('Salary Details',[['CTC','₹—'],['Monthly Gross','₹—'],['Bank','—'],['PAN','—']]);
-  if(hrEmpTab==='Documents')return `<div class="emp-sec"><div class="emp-sec-h"><h3>Documents</h3></div><div class="muted2">No documents yet. Drag files here or click upload.</div></div>`;
+function renderEmpInfo(){const el=document.getElementById('emppanelbody');if(!el)return;el.innerHTML=empInfoBody();}
+function hrEmpBody(e,tab){tab=tab||hrEmpTab;
+  if(tab==='Overview')return hrPerfBlock()+hrFieldSec('Personal Details',[['Full Name',e.name],['Joining Date',e.join]])+hrFieldSec('Contact Details',[['Contact number',e.phone],['Work Email',e.email],['Address','—'],['City','—']]);
+  if(tab==='Personal')return hrFieldSec('Personal Details',[['Full Name',e.name],['Joining Date',e.join],['Date of Birth','—'],['Gender','—']]);
+  if(tab==='Contact')return hrFieldSec('Contact Details',[['Contact number',e.phone],['Emergency number','—'],['Work Email',e.email],['Personal Email','—'],['Address','—'],['City','—']]);
+  if(tab==='Work')return hrFieldSec('Work Profile',[['Role',e.role],['Department',e.dept],['Manager',e.mgr],['Employee Code',e.code]]);
+  if(tab==='Salary')return hrFieldSec('Salary Details',[['CTC','₹—'],['Monthly Gross','₹—'],['Bank','—'],['PAN','—']]);
+  if(tab==='Documents')return `<div class="emp-sec"><div class="emp-sec-h"><h3>Documents</h3></div><div class="muted2">No documents yet. Drag files here or click upload.</div></div>`;
   return `<div class="emp-sec"><div class="emp-sec-h"><h3>Activity</h3></div><div class="muted2">Joined on ${e.join}. No recent activity.</div></div>`;}
 function hrFieldSec(title,fields){return `<div class="emp-sec"><div class="emp-sec-h"><h3>${title}</h3><button class="iconedit" onclick="toast('Edit ${title}')">${svg(SVS.pencil,15)}</button></div><div class="fgrid">${fields.map(f=>`<div class="fld"><div class="flk">${f[0]}</div><input class="flv" value="${f[1]}"></div>`).join('')}</div></div>`;}
 function hrSpark(){const pts=[10,16,13,24,20,32,28,40,36,30,44];const w=560,h=70,mx=Math.max(...pts),step=w/(pts.length-1);const line=pts.map((p,i)=>`${(i*step).toFixed(1)},${(h-(p/mx)*h).toFixed(1)}`).join(' ');return `<svg viewBox="0 0 ${w} ${h}" class="spark" preserveAspectRatio="none"><polyline points="0,${h} ${line} ${w},${h}" fill="rgba(22,163,74,.10)" stroke="none"/><polyline points="${line}" fill="none" stroke="#16A34A" stroke-width="2.5" stroke-linejoin="round"/></svg>`;}
 function hrPerfBlock(){return `<div class="emp-sec"><div class="emp-sec-h"><h3>Performance</h3><span class="muted2" style="margin-left:auto">Monthly · time vs quality</span></div>${hrSpark()}
    <div class="perf-grid">${hrPerf.map((m,i)=>`<div class="perf-card"><button class="perf-x" onclick="hrPerfRemove(${i})">${svg(SVS.x,11)}</button><div class="pv">${m.v}</div><div class="pl">${m.l}</div><div class="pd">${svg(SVS.up,11)} ${m.d}</div></div>`).join('')}<button class="perf-add" onclick="hrPerfAdd()">${svg(SVS.plus,16)} Add metric</button></div></div>`;}
-function hrPerfRemove(i){hrPerf.splice(i,1);document.getElementById('empBody').innerHTML=hrEmpBody(hrEmp);}
-function hrPerfAdd(){hrPerf.push({l:'New metric',v:'0',d:'+0'});document.getElementById('empBody').innerHTML=hrEmpBody(hrEmp);}
+function hrPerfRefresh(){const a=document.getElementById('empBody');if(a&&hrEmp)a.innerHTML=hrEmpBody(hrEmp);const b=document.getElementById('profEmpBody');if(b)b.innerHTML=hrEmpBody(profUser(),profTab);}
+function hrPerfRemove(i){hrPerf.splice(i,1);hrPerfRefresh();}
+function hrPerfAdd(){hrPerf.push({l:'New metric',v:'0',d:'+0'});hrPerfRefresh();}
 function hrAttendance(){const sub=['Attendance','Leave Requests','Holidays'];
   return `<div class="emp-tabs" style="margin-bottom:16px">${sub.map(t=>`<button class="vtab ${t===hrAttTab?'on':''}" onclick="hrAttSet('${t}')">${t}</button>`).join('')}</div>`+(hrAttTab==='Attendance'?hrAttList():hrAttTab==='Leave Requests'?`<div class="emp-sec"><div class="emp-sec-h"><h3>Leave Requests</h3></div><div class="muted2">No pending leave requests.</div></div>`:`<div class="emp-sec"><div class="emp-sec-h"><h3>Holidays</h3></div><div class="muted2">2 upcoming holidays this quarter.</div></div>`);}
 function hrAttSet(t){hrAttTab=t;renderHRPage();}
@@ -676,6 +739,98 @@ function hrPayroll(){const e=EMP[4];return `<div class="hr-h">Pay Run for March 
    <div class="hstats"><div class="hstat"><div class="v">1</div><div class="l">Active Employees</div></div><div class="hstat"><div class="v">₹20,000</div><div class="l">Total Payroll Cost</div></div><div class="hstat"><div class="v">₹0</div><div class="l">Taxes &amp; deductions</div></div><div class="hstat r"><div class="v">₹20,000</div><div class="l">Net Payable</div></div></div>
    <div class="muted2" style="margin:-6px 0 16px">16 March 2026 · 30 Pay days</div>
    <div class="tablewrap"><table><thead><tr><th>Employee</th><th class="num">Paid Days</th><th class="num">Gross</th><th class="num">Deductions</th><th class="num">Net Pay</th><th>Advance</th></tr></thead><tbody><tr><td><span class="owncell">${eav(e)}${e.name}</span></td><td class="num">2</td><td class="num">₹20,000</td><td class="num">₹0</td><td class="num">₹20,000</td><td>—</td></tr></tbody></table></div>`;}
+
+/* ============ PROFILE (account) — full page with left sub-nav, like HR / Accounts ============ */
+let profPage='profile', profTab='Overview', profNavCollapsed=false;
+const PROFPAGES=[['profile','Profile'],['attendance','Attendance'],['payslips','Payslips'],['integrations','Integrations']];
+function profUser(){return EMP.find(e=>e.code==='REL0001')||EMP[0];}
+function mountProfile(){profPage='profile';profTab='Overview';
+  document.getElementById('screen').innerHTML=`<div class="box hrbox ${profNavCollapsed?'navcollapsed':''}" id="profbox"><aside class="hrnav"><div class="hrnav-top" style="justify-content:flex-end"><button class="hrcollapse" onclick="profNavToggle()" title="Collapse">${svg('<path d="m11 17-5-5 5-5M18 17l-5-5 5-5"/>',16)}</button></div>${PROFPAGES.map(p=>`<a class="${profPage===p[0]?'on':''}" onclick="profSet('${p[0]}')">${p[1]}</a>`).join('')}</aside><div class="hrmain" id="profmain"></div><button class="hrreopen" onclick="profNavToggle()" title="Show menu">${svg('<path d="M3 6h18M3 12h18M3 18h18"/>',17)}</button></div>`;
+  renderProfPage();}
+function profNavToggle(){profNavCollapsed=!profNavCollapsed;document.getElementById('profbox').classList.toggle('navcollapsed',profNavCollapsed);}
+function profSet(p){profPage=p;document.querySelectorAll('#profbox .hrnav a').forEach((a,i)=>a.classList.toggle('on',PROFPAGES[i]&&PROFPAGES[i][0]===p));renderProfPage();}
+function renderProfPage(){const el=document.getElementById('profmain');if(!el)return;
+  if(profPage==='profile')el.innerHTML=profBody();
+  else if(profPage==='attendance')el.innerHTML=profAttendance();
+  else if(profPage==='payslips')el.innerHTML=profPayslips();
+  else el.innerHTML=profIntegrations();}
+function profBody(){const e=profUser();const tabs=['Overview','Personal','Contact','Work','Salary','Documents','Activity'];
+  return `<div class="mc-top" style="padding:2px 0 14px"><div class="title-wrap"><span class="eav" style="background:${e.color};width:46px;height:46px;font-size:16px">${e.av}</span><div><h1 style="font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--navy);line-height:1.2">${e.name} <span class="rolechip">${e.role}</span></h1><div class="sub">${e.email} · ${e.status}</div></div></div></div>
+   <div class="emp-tabs" style="margin-bottom:16px">${tabs.map(t=>`<button class="vtab ${t===profTab?'on':''}" onclick="profSetTab('${t}')">${t}</button>`).join('')}</div>
+   <div id="profEmpBody">${hrEmpBody(e,profTab)}</div>`;}
+function profSetTab(t){profTab=t;const b=document.getElementById('profEmpBody');if(b)b.innerHTML=hrEmpBody(profUser(),profTab);document.querySelectorAll('#profmain .emp-tabs .vtab').forEach(x=>x.classList.toggle('on',x.textContent===t));}
+function profAttendance(){const days=[['02 Jun 2026','Present','09:58 AM','06:31 PM','8h 33m'],['03 Jun 2026','Present','10:04 AM','06:45 PM','8h 41m'],['04 Jun 2026','Present','09:46 AM','06:20 PM','8h 34m'],['05 Jun 2026','Absent','-','-','-']];
+  return `${pageHeader('Attendance','Your check-ins, hours & leave balance','<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>')}
+   <div class="hstats"><div class="hstat"><div class="v">21</div><div class="l">Present (Jun)</div></div><div class="hstat r"><div class="v">1</div><div class="l">Absent</div></div><div class="hstat"><div class="v">2</div><div class="l">Leaves left</div></div><div class="hstat"><div class="v">8h 36m</div><div class="l">Avg hours</div></div></div>
+   <div class="tablewrap"><table><thead><tr><th>Date</th><th>Status</th><th>Check In</th><th>Check Out</th><th>Work Hours</th></tr></thead><tbody>${days.map(d=>`<tr><td class="co">${d[0]}</td><td><span style="color:${d[1]==='Present'?'var(--ok)':'var(--coral-ink)'};font-weight:600">${d[1]}</span></td><td>${d[2]}</td><td>${d[3]}</td><td>${d[4]}</td></tr>`).join('')}</tbody></table></div>`;}
+function profPayslips(){const rows=[['May 2026','₹20,000','₹0','₹20,000'],['April 2026','₹20,000','₹0','₹20,000'],['March 2026','₹20,000','₹0','₹20,000']];
+  return `${pageHeader('Payslips','Monthly salary statements','<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/>')}
+   <div class="tablewrap"><table><thead><tr><th>Period</th><th class="num">Gross</th><th class="num">Deductions</th><th class="num">Net Pay</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td><td class="num">${r[3]}</td><td><span class="ebadge" style="color:var(--ok);background:var(--ok-soft)">✓ Paid</span></td><td><button class="iconedit" onclick="toast('Download payslip · ${r[0]}')">${svg('<path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/>',14)}</button></td></tr>`).join('')}</tbody></table></div>`;}
+function profIntegrations(){const apps=[['Google Drive','#15A06A','Sync files & documents',1],['Slack','#7C53E6','Notifications & chat',1],['Gmail','#E0533A','Email integration',0],['Zoom','#2F6FED','Meetings & calls',0],['GitHub','#24292F','Code & issues',0]];
+  return `${pageHeader('Integrations','Connect your tools to OJO','<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5"/>')}
+   <div class="intlist">${apps.map(a=>`<div class="introw"><div class="inticon" style="background:${a[1]}">${a[0][0]}</div><div style="flex:1"><div class="intname">${a[0]}</div><div class="muted2">${a[2]}</div></div><button class="intbtn ${a[3]?'on':''}" onclick="toast('${a[3]?'Disconnect':'Connect'} ${a[0]}')">${a[3]?'Connected':'Connect'}</button></div>`).join('')}</div>`;}
+
+/* ============ ORG ADMIN — full page, cell-style (like HR / Accounts / Profile) ============ */
+let adminPage='users', adminRole=null, adminPermMod='Sales', adminNavCollapsed=false;
+const ORGADMIN_PAGES=[['users','Users'],['roles','Roles and Permissions'],['orgsettings','Organization Settings'],['hrpay','HR & Payroll'],['finance','Finance & Compliance'],['payment','Payment Config'],['integrations','Integrations'],['billing','Billing & Plans']];
+const ORGUSERS=[['VV','#C92F3A','Vinoth V V','Org Admin','—','—','25 Feb'],['PA','#2F6FED','Palpxvinoth','Org Admin','—','—','25 Feb'],['PR','#7C53E6','Preetam','Client','—','—','25 Feb'],['NI','#15A06A','Nidhuna','Finance Admin','Design','—','26 Feb'],['CY','#E08A1E','Client Yamuna','Client','—','—','10 Apr'],['RA','#C92F3A','Rajeeshal','Client','—','—','01 May'],['DE','#15A06A','Devika','Client','—','—','03 May'],['AB','#2F6FED','Aman Bhai','Client','—','—','07 May'],['TN','#7C53E6','Test New','Employee','Design','—','15 May']];
+const ORGROLES=[{name:'Org Admin',color:'#C92F3A',desc:'Full access across all modules and settings.',base:'Manager',perm:'28/28',members:2},{name:'Sales Admin',color:'#E08A1E',desc:'Manages sales team and leads',base:'Sales Admin',perm:'24/28',members:1},{name:'Finance Admin',color:'#15A06A',desc:'Manages accounts, billing and compliance.',base:'Manager',perm:'20/28',members:1},{name:'Employee',color:'#2F6FED',desc:'Base role for most org members.',base:'Employee',perm:'12/28',members:5},{name:'Client',color:'#7C53E6',desc:'External client with limited visibility.',base:'Client',perm:'5/28',members:6}];
+const PERM_MODS=[['Sales','24/28'],['Contacts','8/8'],['HRM',''],['Projects',''],['Finance',''],['Vendors','4/24'],['Chat','4/5'],['Common','24']];
+const PERM_ROWS=['Leads','Proposals','Documents','Tasks','Reviews','Emails','Calls','Meetings','Audio'];
+const PERM_COLS=['Read','Read All','Create','Update'];
+let rolePerms={};
+function initRolePerms(){rolePerms={};PERM_ROWS.forEach((r,ri)=>PERM_COLS.forEach((c,ci)=>{rolePerms[ri+'|'+ci]=true;}));
+  ['2|1','3|1','4|1','5|1','6|1','7|1','8|1','2|3'].forEach(k=>rolePerms[k]=false);}
+function roleColor(role){return {'Org Admin':'#C92F3A','Finance Admin':'#15A06A','Sales Admin':'#E08A1E','Employee':'#2F6FED','Client':'#7C53E6','Manager':'#0EA5A5'}[role]||'var(--muted)';}
+function roleChip(role){const c=roleColor(role);return `<span class="ebadge" style="color:${c};background:${c}1a">${role}</span>`;}
+function mountOrgAdmin(){adminRole=null;
+  document.getElementById('screen').innerHTML=`<div class="box hrbox ${adminNavCollapsed?'navcollapsed':''}" id="adminbox"><aside class="hrnav"><div class="hrnav-top" style="justify-content:flex-end"><button class="hrcollapse" onclick="adminNavToggle()" title="Collapse">${svg('<path d="m11 17-5-5 5-5M18 17l-5-5 5-5"/>',16)}</button></div>${ORGADMIN_PAGES.map(p=>`<a class="${adminPage===p[0]?'on':''}" onclick="adminSet('${p[0]}')">${p[1]}</a>`).join('')}</aside><div class="hrmain" id="adminmain"></div><button class="hrreopen" onclick="adminNavToggle()" title="Show menu">${svg('<path d="M3 6h18M3 12h18M3 18h18"/>',17)}</button></div>`;
+  renderAdminPage();}
+function adminNavToggle(){adminNavCollapsed=!adminNavCollapsed;document.getElementById('adminbox').classList.toggle('navcollapsed',adminNavCollapsed);}
+function adminSet(p){adminPage=p;adminRole=null;document.querySelectorAll('#adminbox .hrnav a').forEach((a,i)=>a.classList.toggle('on',ORGADMIN_PAGES[i]&&ORGADMIN_PAGES[i][0]===p));renderAdminPage();}
+function renderAdminPage(){const el=document.getElementById('adminmain');if(!el)return;
+  if(adminRole){el.innerHTML=adminRoleEdit(adminRole);return;}
+  if(adminPage==='users')el.innerHTML=adminUsers();
+  else if(adminPage==='roles')el.innerHTML=adminRoles();
+  else if(adminPage==='integrations')el.innerHTML=profIntegrations();
+  else el.innerHTML=adminPlaceholder();}
+function adminPlaceholder(){const p=ORGADMIN_PAGES.find(x=>x[0]===adminPage);return `${pageHeader(p[1],'Manage '+p[1].toLowerCase()+' for your organization.','<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/>')}<div class="emp-sec"><div class="emp-sec-h"><h3>${p[1]}</h3></div><div class="muted2">${p[1]} configuration lives here. Each setting is a cell you can edit. (Demo)</div></div>`;}
+function adminUsers(){return `<div class="hrtoolbar"><div class="hsearch">${svg(SVS.search,15)} Search users</div><button class="mtool" style="margin-left:auto">${svg(SVS.filter,17)}</button><button class="mtool">${svg(SVS.sort,17)}</button></div>
+   <div class="tablewrap"><table><thead><tr><th style="width:40px"><input type="checkbox" onclick="event.stopPropagation()"></th><th>Name</th><th>Role</th><th>Department</th><th>Manager</th><th>Joining Date</th><th style="width:44px"></th></tr></thead><tbody>${ORGUSERS.map(u=>`<tr onclick="toast('Open user: ${u[2]}')"><td><input type="checkbox" onclick="event.stopPropagation()"></td><td><span class="owncell"><span class="eav" style="background:${u[1]};width:30px;height:30px;font-size:11px">${u[0]}</span><span style="color:var(--navy);font-weight:700;font-size:13.5px">${u[2]}</span></span></td><td>${roleChip(u[3])}</td><td class="co">${u[4]}</td><td class="co">${u[5]}</td><td class="co">${u[6]}</td><td><button class="iconedit" onclick="event.stopPropagation();toast('User actions')">${svg(SVS.more,16)}</button></td></tr>`).join('')}</tbody></table></div>
+   <div class="tblfoot"><button class="pill" onclick="toast('Rows per page')">Show 50 rows ${svg('<path d="m6 9 6 6 6-6"/>',13)}</button><div class="pager"><button class="pill" onclick="toast('Previous')">Previous</button><button class="pill on">1</button><button class="pill" onclick="toast('Next')">Next</button></div></div>`;}
+function adminRoles(){return `<div class="hrtoolbar"><div class="hr-h" style="margin:0">Roles &amp; Permissions</div><button class="abtn dark" style="margin-left:auto;padding:9px 16px;border-radius:999px;font-weight:700;font-size:13px" onclick="toast('New role')">＋ New Role</button></div>
+   <div class="tablewrap"><table><thead><tr><th>Role</th><th>Base Role</th><th>Members</th><th>Permissions</th><th style="width:44px"></th></tr></thead><tbody>${ORGROLES.map((r,i)=>`<tr onclick="adminOpenRole(${i})"><td><span class="owncell"><span class="rdot" style="background:${r.color}"></span><span style="color:var(--navy);font-weight:700;font-size:13.5px">${r.name}</span></span></td><td class="co">${r.base}</td><td class="co">${r.members} members</td><td><span class="ebadge" style="color:var(--navy);background:var(--surface-2)">${r.perm}</span></td><td><button class="iconedit" onclick="event.stopPropagation();adminOpenRole(${i})">${svg(SVS.pencil,15)}</button></td></tr>`).join('')}</tbody></table></div>`;}
+function adminOpenRole(i){adminRole=Object.assign({},ORGROLES[i]);adminPermMod='Sales';initRolePerms();renderAdminPage();}
+function adminBackRoles(){adminRole=null;adminPage='roles';renderAdminPage();}
+function adminPickColor(btn,c){document.querySelectorAll('.swatchrow .swatch').forEach(s=>s.classList.remove('on'));btn.classList.add('on');if(adminRole)adminRole.color=c;}
+function adminSetPermMod(m){adminPermMod=m;document.querySelectorAll('.permmods .permmod').forEach(b=>b.classList.toggle('on',b.dataset.mod===m));const lbl=document.querySelectorAll('.permaccess .pat');if(lbl[0])lbl[0].textContent=m+' access';}
+function permToggle(ri,ci){const k=ri+'|'+ci;rolePerms[k]=!rolePerms[k];const btn=document.querySelector(`.permcell[data-k="${k}"]`);if(btn)btn.classList.toggle('on',rolePerms[k]);updatePermCount();}
+function updatePermCount(){const n=Object.values(rolePerms).filter(Boolean).length,t=PERM_ROWS.length*PERM_COLS.length;const el=document.getElementById('permCount');if(el)el.textContent=`${n}/${t} selected`;}
+function permSelectAll(){const n=Object.values(rolePerms).filter(Boolean).length,t=PERM_ROWS.length*PERM_COLS.length,all=n<t;PERM_ROWS.forEach((r,ri)=>PERM_COLS.forEach((c,ci)=>rolePerms[ri+'|'+ci]=all));document.querySelectorAll('.permcell').forEach(b=>{b.classList.toggle('on',all);});updatePermCount();}
+function permMatrix(){return `<div class="permtbl"><div class="permhead"><div class="permrow-h"></div>${PERM_COLS.map(c=>`<div class="permcol-h">${c}</div>`).join('')}</div>
+   ${PERM_ROWS.map((r,ri)=>`<div class="permrow"><div class="permrow-l">${r}</div>${PERM_COLS.map((c,ci)=>`<button class="permcell ${rolePerms[ri+'|'+ci]?'on':''}" data-k="${ri+'|'+ci}" onclick="permToggle(${ri},${ci})" title="${r} · ${c}">${svg('<path d="M20 6 9 17l-5-5"/>',15)}</button>`).join('')}</div>`).join('')}</div>`;}
+function adminSaveRole(){toast('Role permissions updated');adminBackRoles();}
+function adminRoleEdit(r){const colors=['#C92F3A','#2F6FED','#7C53E6','#15A06A','#E08A1E','#E0533A','#0EA5A5','#6366F1'];
+  const n=Object.values(rolePerms).filter(Boolean).length,t=PERM_ROWS.length*PERM_COLS.length;
+  return `<div class="roleedit-head"><button class="back" onclick="adminBackRoles()">${svg(SVS.arrow,18)}</button><div><div class="hr-h" style="margin:0">Edit Role</div><div class="muted2">Configure who can view, create, update or delete records across modules.</div></div></div>
+   <div class="emp-sec">
+     <div class="flk">Role Name <span style="color:var(--coral)">*</span></div><input class="flv" value="${r.name}" style="margin-bottom:18px">
+     <div class="flk">Color</div><div class="swatchrow" style="margin-bottom:18px">${colors.map(c=>`<button class="swatch ${c===r.color?'on':''}" style="background:${c}" onclick="adminPickColor(this,'${c}')"></button>`).join('')}</div>
+     <div class="flk">Description</div><textarea class="flv" rows="2" style="resize:vertical">${r.desc}</textarea>
+   </div>
+   <div class="emp-sec">
+     <div class="emp-sec-h"><h3>Base Role</h3></div>
+     <div class="lgate"><span>${svg('<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>',18)}</span><div><div class="t">For most org members, use <b>Employee</b> as the base and add extra permissions on top.</div><div class="s">Use manager roles only for team leads who need full module access.</div></div></div>
+     <select class="flv">${['Sales Admin','Employee','Manager','Finance Admin','Client'].map(x=>`<option ${x===r.base?'selected':''}>${x}</option>`).join('')}</select>
+   </div>
+   <div class="emp-sec">
+     <div class="emp-sec-h"><h3>Permissions</h3></div>
+     <div class="permmods">${PERM_MODS.map(m=>`<button class="permmod ${m[0]===adminPermMod?'on':''}" data-mod="${m[0]}" onclick="adminSetPermMod('${m[0]}')">${m[0]}${m[1]?`<span class="pmct">${m[1]}</span>`:''}</button>`).join('')}</div>
+     <div class="permaccess"><div><div class="pat">${adminPermMod} access</div><div class="pas">Module enabled — turn off to revoke all access in one click.</div></div><span class="toggle on" onclick="this.classList.toggle('on')"></span></div>
+     <div class="permbar"><span id="permCount">${n}/${t} selected</span><button class="lnk2" onclick="permSelectAll()">Select all</button></div>
+     ${permMatrix()}
+   </div>
+   <div class="roleedit-foot"><button class="pill" onclick="adminBackRoles()">Cancel</button><button class="abtn dark" style="padding:9px 22px;border-radius:999px;font-weight:700;font-size:13px" onclick="adminSaveRole()">Update</button></div>`;}
 
 /* ============ CONSISTENT PAGE HEADER + ADDABLE METRICS (shared by all listings) ============ */
 function pageHeader(t,s,icon){return `<div class="phead2">${icon?`<div class="picon">${svg(icon,20)}</div>`:''}<div><div class="pht">${t}</div>${s?`<div class="phs">${s}</div>`:''}</div></div>`;}
@@ -752,7 +907,7 @@ function collOpen(id){collRec=id;collTab='Overview';collColl=false;mountCollReco
 function mountCollRecord(){const c=curColl(),r=curRec();collFace='info';
   document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dbox ${collColl?'collapsed':''}" id="cbox"><div class="dmain">
      <div class="crumbbar"><a onclick="go('${coll}')">${c.name}</a> <span class="sep">‹</span> <b>${r.name}</b></div>
-     <div class="mc-top"><div class="title-wrap"><span class="eav" style="background:${r.color};width:38px;height:38px;font-size:14px">${r.av}</span><div><h1>${r.name}</h1><div class="sub">${r.type} · ${r.status}</div></div></div><div class="sp"></div><button class="paneltoggle" onclick="collTogglePanel()"><span id="cPtog">${collColl?'Show panel':'Hide panel'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
+     <div class="mc-top"><div class="title-wrap"><span class="eav" style="background:${r.color};width:38px;height:38px;font-size:14px">${r.av}</span><div><h1>${r.name}</h1><div class="sub">${r.type} · ${r.status}</div></div></div><div class="sp"></div><button class="paneltoggle" onclick="collTogglePanel()"><span id="cPtog">${collColl?'Show info':'Hide info'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
      <div class="emp-tabs">${c.tabs.map(t=>`<button class="vtab ${t===collTab?'on':''}" onclick="collSetTab('${t}')">${t}</button>`).join('')}</div>
      <div class="dcenter"><div class="inner" id="cinner">${collBody(c,r)}</div></div></div>
    <aside class="dpanel" id="cpanel"><div class="dpanel-head"><span class="nm">${r.name}</span><button class="ed" onclick="xpOpenFrom(this)" title="Expand">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button><button class="ed" style="margin-left:6px">${svg(SVS.pencil,15)}</button></div><div class="dpanel-body">${collPanel(c,r)}</div></aside></div>
@@ -761,7 +916,7 @@ function mountCollRecord(){const c=curColl(),r=curRec();collFace='info';
 function collClose(){go(coll);}
 function collNav(dir){const rows=curColl().data();const i=rows.findIndex(x=>x.id===collRec);if(i<0)return;const n=(i+dir+rows.length)%rows.length;collRec=rows[n].id;xpClose();mountCollRecord();}
 function collSetTab(t){collTab=t;document.getElementById('cinner').innerHTML=collBody(curColl(),curRec());document.querySelectorAll('.emp-tabs .vtab').forEach(b=>b.classList.toggle('on',b.textContent===t));}
-function collTogglePanel(){collColl=!collColl;document.getElementById('cbox').classList.toggle('collapsed',collColl);document.getElementById('cPtog').textContent=collColl?'Show panel':'Hide panel';}
+function collTogglePanel(){collColl=!collColl;document.getElementById('cbox').classList.toggle('collapsed',collColl);document.getElementById('cPtog').textContent=collColl?'Show info':'Hide info';}
 function collBody(c,r){if(collTab!=='Overview')return `<div class="emp-sec"><div class="emp-sec-h"><h3>${collTab}</h3></div><div class="muted2">No ${collTab.toLowerCase()} yet.</div></div>`;
   return c.groups.map(g=>`<div class="emp-sec"><div class="emp-sec-h"><h3>${g[0]}</h3><button class="iconedit" onclick="toast('Edit ${g[0]}')">${svg(SVS.pencil,15)}</button></div><div class="fgrid">${g[1].map(f=>{let v=r[f[1]];if(f[2]==='money')v=fmt(v);return `<div class="fld"><div class="flk">${f[0]}</div><input class="flv" value="${v}"></div>`;}).join('')}</div></div>`).join('');}
 function collPanel(c,r){return `<div class="xipanel"><div class="xirow"><span class="k">Type</span><span class="v">${r.type}</span></div><div class="xirow"><span class="k">Status</span><span class="v" style="color:${stColor(r.status)}">${r.status}</span></div><div class="xirow"><span class="k">Owner</span><span class="v">${r.owner}</span></div></div>
@@ -991,18 +1146,17 @@ function taskBack(){focusPause();openTasks(taskModule);}
 function tFocusMode(){const list=scoped().filter(t=>t.status!=='Done');if(!list.length){toast('All caught up! 🎉');return;}const ord={High:0,Medium:1,Low:2};list.sort((a,b)=>ord[a.pri]-ord[b.pri]);openTaskRec(list[0].id);setTimeout(focusStart,80);toast('Focus mode · '+list[0].title);}
 function mountTaskDetail(){const t=tRec;
   document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dbox ${tCollapsed?'collapsed':''}" id="tbox"><div class="dmain">
-    <div class="dtop"><div class="crumbs"><a onclick="taskBack()">Tasks</a> <span class="sep">‹</span> <b>${t.title}</b> <span class="sep">‹</span> ${tTab}</div><div class="sp"></div><button class="paneltoggle" onclick="tToggle()"><span id="tPtog">${tCollapsed?'Show panel':'Hide panel'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
+    <div class="dtop"><div class="crumbs"><a onclick="taskBack()">Tasks</a> <span class="sep">‹</span> <b>${t.title}</b> <span class="sep">‹</span> ${tTab}</div><div class="sp"></div><button class="paneltoggle" onclick="tToggle()"><span id="tPtog">${tCollapsed?'Show info':'Hide info'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
     <div class="viewbar">${['Overview','Activity'].map(x=>`<button class="vtab ${x===tTab?'on':''}" onclick="tSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[x==='Overview'?'star':'Feed']||ICONS.List,14)}</span>${x}</button>`).join('')}</div>
     <div class="dcenter"><div class="inner" id="tinner">${tBody()}</div></div></div>
    <aside class="dpanel" id="tpanel"><div class="dpanel-head"><span class="nm">${t.title}</span><button class="ed" onclick="xpOpenFrom(this)" title="Expand">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button><button class="ed" style="margin-left:6px">${svg(SVS.pencil,15)}</button></div>
-    <div class="xcfaces">${['info','chat','call','video','email'].map(f=>`<button class="xcface ${f===tFace?'on':''}" data-face="${f}" onclick="tSetFace('${f}')">${faceIcon(f)}</button>`).join('')}</div>
     <div class="dpanel-body" id="tpanelbody"></div></aside></div>
    <div class="dside"><button class="dctl x" onclick="taskBack()" title="Close">${svg(SVS.x,19)}</button><div class="dnav"><button class="dctl" onclick="tNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="tNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div></div>`;
   renderTaskInfo();bindTComment();
   commSetHost({getFace:()=>tFace,setFace:tSetFace,content:commTaskContent});}
 function tNav(dir){const list=scoped();const i=list.findIndex(x=>x.id===tRec.id);if(i<0)return;const n=(i+dir+list.length)%list.length;xpClose();openTaskRec(list[n].id);}
 function bindTComment(){const ta=document.getElementById('tcmt');if(ta){ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();tComment();}});}}
-function tToggle(){tCollapsed=!tCollapsed;document.getElementById('tbox').classList.toggle('collapsed',tCollapsed);document.getElementById('tPtog').textContent=tCollapsed?'Show panel':'Hide panel';}
+function tToggle(){tCollapsed=!tCollapsed;document.getElementById('tbox').classList.toggle('collapsed',tCollapsed);document.getElementById('tPtog').textContent=tCollapsed?'Show info':'Hide info';}
 function tSetTab(x){tTab=x;document.getElementById('tinner').innerHTML=tBody();document.querySelectorAll('#tbox .viewbar .vtab').forEach(b=>b.classList.toggle('on',b.textContent.trim()===x));bindTComment();}
 function tSetFace(f){tFace=f;document.querySelectorAll('#tpanel .xcface').forEach(b=>b.classList.toggle('on',b.dataset.face===f));renderTaskInfo();}
 function tStepper(t){const order=TSTAGES,idx=order.findIndex(s=>s===t.status),pct=idx<=0?0:(idx/(order.length-1))*100;
@@ -1044,10 +1198,7 @@ function tInfoBody(){const t=tRec,p=PEOPLE[t.asg],sm=SRC[t.src];const prog=t.sta
    <div class="xipanel"><div class="xirow"><span class="k">Source</span><span class="v"><span class="tsrc" style="color:${sm[1]};background:${sm[1]}1f">${sm[0]}</span></span></div><div class="xirow"><span class="k">Status</span><span class="v" style="color:${TSTC[t.status]}">${t.status}</span></div><div class="xirow"><span class="k">Priority</span><span class="v">${t.pri}</span></div><div class="xirow"><span class="k">Due</span><span class="v">${t.due||'—'}</span></div></div>
    <div class="xigroup"><div class="gh">Linked ${chev2()}</div><div class="xipanel"><div class="xirow"><span class="k">Record</span><span class="v">${t.link}</span></div><div class="xirow"><span class="k">Owner</span><span class="v">${p[2]}</span></div></div></div>
    <div class="xigroup"><div class="gh">Effort ${chev2()}</div><div class="xipanel"><div class="xirow"><span class="k">Estimate</span><span class="v">${t.est}</span></div><div class="xirow"><span class="k">Focus logged</span><span class="v">${t.focusMin}m</span></div></div></div>`;}
-function renderTaskInfo(){const el=document.getElementById('tpanelbody');if(!el)return;
-  if(tFace==='email'){el.innerHTML=emailListHTML();return;}
-  if(tFace!=='info'){el.innerHTML=commEmpty(tFace);return;}
-  el.innerHTML=tInfoBody();}
+function renderTaskInfo(){const el=document.getElementById('tpanelbody');if(!el)return;el.innerHTML=tInfoBody();}
 /* ---- focus timer ---- */
 function focusCardHTML(){const t=tRec;const pct=focusLeft/FOCUS_TOTAL*100;const mm=String(Math.floor(focusLeft/60)).padStart(2,'0'),ss=String(focusLeft%60).padStart(2,'0');
   return `<div class="fc-h">${svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',14)} Focus session</div>
