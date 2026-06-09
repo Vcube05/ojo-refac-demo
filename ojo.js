@@ -17,6 +17,9 @@ const ICONS={star:'<path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z" fill="cu
 const fmt=n=>'₹'+new Intl.NumberFormat('en-IN').format(n);
 let tT;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('show'),2100);}
 function closePops(){document.querySelectorAll('.pop').forEach(p=>p.classList.remove('show'));}
+/* ---- theme (light | dark) — persisted; every component flips via role tokens ---- */
+function curTheme(){return document.documentElement.getAttribute('data-theme')==='dark'?'dark':'light';}
+function setTheme(t){const r=document.documentElement;if(t==='dark')r.setAttribute('data-theme','dark');else r.removeAttribute('data-theme');try{localStorage.setItem('ojo-theme',t);}catch(e){}document.querySelectorAll('.themeseg button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));}
 function openPop(id){const m=document.getElementById(id);if(!m)return;const o=m.classList.contains('show');closePops();if(!o)m.classList.add('show');}
 document.addEventListener('click',e=>{if(e.target.closest('.pop')||e.target.closest('#setBtn')||e.target.closest('#vaddBtn'))return;closePops();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closePeek();});
@@ -61,7 +64,11 @@ const M={
     active:'All Projects',color:true,size:'medium',types:['Gallery','Table','Board','List','Calendar','Timeline','Chart','Feed','Map'],group:()=>'Status',render:renderDashWork}
 };
 let curMod='leads';function cm(){return M[curMod];}
-let modCollapsed=false, modFace='info';
+let curRoute='home';
+/* lead-record layout for A/B testing: 'A' = Inspector (right panel), 'B' = AI Briefing (top) */
+let recVariant='A';
+function setRecVariant(v){recVariant=v;try{localStorage.setItem('ojo-rec-variant',v);}catch(e){}if(rec&&recMode==='detail')mountDetail();}
+let modCollapsed=true, modFace='info';
 function curType(){return cm().views.find(v=>v.name===cm().active).type;}
 
 /* ============ ROUTER ============ */
@@ -72,9 +79,9 @@ function subItems(mod){const S=['settings','Settings',"toast('Settings — demo'
 function subToggle(){subCollapsed=!subCollapsed;const s=document.getElementById('shell');if(s)s.classList.toggle('navcollapsed',subCollapsed);}
 function renderShell(mod,active){const it=subItems(mod);
   document.getElementById('screen').innerHTML=`<div class="box hrbox ${subCollapsed?'navcollapsed':''}" id="shell"><aside class="hrnav"><div class="hrnav-top" style="justify-content:flex-end"><button class="hrcollapse" onclick="subToggle()" title="Collapse">${svg('<path d="m11 17-5-5 5-5M18 17l-5-5 5-5"/>',16)}</button></div>${it.list.map(i=>`<a class="${i[0]===active?'on':''}" onclick="${i[2]}">${i[1]}</a>`).join('')}</aside><div class="modbody" id="modcontent"></div><button class="hrreopen" onclick="subToggle()" title="Show menu">${svg('<path d="M3 6h18M3 12h18M3 18h18"/>',17)}</button></div>`;}
-function go(route){closePeek();closePops();xpClose();hideCommDock();
-  /* keep the right panel persistently open across all pages/modules (desktop); default to Ojo Genie when nothing is open */
-  if(window.matchMedia('(min-width:701px)').matches){if(!(section&&document.getElementById('flyout')?.classList.contains('show')))openSection('genie');}else closeDrawer();
+function go(route){curRoute=route;closePeek();closePops();xpClose();hideCommDock();
+  /* right panel stays hidden by default; once opened it persists across pages (desktop). Mobile closes its sheet on navigation. */
+  if(!window.matchMedia('(min-width:701px)').matches)closeDrawer();
   if(route==='home'){setRail('navHome');mountHome();return;}
   if(route==='hr'){setRail('navHR');mountHR();return;}
   if(route==='leads'){curMod='leads';setRail('navLeads');renderShell('leads','leads');mountModule();}
@@ -83,7 +90,8 @@ function go(route){closePeek();closePops();xpClose();hideCommDock();
   else if(route==='account'){setRail('navAccounts');mountAccounts();}
   else if(route==='profile'){setRail('r-profile');mountProfile();}
   else if(route==='admin'){setRail('navOrgAdmin');mountOrgAdmin();}
-  else if(route==='vendor'){setRail('navVendors');renderShell('vendor','vendor');mountColl('vendor');}}
+  else if(route==='vendor'){setRail('navVendors');renderShell('vendor','vendor');mountColl('vendor');}
+  syncGenie();}
 
 function modTools(){return `<button class="mtool"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5h18M6 12h12M10 19h4"/></svg></button>
       <button class="mtool"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h12M3 12h8M3 18h5M17 4v16m0 0 4-4m-4 4-4-4"/></svg></button>
@@ -135,14 +143,25 @@ function mountModule(){const c=cm();
 /* project right info/comm panel (same expandable pattern as the detail page) */
 function modToggle(){modCollapsed=!modCollapsed;document.getElementById('modbox').classList.toggle('collapsed',modCollapsed);document.getElementById('modPtogTxt').textContent=modCollapsed?'Show info':'Hide info';}
 function setModFace(f){modFace=f;document.querySelectorAll('#modpanel .xcface').forEach(b=>b.classList.toggle('on',b.dataset.face===f));renderModInfo();}
+/* OJO read of the project — derived from task completion, work-in-progress and budget */
+function projInsights(){const a=projScore();const done=tasks.filter(t=>t.st==='Done').length;const doing=tasks.filter(t=>t.st==='Doing').length;const total=tasks.length||1;
+  return [
+   ['target',a[0]<40?`<b>Early stage.</b> ${done}/${total} tasks done — rally the team on Discovery to build momentum.`:a[0]<70?`<b>On the way.</b> ${done}/${total} tasks done; keep the current milestone moving.`:`<b>On track.</b> ${done}/${total} tasks done — strong pace toward launch.`],
+   ['clock',doing?`<b>${doing} task${doing>1?'s':''} in progress.</b> Keep them unblocked to protect the 20 Jul timeline.`:`<b>Nothing in progress.</b> Assign the next milestone so the project doesn't stall.`],
+   ['cash',`<b>₹3,80,000 of ₹4,80,000 budget left.</b> Billing on track — ₹0 invoiced so far.`]
+  ];}
+function projPanelCells(){const a=projScore();const done=tasks.filter(t=>t.st==='Done').length;const total=tasks.length||1;
+  return [
+   {render:'score',props:{pct:a[0],label:a[1],reason:`${done}/${total} tasks done · 4 milestones`,tag:'OJO read'}},
+   {render:'facts',props:{rows:[['Timeline',`${a[0]}% complete`],['Due','20 Jul 2026'],['Budget','₹3,80,000 left'],['Tasks',`${done}/${total} done`],['Owner',`<span class="ip-owner"><span class="av" style="background:#F04D56">PN</span>Priya Nair</span>`]]}},
+   {render:'insights',props:{items:projInsights(),askNoun:'project'}},
+   {render:'contacts',props:{title:'Client contact',add:null,list:[['Rajeeshlal','Primary · POC','vinoth+lal@palpx.com','#2F6FED',true]]}},
+   {render:'more',props:{rows:[['Website','ojo.io'],['Location','—'],['Vendor','Ojo Dojo (outsourced)'],['Vendor POC','ojodeveloper1'],['Vendor email','ojodeveloper1@gmail.com']]}}
+  ];}
 function projInfoBody(){
-  return `<div class="xshare"><div><div class="xsh-t">Share with client</div><div class="xsh-s">When on, this project appears in the client portal.</div></div><span class="toggle on" onclick="this.classList.toggle('on')"></span></div>
-   <div class="xglabel2">Project Health Overview</div>
-   <div class="xblock"><div class="xb-row"><span class="xb-h">Project Health</span><span class="minigauge">${ring(0,'var(--line-3)',30)}</span></div><div class="xb-big" style="color:var(--ghost)">--</div></div>
-   <div class="xblock"><div class="xb-h">Timeline</div><div class="xb-big">0% complete</div><div class="xb-sub">12 May 2026 to 10 Jun 2026</div><div class="xprog"><div class="svcbar"><div class="svcfill" style="width:2%;background:var(--ok)"></div></div><span class="xprogv" style="color:var(--ok)">0%</span></div></div>
-   <div class="xblock"><div class="xb-h">Budget</div><div class="xb-big">₹3,80,000 remaining</div><div class="xb-sub">Within budget · Billed ₹0</div><div class="xprog"><div class="svcbar"><div class="svcfill" style="width:100%;background:var(--ok)"></div></div><span class="xprogv" style="color:var(--ok)">100%</span></div></div>
-   ${igroup('Contact',ipanel([['POC','Rajeeshlal'],['Phone','9769011309'],['Email','<span class="vmail">vinoth+lal@palpx.com</span>'],['Website','<span class="vlink">ojo.io</span>'],['Location','--']])+commQuick(),true)}
-   ${igroup('Vendor Details',`<div class="xvend"><span class="av" style="background:#E0533A1a;color:#E0533A">O</span><div><div class="xv-n">Ojo Dojo</div><div class="xv-s">Outsourced to</div></div></div>`+ipanel([['POC','ojodeveloper1'],['Email','<span class="vmail">ojodeveloper1@gmail.com</span>'],['Phone','+919019029123']]))}`;}
+  return `<div class="ip">
+   <div class="ip-share"><div><div class="ip-share-t">Share with client</div><div class="ip-share-s">When on, this project appears in the client portal.</div></div><span class="toggle on" onclick="this.classList.toggle('on')"></span></div>
+   ${projPanelCells().map(renderPanelCell).join('')}</div>`;}
 function renderModInfo(){const el=document.getElementById('modpanelbody');if(!el)return;el.innerHTML=projInfoBody();}
 
 /* ---- floating info/comm bar: replaces the stacked info/comm panel on mobile (overview + detail pages) ----
@@ -197,6 +216,90 @@ function commCollContent(f){return f==='info'?collPanel(curColl(),curRec()):comm
 const SVGPHONE='<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>';
 const SVGMAIL='<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>';
 const SVGVID='<rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4z"/>';
+
+/* ===== Right OJO dock as UI cells (cell-model: render + bind + click + target) =====
+   Declarative & extensible — add a structure by pushing a cell, no markup edits.
+   Three groups give the dock a cohesive read: assist (Genie, the anchor) ·
+   communication (contextual to the open record + global inbox) · tools.       */
+const DOCK_ICONS={
+  chat:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  call:SVGPHONE, video:SVGVID, email:SVGMAIL,
+  bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>'
+};
+/* Single-sheet tabs: comm channels + Genie. (Search lives on Home, Notifications in the rail.) */
+const DOCK_CELLS=[
+  {id:'ui-dock-genie',  type:'UICell', owner:'ui-dock', group:'assist', values:{name:'Ojo Genie', render:'anchor', bind:'capability:genie',    click:'open', icon:'genie'}, links:{target:'genie'}},
+  {id:'ui-dock-chat',   type:'UICell', owner:'ui-dock', group:'comm',   values:{name:'Messages',  render:'icon',   bind:'collection:Message', click:'open', icon:'chat'},  links:{target:'chat'}},
+  {id:'ui-dock-call',   type:'UICell', owner:'ui-dock', group:'comm',   values:{name:'Calls',     render:'icon',   bind:'relation:calls',     click:'comm', icon:'call'},  links:{target:'call'}},
+  {id:'ui-dock-video',  type:'UICell', owner:'ui-dock', group:'comm',   values:{name:'Meetings',  render:'icon',   bind:'relation:meetings',  click:'comm', icon:'video'}, links:{target:'video'}},
+  {id:'ui-dock-email',  type:'UICell', owner:'ui-dock', group:'comm',   values:{name:'Email',     render:'icon',   bind:'relation:emails',    click:'comm', icon:'email'}, links:{target:'email'}}
+];
+function dockBtn(c){
+  const v=c.values, id=c.links.target;
+  const handler=v.click==='comm'?`openComm('${id}')`:`openSection('${id}')`;
+  if(v.render==='anchor')
+    return `<button class="di genie" id="d-${id}" onclick="${handler}" title="${v.name}"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO Genie"></button>`;
+  return `<button class="di" id="d-${id}" onclick="${handler}" title="${v.name}">${svg(DOCK_ICONS[v.icon],19)}</button>`;
+}
+/* Claude-style tab: icon only, with the label revealed for the selected tab. */
+function panelTabBtn(c){
+  const v=c.values, id=c.links.target;
+  const handler=v.click==='comm'?`openComm('${id}')`:`openSection('${id}')`;
+  if(v.render==='anchor')
+    return `<button class="di genie ptab" id="d-${id}" onclick="${handler}" title="${v.name}"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span class="ptlbl">${v.name}</span></button>`;
+  return `<button class="di ptab" id="d-${id}" onclick="${handler}" title="${v.name}">${svg(DOCK_ICONS[v.icon],19)}<span class="ptlbl">${v.name}</span></button>`;
+}
+function renderDock(){
+  const el=document.getElementById('dock'); if(!el)return;
+  const g=k=>DOCK_CELLS.filter(c=>c.group===k);
+  el.innerHTML =
+    g('assist').map(dockBtn).join('') +
+    `<div class="dgroup" title="Communication">`+g('comm').map(dockBtn).join('')+`</div>` +
+    `<div class="dock-spacer"></div>` +
+    g('util').map(dockBtn).join('');
+}
+/* Single-sheet panel: one horizontal tab bar at the top (comm pill · tools · Genie),
+   the body switches with the active tab. Genie is the default open tab. */
+function renderPanelTabs(){
+  const el=document.getElementById('panelTabs'); if(!el)return;
+  const g=k=>DOCK_CELLS.filter(c=>c.group===k);
+  el.innerHTML =
+    g('comm').map(panelTabBtn).join('') +
+    `<div class="dock-spacer"></div>` +
+    g('assist').map(panelTabBtn).join('');
+}
+/* Contextual awareness: Genie + the comms group read whatever record/module is open. */
+function ctxName(){
+  if(typeof rec!=='undefined'&&rec&&rec.ent)return rec.type==='lead'?rec.ent.nm:rec.ent.title;
+  if(typeof hrEmp!=='undefined'&&hrEmp)return hrEmp.name;
+  if(typeof tRec!=='undefined'&&tRec)return tRec.title;
+  if(typeof curMod!=='undefined'){if(curMod==='leads')return 'your pipeline';if(curMod==='project'||curMod==='projdash')return 'your projects';}
+  return '';
+}
+function commContextName(){
+  if(typeof rec!=='undefined'&&rec&&rec.ent)return rec.type==='lead'?rec.ent.nm:rec.ent.title;
+  if(typeof hrEmp!=='undefined'&&hrEmp)return hrEmp.name;
+  if(typeof tRec!=='undefined'&&tRec)return tRec.title;
+  if(typeof curMod!=='undefined'&&curMod==='project')return 'Apollo — Website Revamp';
+  return '';
+}
+function genieContext(){
+  if(curRoute==='home'||curRoute==='profile'||curRoute==='admin')return {who:'', suggestions:["What needs my attention today?",'Show My Leads',"Today's calls"]};
+  if(typeof rec!=='undefined'&&rec&&rec.ent){
+    const n=rec.type==='lead'?rec.ent.nm:rec.ent.title;
+    return {who:ctxName(), suggestions: rec.type==='lead'
+      ? [`Draft a follow-up to ${n}`,'Summarise this lead',"What's the next best action?"]
+      : ['Summarise this task','Draft a status update',"What's blocking this?"]};
+  }
+  if(typeof hrEmp!=='undefined'&&hrEmp)return {who:hrEmp.name, suggestions:[`Summarise ${hrEmp.name}'s profile`,'Pending approvals','Leave balance']};
+  if(typeof curMod!=='undefined'&&curMod==='leads')return {who:'your pipeline', suggestions:['Show My Leads',"Today's calls",'Which leads are going cold?']};
+  if(typeof curMod!=='undefined'&&(curMod==='project'||curMod==='projdash'))return {who:'your projects', suggestions:['Prioritize tasks for first half',"What's overdue?",'Project health']};
+  return {who:'', suggestions:['Prioritize tasks for first half','Show My Leads',"Today's calls"]};
+}
+/* keep the Genie panel's contextual content in sync as the user navigates */
+function syncGenie(){if(section==='genie'){const b=document.getElementById('flyBody');if(b)b.innerHTML=genieBody();}}
+
 const CDATA={
   chat:[['in','Hi, following up on the proposal — any update?','Mon · 10:32 AM'],['out','Hi! Finalising the numbers, sending today.','Mon · 10:41 AM'],['in','Great, looking forward to it.','Mon · 10:43 AM'],['out','Shared the deck — let me know your thoughts.','Tue · 9:15 AM'],['in','Looks solid. Can we tweak the timeline?','Tue · 9:30 AM']],
   call:[['out','Outgoing call','12m 48s','Today · 2:30 PM'],['in','Incoming call','4m 12s','03 Jun · 11:10 AM'],['missed','Missed call','—','31 May · 6:05 PM'],['out','Outgoing call','1m 02s','24 May · 4:00 PM']],
@@ -326,7 +429,7 @@ function pTable(){let h='<div class="tablewrap"><table><thead><tr><th>Task</th><
 function toggleDone(id){const t=tasks.find(x=>x.id===id);if(!t)return;t.st=t.st==='Done'?'Todo':'Done';renderWork();}
 
 /* ============ RECORD (shared by side-peek + full detail) ============ */
-let rec=null, recMode='peek', detailFace='info', detailTab='Overview', detailCollapsed=false;
+let rec=null, recMode='peek', detailFace='info', detailTab='Overview', detailCollapsed=true;
 const SCORE={New:[20,'Cold'],Contacted:[35,'Warming'],Qualified:[60,'Average'],Proposal:[72,'Warm'],Won:[95,'Hot'],Lost:[12,'Cold']};
 const TABICON={Overview:'star',Details:'Table',Notes:'notes',Activity:'activity'};
 function newRec(type,id){const ent=type==='lead'?leads.find(x=>x.id===id):tasks.find(x=>x.id===id);if(!ent)return null;
@@ -346,37 +449,54 @@ function cardDrop(e,stage){e.preventDefault();e.currentTarget.classList.remove('
 function expandRecord(){if(!rec)return;const type=rec.type,id=rec.ent.id;closePeek();openDetail(type,id);}
 
 /* ---- full detail page (with collapsible info/comm panel) ---- */
-function openDetail(type,id){const r=newRec(type,id);if(!r)return;rec=r;recMode='detail';detailFace='info';detailTab='Overview';detailCollapsed=false;trkReset();mountDetail();}
+function openDetail(type,id){const r=newRec(type,id);if(!r)return;rec=r;recMode='detail';detailFace='info';detailTab='Overview';detailCollapsed=isMobile();trkReset();mountDetail();syncGenie();}
 function faceIcon(f){const m={info:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',chat:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',call:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',video:'<rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4z"/>',email:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>'};return svg(m[f],17);}
 function mountDetail(){const r=rec,isLead=r.type==='lead',e=r.ent;
   const crumb=isLead?`<a onclick="go('leads')">Leads</a> <span class="sep">‹</span> <b>${e.co}</b> <span class="sep">‹</span> ${detailTab}`
     :`<a onclick="go('projectsDash')">Projects</a> <span class="sep">‹</span> <a onclick="go('project')">Apollo</a> <span class="sep">‹</span> ${e.ms} <span class="sep">‹</span> ${detailTab}`;
+  const dside=`<div class="dside">
+      <button class="dctl x" onclick="detailClose()" title="Close (Esc)">${svg('<path d="M18 6 6 18M6 6l12 12"/>',19)}</button>
+      <div class="dnav"><button class="dctl" onclick="detailNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="detailNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div>
+    </div>`;
+  const viewbar=`<div class="viewbar">${['Overview','Details','Notes','Activity'].map(x=>`<button class="vtab ${x===detailTab?'on':''}" onclick="detailSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[TABICON[x]],14)}</span>${x}</button>`).join('')}</div>`;
   const ptitle=isLead?e.co:e.t;
-  document.getElementById('screen').innerHTML=`<div class="dwrap">
+  const abtoggle=isLead?`<span class="seg abseg" title="Layout (A/B/C)"><button class="${recVariant==='A'?'on':''}" onclick="setRecVariant('A')">A · Inspector</button><button class="${recVariant==='B'?'on':''}" onclick="setRecVariant('B')">B · Briefing</button><button class="${recVariant==='C'?'on':''}" onclick="setRecVariant('C')">C · Board</button></span>`:'';
+  if(isLead&&recVariant==='C'){
+    /* Variant C — Briefing, full board, NO side panel: all the panel data folded into one column */
+    document.getElementById('screen').innerHTML=`<div class="dwrap solo">${dside}
+      <div class="dbox solo" id="dbox">
+        <div class="dmain">
+          <div class="dtop"><div class="crumbs">${crumb}</div><div class="sp"></div>${abtoggle}</div>
+          ${viewbar}
+          <div class="dcenter"><div class="inner" id="dinner"></div></div>
+        </div>
+      </div></div>`;
+    renderRec();
+    commSetHost({getFace:()=>detailFace,setFace:detailSetFace,content:commDetailContent});
+    syncCommActive();
+    return;
+  }
+  document.getElementById('screen').innerHTML=`<div class="dwrap">${dside}
     <div class="dbox ${detailCollapsed?'collapsed':''}" id="dbox">
       <div class="dmain">
-        <div class="dtop"><div class="crumbs">${crumb}</div><div class="sp"></div>
+        <div class="dtop"><div class="crumbs">${crumb}</div><div class="sp"></div>${abtoggle}
           <button class="paneltoggle" onclick="detailToggle()"><span id="ptogTxt">${detailCollapsed?'Show info':'Hide info'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
-        <div class="viewbar">${['Overview','Details','Notes','Activity'].map(x=>`<button class="vtab ${x===detailTab?'on':''}" onclick="detailSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[TABICON[x]],14)}</span>${x}</button>`).join('')}</div>
+        ${viewbar}
         <div class="dcenter"><div class="inner" id="dinner"></div></div>
       </div>
       <aside class="dpanel" id="dpanel">
         <div class="dpanel-head"><span class="nm">${ptitle}</span><button class="ed" onclick="xpOpenFrom(this)" title="Expand">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button><button class="ed" style="margin-left:6px">${svg('<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',15)}</button></div>
         <div class="dpanel-body" id="dpanelbody"></div>
-      </aside></div>
-    <div class="dside">
-      <button class="dctl x" onclick="detailClose()" title="Close (Esc)">${svg('<path d="M18 6 6 18M6 6l12 12"/>',19)}</button>
-      <div class="dnav"><button class="dctl" onclick="detailNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="detailNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div>
-    </div></div>`;
+      </aside></div></div>`;
   renderRec();renderDetailInfo();
-  commSetHost({getFace:()=>detailFace,setFace:detailSetFace,content:commDetailContent});}
+  commSetHost({getFace:()=>detailFace,setFace:detailSetFace,content:commDetailContent});syncCommActive();}
 function detailToggle(){detailCollapsed=!detailCollapsed;document.getElementById('dbox').classList.toggle('collapsed',detailCollapsed);document.getElementById('ptogTxt').textContent=detailCollapsed?'Show info':'Hide info';}
 function detailClose(){const t=rec&&rec.type==='lead'?'leads':'project';trkReset();rec=null;recMode='';go(t);}
 function detailNav(dir){if(!rec)return;const arr=rec.type==='lead'?leads:tasks;const i=arr.findIndex(x=>x.id===rec.ent.id);if(i<0)return;const n=(i+dir+arr.length)%arr.length;const nr=newRec(rec.type,arr[n].id);if(!nr)return;rec=nr;detailFace='info';trkReset();xpClose();mountDetail();}
 document.addEventListener('keydown',e=>{if(recMode!=='detail'||!document.getElementById('dbox'))return;const t=e.target;if(t&&(t.tagName==='TEXTAREA'||t.tagName==='INPUT'||t.isContentEditable))return;if(e.key==='Escape'){if(xpShown()){xpClose();}else{detailClose();}}else if(e.key==='ArrowDown'){e.preventDefault();detailNav(1);}else if(e.key==='ArrowUp'){e.preventDefault();detailNav(-1);}});
 function detailSetTab(t){detailTab=t;mountDetail();}
 function detailSetFace(f){detailFace=f;document.querySelectorAll('.xcface').forEach(b=>b.classList.toggle('on',b.dataset.face===f));renderDetailInfo();}
-function ring(pct,color,size){const r=(size-10)/2,c=2*Math.PI*r,off=c*(1-pct/100);return `<svg width="${size}" height="${size}" style="transform:rotate(-90deg)"><circle cx="${size/2}" cy="${size/2}" r="${r}" stroke="#E3E0DB" stroke-width="9" fill="none"/><circle cx="${size/2}" cy="${size/2}" r="${r}" stroke="${color}" stroke-width="9" fill="none" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"/></svg>`;}
+function ring(pct,color,size){const r=(size-10)/2,c=2*Math.PI*r,off=c*(1-pct/100);return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="transform:rotate(-90deg)"><circle cx="${size/2}" cy="${size/2}" r="${r}" stroke="var(--line-2)" stroke-width="9" fill="none"/><circle cx="${size/2}" cy="${size/2}" r="${r}" stroke="${color}" stroke-width="9" fill="none" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"/></svg>`;}
 function chev2(){return `<span class="chev">${svg('<path d="m6 9 6 6 6-6"/>',14)}</span>`;}
 function renderDetailInfo(){const el=document.getElementById('dpanelbody');if(!el)return;el.innerHTML=rec.type==='lead'?leadInfo():taskInfo();}
 function ipanel(rows){return `<div class="xipanel">${rows.map(r=>`<div class="xirow"><span class="k">${r[0]}</span><span class="v">${r[1]}</span></div>`).join('')}</div>`;}
@@ -388,26 +508,88 @@ function commQuick(){return `<div class="commquick"><span class="cql">Reach out<
   <button class="cq" onclick="openComm('call')" title="Call">${faceIcon('call')}</button>
   <button class="cq" onclick="openComm('video')" title="Meeting">${faceIcon('video')}</button>
   <button class="cq" onclick="openComm('email')" title="Email">${faceIcon('email')}</button></div>`;}
-function leadInfo(){const l=rec.ent;const sc=(SCORE[l.st]||[40,'Average']);
-  const t=sc[0]>=70?['var(--ok)','var(--ok-soft)','#0C6B47']:sc[0]>=45?['var(--warn)','#FBF6E6','#8A5A14']:['var(--coral)','var(--coral-soft)','var(--coral-ink)'];
+/* AI read of a lead, derived honestly from its current stage (the lead cell's state). */
+function leadAI(l){const m={
+   New:{reason:'New lead — no activity logged yet.',label:'Assign an owner so this lead gets worked.',cta:'Assign owner'},
+   Contacted:{reason:'Contacted — awaiting qualification.',label:'Confirm the budget and timeline to qualify.',cta:'Qualify lead'},
+   Qualified:{reason:'Qualified — strong fit, ready to pitch.',label:'Send the proposal to move toward Won.',cta:'Send proposal'},
+   Proposal:{reason:'Proposal sent — decision pending.',label:'Follow up to close the deal.',cta:'Log a follow-up'},
+   Won:{reason:'Won — a customer & deal were created.',label:'Kick off the project for this customer.',cta:'Create project'},
+   Lost:{reason:'Lost — archived for reference.',label:'Log the reason to sharpen future scoring.',cta:'Add lost reason'}};
+  return m[l.st]||m.New;}
+const SPARK='<path d="M12 3l1.6 4.6L18 9l-4.4 1.4L12 15l-1.6-4.6L6 9l4.4-1.4z" fill="currentColor" stroke="none"/>';
+function ipRows(rows){return `<div class="ip-facts">${rows.map(r=>`<div class="ip-row"><span class="k">${r[0]}</span><span class="v">${r[1]}</span></div>`).join('')}</div>`;}
+function ipMoreToggle(b){b.closest('.ip-more').classList.toggle('open');}
+/* The lead inspector as a declarative cell spec (render + bind + props) — top-to-bottom by
+   importance; low-value fields collapse. Add a section by pushing a cell, no markup edits. */
+/* OJO's recommendations — derived honestly from the lead's own cell values (stage, value, source) */
+const OI_ICONS={flame:'<path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-1 .5-2 1-3 .5 2 2 2 2 0 0-2-1-3 1-5z"/>',target:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/>',cash:'<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'};
+function leadInsights(l){const sc=(SCORE[l.st]||[40])[0];const out=[];
+  out.push(['flame',sc<45?`<b>Going cold.</b> No activity logged in 14 days — a quick call could re-warm it.`:`<b>Engaged.</b> Activity is recent — keep momentum with a timely follow-up.`]);
+  out.push(['target',`<b>${l.src} leads close ~2× more often</b> than average. Worth prioritising this one.`]);
+  out.push(['cash',l.val<120000?`<b>Budget ${fmt(l.val)} is on the low side</b> for ${l.src} deals — room to upsell the Ad Creative add-on.`:`<b>Budget ${fmt(l.val)} is healthy</b> for a ${l.src} deal at this stage.`]);
+  return out;}
+/* shared building blocks — reused by the right panel (A/B) and the full board (C) */
+function ojoInsightsCard(items,noun){return `<div class="ojo-card"><div class="ojo-card-h"><img class="ojo-mini" src="assets/ojo-logo.png" alt="OJO"> OJO Insights <span class="ojo-live">live</span></div>
+  <div class="ojo-insights">${items.map(i=>`<div class="oi"><span class="oi-ic">${svg(OI_ICONS[i[0]]||OI_ICONS.target,15)}</span><span class="oi-t">${i[1]}</span></div>`).join('')}</div>
+  <button class="ojo-ask" onclick="openSection('genie')">${svg(SPARK,13)} Ask OJO about this ${noun||'lead'}</button></div>`;}
+function leadContacts(l){const first=(l.nm||'contact').split(' ')[0].toLowerCase();const org=l.co.toLowerCase().replace(/[^a-z]/g,'')||'co';
+  return [[l.nm,'Primary contact',`${first}@${org}.com`,'#7C53E6',true],['Rohit Mehra','Finance · Decision maker',`rohit@${org}.com`,'#2F6FED',false]];}
+function contactsListHTML(list,addLabel){const add=addLabel===null?'':`<button class="contact-add" onclick="toast('${addLabel||'Add a contact'}')">${svg('<path d="M12 5v14M5 12h14"/>',13)} ${addLabel||'Add a contact'}</button>`;
+  return `<div class="contacts-list">${list.map(c2=>`<div class="contact-row"><span class="av" style="background:${c2[3]}">${(c2[0]||'?').split(' ').map(w=>w[0]).slice(0,2).join('')}</span>
+  <div class="cr-id"><div class="nm">${c2[0]}${c2[4]?' <span class="primary-chip">Primary</span>':''}</div><div class="sub">${c2[1]}</div></div>
+  <div class="cr-actions"><button onclick="openComm('call')" title="Call">${faceIcon('call')}</button><button onclick="openComm('email')" title="Email">${faceIcon('email')}</button><button onclick="openComm('chat')" title="Message">${faceIcon('chat')}</button></div></div>`).join('')}${add}</div>`;}
+function leadPanelCells(l){
+  const sc=SCORE[l.st]||[40,'Average'];const ai=leadAI(l);
   const own=l.asg?PEOPLE[l.asg]:null;const first=(l.nm||'contact').split(' ')[0].toLowerCase();
-  return `<div class="xscore" style="background:${t[1]};border:1px solid ${t[0]}33"><div class="xgauge">${ring(sc[0],t[0],122)}<div class="pct" style="color:${t[2]}">${sc[0]}%</div></div><div class="r2"><span class="l">Lead Score <span class="xderive">derive</span></span><span class="vv">${sc[1]}</span></div></div>
-   ${ipanel([['Budget',`<span class="money">${fmt(l.val)}</span>`],['Status',`<span class="statuschip ok">Active ${svg('<path d="m6 9 6 6 6-6"/>',11)}</span>`]])}
-   ${ipanel([['Start Date','17 May 2026']])}
-   ${igroup('Client',ipanel([['Name',l.nm],['Phone','8892384323'],['Email',`<span class="vmail">${first}@gmail.com</span>`]])+`<div class="xmore">${svg('<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6"/>',14)} +1 other contact</div>`+commQuick())}
-   ${igroup('Professional',ipanel([['Organisation',l.co],['Role','—'],['Department','—'],['Address','Bengaluru']]))}
-   ${igroup('Location',ipanel([['Contact Address','—']]))}
-   ${igroup('Lead Source',ipanel([['Source',l.src],['Added by','Vinoth V V']])+`<div class="asgwrap"><div class="asglab">Assigned to</div><div class="asgchip"><span class="av" style="background:${own?own[1]:'#C92F3A'}">${own?own[0]:'VV'}</span> ${own?own[2]:'Vinoth V V'} <button class="asgx" onclick="toast('Unassign')">${svg('<path d="M18 6 6 18M6 6l12 12"/>',11)}</button></div></div>`+ipanel([['Added on','07 May 2026']]))}`;}
-function taskInfo(){const t=rec.ent;const its=tasks.filter(x=>x.ms===t.ms);const pct=Math.round(its.filter(x=>x.st==='Done').length/its.length*100);return `
-  <div class="xscore" style="background:var(--coral-soft);border:1px solid var(--coral-line)"><div class="xgauge">${ring(pct,'var(--coral)',122)}<div class="pct" style="color:var(--coral-ink)">${pct}%</div></div><div class="r2"><span class="l">Milestone progress <span class="xderive">derive</span></span><span class="vv">${t.ms}</span></div></div>
-  <div class="xipanel"><div class="xirow"><span class="k">Project</span><span class="v">${PROJECT}</span></div><div class="xirow"><span class="k">Status</span><span class="v">${t.st}</span></div><div class="xirow"><span class="k">Priority</span><span class="v">${t.pri}</span></div><div class="xirow"><span class="k">Estimate</span><span class="v">${t.est}</span></div></div>
-  <div class="xigroup"><div class="gh">People ${chev2()}</div><div class="xipanel"><div class="xirow"><span class="k">Assignee</span><span class="v">${PEOPLE[t.asg][2]}</span></div><div class="xirow"><span class="k">Created by</span><span class="v">Priya Nair</span></div></div></div>
-  <div class="xigroup"><div class="gh">Dependencies ${chev2()}</div><div class="xipanel"><div class="xirow"><span class="k">Blocked by</span><span class="v" style="color:var(--ghost)">None</span></div></div></div>`;}
+  const org=l.co.toLowerCase().replace(/[^a-z]/g,'')||'co';
+  const stageDot=`<span class="ip-stage"><span class="dot" style="background:${lcc(l.st)}"></span>${l.st}</span>`;
+  const owner=own?`<span class="ip-owner"><span class="av" style="background:${own[1]}">${own[0]}</span>${own[2]}</span>`
+    :`<button class="ip-assign" onclick="toast('Assign owner')">${svg('<path d="M12 5v14M5 12h14"/>',12)} Assign</button>`;
+  const cells=[];
+  /* Variant B puts score + facts in the top briefing, so the panel leads with AI */
+  if(recVariant!=='B'){
+    cells.push({render:'score',bind:'derive:leadScore',props:{pct:sc[0],label:sc[1],reason:ai.reason}});
+    cells.push({render:'facts',bind:'self',props:{rows:[['Stage',stageDot],['Budget',`<span class="money">${fmt(l.val)}</span>`],['Source',l.src],['Owner',owner],['Created','07 May 2026']]}});
+  }
+  cells.push({render:'insights',bind:'derive:ojoInsights',props:{items:leadInsights(l)}});
+  cells.push({render:'contacts',bind:'relation:contacts',props:{list:leadContacts(l)}});
+  cells.push({render:'more',bind:'self',props:{rows:[['Organisation',l.co],['Role','—'],['Department','—'],['Address','Bengaluru'],['Contact address','—'],['Added by','Vinoth V V']]}});
+  return cells;
+}
+function renderPanelCell(c){const p=c.props;
+  if(c.render==='score'){const t=p.pct>=70?['var(--ok)','#0C6B47']:p.pct>=45?['var(--warn)','#8A5A14']:['var(--coral)','var(--coral-ink)'];
+    return `<div class="ip-score"><div class="ip-gauge">${ring(p.pct,t[0],84)}<div class="pct" style="color:${t[1]}">${p.pct}%</div></div>
+      <div class="ip-sc-meta"><div class="ip-sc-top"><span class="grade" style="color:${t[1]}">${p.label}</span><span class="ip-tag">${svg(SPARK,12)} ${p.tag||'OJO score'}</span></div><div class="ip-reason">${p.reason}</div></div></div>`;}
+  if(c.render==='facts')return ipRows(p.rows);
+  if(c.render==='insights')return ojoInsightsCard(p.items,p.askNoun);
+  if(c.render==='contacts')return `<div class="ip-sec-h">${p.title||'Contacts'}</div>${contactsListHTML(p.list,p.add)}`;
+  if(c.render==='more')return `<div class="ip-more"><button class="ip-more-h" onclick="ipMoreToggle(this)">More details ${svg('<path d="m6 9 6 6 6-6"/>',15)}</button><div class="ip-more-b">${ipRows(p.rows)}</div></div>`;
+  return '';
+}
+function leadInfo(){return `<div class="ip">${leadPanelCells(rec.ent).map(renderPanelCell).join('')}</div>`;}
+/* OJO read of a task — derived from status, priority, due, milestone */
+function taskInsights(t){const out=[];
+  out.push(['clock',t.st==='Done'?`<b>Completed.</b> This task is done — nice work.`:`<b>${t.pri} priority${t.due?` · due ${t.due}`:''}.</b> ${t.pri==='High'?'Tackle this next to avoid slipping the milestone.':'On track if picked up this week.'}`]);
+  out.push(['target',`<b>Part of ${t.ms}.</b> Closing it moves the milestone forward.`]);
+  out.push(['flame',`<b>Estimated ${t.est}.</b> ${t.pri==='High'?'Downstream tasks depend on this one.':'No blockers logged.'}`]);
+  return out;}
+function taskPanelCells(t){const its=tasks.filter(x=>x.ms===t.ms);const done=its.filter(x=>x.st==='Done').length;const pct=its.length?Math.round(done/its.length*100):0;const p=PEOPLE[t.asg];
+  const assignee=p?`<span class="ip-owner"><span class="av" style="background:${p[1]}">${p[0]}</span>${p[2]}</span>`:'—';
+  return [
+    {render:'score',props:{pct,label:t.st,reason:`${t.ms} milestone · ${done}/${its.length} tasks done`,tag:'OJO read'}},
+    {render:'facts',props:{rows:[['Status',t.st],['Assignee',assignee],['Due',t.due||'—'],['Priority',t.pri],['Estimate',t.est]]}},
+    {render:'insights',props:{items:taskInsights(t),askNoun:'task'}},
+    {render:'contacts',props:{title:'People',add:null,list:[[p?p[2]:'Unassigned','Assignee','',p?p[1]:'#8B93A1',true],['Priya Nair','Created by','','#F04D56',false]]}},
+    {render:'more',props:{rows:[['Project',PROJECT],['Milestone',t.ms],['Blocked by','None']]}}
+  ];}
+function taskInfo(){return `<div class="ip">${taskPanelCells(rec.ent).map(renderPanelCell).join('')}</div>`;}
 
 /* ---- shared record body (rows + subtasks + comments) ---- */
 function renderRec(){const inner=document.getElementById('dinner');if(!inner)return;
   if(detailTab==='Overview')inner.innerHTML=(rec.type==='lead'?leadRecHTML():taskRecHTML());
   else if(detailTab==='Details'&&rec.type==='lead')inner.innerHTML=renderDocs(rec.ent);
+  else if(detailTab==='Notes')inner.innerHTML=`<div class="rec-block" style="margin-top:6px"><div class="rec-block-h">Notes</div><div class="free notes-free" contenteditable="true" data-ph="Write a note about this lead…"></div></div>`;
   else inner.innerHTML=`<div class="placeholder" style="margin-top:30px"><div class="pic">${svg(ICONS.List,28)}</div><h2>${detailTab}</h2><p>This view renders the same cell's data, arranged as ${detailTab}.</p></div>`;
   const ta=document.getElementById('cmt');if(ta){ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();recComment();}});}}
 function subsHTML(){return `<div class="subs">${rec.subs.map((s,i)=>`<div class="sub ${s.done?'done':''}"><button class="scheck" onclick="recSub(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></button><span class="txt">${s.t}</span></div>`).join('')}<div class="subadd"><span class="scheck"></span><input placeholder="Add a new subtask" onkeydown="if(event.key==='Enter')recAddSub(this)"></div></div>`;}
@@ -422,41 +604,67 @@ function leadStepper(l){const order=LSTAGES.filter(s=>s.k!=='Lost');const idx=or
    <div class="lstep"><div class="track"></div><div class="fill" style="width:${pct}%"></div>
    ${order.map((s,i)=>`<div class="lstp ${i<idx?'done':(i===idx?'cur':'')}" onclick="recMove('${s.k}')"><div class="nd"></div><div class="nm">${s.k}</div><div class="due">${leadClosed(s.k)?'Closed':'No due date'}</div></div>`).join('')}</div>
    <button class="lstep-nav">${svg('<path d="M9 6l6 6-6 6"/>',14)}</button></div>`;}
-function leadGate(l){if(leadClosed(l.st))return `<div class="lgate win">${svg('<path d="M20 6 9 17l-5-5"/>',18)}<div><div class="t">This lead is ${l.st}.</div><div class="s">A Closed-property stage unlocked the outcome — a Customer + Deal were created.</div></div></div>`;
-  const canWin=l.st==='Proposal'||l.st==='Qualified';
-  return `<div class="lgate">${svg('<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>',18)}<div><div class="t">Mark&nbsp;as&nbsp;Won appears only in stages with the <b>Closed</b> property.</div><div class="s">${canWin?'This lead is ready — <a onclick="recMove(\'Won\')" style="color:var(--coral-ink);font-weight:700;text-decoration:underline;cursor:pointer">move it to Won</a> to close.':'Move this lead to a Closed-property stage to unlock the Won action.'}</div></div></div>`;}
+function leadGate(l){if(!leadClosed(l.st))return '';
+  return `<div class="lgate win">${svg('<path d="M20 6 9 17l-5-5"/>',18)}<div><div class="t">This lead is ${l.st}.</div><div class="s">A Closed-property stage unlocked the outcome — a Customer + Deal were created.</div></div></div>`;}
 function leadSugg(l){const sc=(SCORE[l.st]||[43,'High'])[0];return `<div class="lsugg"><div class="h">OJO Suggestion</div><h3>${l.st}</h3><ul>
    <li>${l.asg?PEOPLE[l.asg][2]+' is assigned as the owner — good to go.':'Assign a sales POC to this lead from the Client panel to get started.'}</li>
    <li>Service “Meta Ad Campaigns” is 10/14 fields complete — add Goal, Effort Hours and Target Audience to strengthen the proposal.</li>
    <li>Lead score is ${sc} — improve it by logging client activities, adding notes, and filling service details to show stronger engagement.</li></ul>
    <div class="lpri">${svg('<path d="M3 3v18h18M7 14l3-3 3 2 4-5"/>',14)} High priority</div></div>`;}
-function leadRecHTML(){const l=rec.ent;return `<span class="type-chip">Sales Lead</span><h1>${l.nm}</h1><div class="byline"><span class="av" style="background:${l.asg?PEOPLE[l.asg][1]:'#F04D56'}">${l.asg?PEOPLE[l.asg][0]:'PN'}</span> Added by <b>Priya Nair</b> · ${l.co}</div>
-  <div class="rec-meta">
-    <div class="mrow"><span class="mk">Service Type</span><span class="svc-chip2">Meta Ad Campaigns</span><span class="svc-chip2">Ad Creative</span></div>
-    <div class="mrow"><span class="mk">Tags</span><button class="tag-add2" onclick="toast('Add tag')">${svg('<path d="M12 5v14M5 12h14"/>',12)} Add tag</button></div>
+function scoreColors(pct){return pct>=70?['var(--ok)','#0C6B47']:pct>=45?['var(--warn)','#8A5A14']:['var(--coral)','var(--coral-ink)'];}
+/* keep the body's Call/Email/Message buttons in sync with the open comm channel */
+function syncCommActive(){const ch=(section&&section.indexOf('comm-')===0)?section.slice(5):null;document.querySelectorAll('.commbtn').forEach(b=>b.classList.toggle('on',b.dataset.f===ch));}
+function stageAiCard(ai){return `<div class="stage-ai"><div class="sa-h">${svg(SPARK,13)} OJO · how to move this lead</div><div class="sa-b">${ai.label}</div><button class="sa-cta" onclick="toast('${ai.cta.replace(/'/g,"\\'")}')">${ai.cta} ${svg('<path d="M5 12h14M13 6l6 6-6 6"/>',14)}</button></div>`;}
+function leadBriefing(l){const sc=SCORE[l.st]||[40,'Average'];const t=scoreColors(sc[0]);const ai=leadAI(l);const own=l.asg?PEOPLE[l.asg]:null;
+  const facts=[['Stage',l.st],['Budget',fmt(l.val)],['Source',l.src],['Owner',own?own[2]:'Unassigned']];
+  return `<div class="brief">
+    <div class="brief-top">
+      <div class="ip-gauge sm">${ring(sc[0],t[0],72)}<div class="pct" style="color:${t[1]}">${sc[0]}%</div></div>
+      <div class="brief-id"><div class="brief-grade"><span class="grade" style="color:${t[1]}">${sc[1]}</span> <span class="ip-tag">${svg(SPARK,12)} OJO score</span></div>
+        <div class="brief-facts">${facts.map(f=>`<span class="bf"><span class="k">${f[0]}</span><span class="v">${f[1]}</span></span>`).join('')}</div></div>
+    </div>
+    <div class="brief-rec"><span class="br-h">${svg(SPARK,13)} OJO recommends</span><span class="br-b">${ai.label}</span><button class="br-cta" onclick="toast('${ai.cta.replace(/'/g,"\\'")}')">${ai.cta} ${svg('<path d="M5 12h14M13 6l6 6-6 6"/>',14)}</button></div>
+  </div>`;}
+function leadRecHTML(){const l=rec.ent;const ai=leadAI(l);const own=l.asg?PEOPLE[l.asg]:null;const B=recVariant==='B';const C=recVariant==='C';
+  return `
+  <div class="lead-head">
+    <div class="lh-id"><h1>${l.co}</h1>
+      <div class="byline"><span class="av" style="background:${own?own[1]:'#F04D56'}">${own?own[0]:'PN'}</span> <b>${l.nm}</b> <span class="dotsep">·</span> contact <span class="dotsep">·</span> added by Priya Nair</div></div>
   </div>
-  <div class="rec-desc">${l.co} is undertaking the ${l.nm} engagement to address a clear business need. The solution leverages OJO's delivery workflow to take this from brief to launch, with the deliverables, timeline and budget tracked as cells. Owner: ${l.asg?PEOPLE[l.asg][2]:'unassigned'}. Source: ${l.src}.</div>
-  ${leadStepper(l)}
-  ${leadGate(l)}
-  ${leadSugg(l)}
-  <div class="rows">
-    <div class="row"><div class="k">Assigned to</div><div class="v"><span class="av-chip">${av(l.asg)}${l.asg?PEOPLE[l.asg][2]:'Unassigned'}</span></div></div>
-    <div class="row"><div class="k">Budget</div><div class="v"><span class="money">${fmt(l.val)}</span></div></div>
-    <div class="row"><div class="k">Source</div><div class="v">${l.src}</div></div>
-    <div class="row"><div class="k">Notes</div><div class="v notes"><div class="free" contenteditable="true"></div></div></div>
-    <div class="row"><div class="k">Subtasks</div><div class="v">${subsHTML()}</div></div>
-  </div>${commentsHTML('lead')}`;}
+  ${(B||C)?leadBriefing(l):''}
+  <div class="rec-actions">
+    <button class="commbtn" data-f="call" onclick="openComm('call')">${faceIcon('call')} Call</button>
+    <button class="commbtn" data-f="email" onclick="openComm('email')">${faceIcon('email')} Email</button>
+    <button class="commbtn" data-f="chat" onclick="openComm('chat')">${faceIcon('chat')} Message</button>
+  </div>
+  ${C?`<div class="board-grid">
+    <div class="sec" style="margin-top:0"><div class="sec-h">OJO Insights</div>${ojoInsightsCard(leadInsights(l))}</div>
+    <div class="sec" style="margin-top:0"><div class="sec-h">Contacts</div>${contactsListHTML(leadContacts(l))}</div>
+  </div>`:''}
+  <div class="sec"><div class="sec-h">Pipeline</div>
+    ${leadStepper(l)}${leadGate(l)}
+    ${(B||C)?'':stageAiCard(ai)}
+  </div>
+  <div class="sec"><div class="sec-h">About</div>
+    <div class="rec-meta">
+      <div class="mrow"><span class="mk">Service Type</span><span class="svc-chip2">Meta Ad Campaigns</span><span class="svc-chip2">Ad Creative</span></div>
+      <div class="mrow"><span class="mk">Tags</span><button class="tag-add2" onclick="toast('Add tag')">${svg('<path d="M12 5v14M5 12h14"/>',12)} Add tag</button></div>
+    </div>
+    <div class="rec-desc">${l.co} is undertaking the ${l.nm} engagement to address a clear business need. The solution leverages OJO's delivery workflow to take this from brief to launch, with the deliverables, timeline and budget tracked as cells. Source: ${l.src}.</div>
+  </div>
+  <div class="sec"><div class="sec-h">Subtasks</div>${subsHTML()}</div>
+  ${commentsHTML('lead')}`;}
 function taskRecHTML(){const t=rec.ent;if(!t.accept)t.accept=[];if(!t.proof)t.proof=[];
   const done=t.st==='Done',pct=trkPct();
   const I={plus:'<path d="M12 5v14M5 12h14"/>',clip:'<path d="m21 8-9.5 9.5a4 4 0 0 1-5.7-5.7L14 4a2.6 2.6 0 0 1 3.7 3.7L9.2 16.2"/>',up:'<path d="M12 15V3M7 8l5-5 5 5M5 21h14"/>',link:'<path d="M10 13a4 4 0 0 0 6 0l3-3a4 4 0 1 0-6-6l-1 1M14 11a4 4 0 0 0-6 0l-3 3a4 4 0 1 0 6 6l1-1"/>',file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',star:'<path d="M12 3l2 5.5L20 9l-4.5 3.7L17 19l-5-3.2L7 19l1.5-6.3L4 9l6-.5z"/>',reload:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',play:'<path d="M6 4l14 8-14 8z"/>',check:'<path d="M20 6 9 17l-5-5"/>',chev:'<path d="m6 9 6 6 6-6"/>'};
-  return `<span class="type-chip">Task</span><h1>${t.t}</h1><div class="byline"><span class="av" style="background:${PEOPLE[t.asg][1]}">${PEOPLE[t.asg][0]}</span> in <b>${PROJECT}</b> · ${t.ms}</div>
+  return `<h1>${t.t}</h1><div class="byline"><span class="av" style="background:${PEOPLE[t.asg][1]}">${PEOPLE[t.asg][0]}</span> in <b>${PROJECT}</b> · ${t.ms}</div>
+  <div class="rec-actions">
+    <button class="commbtn" data-f="chat" onclick="openComm('chat')">${faceIcon('chat')} Message</button>
+    <button class="commbtn" data-f="call" onclick="openComm('call')">${faceIcon('call')} Call</button>
+    <button class="commbtn" data-f="email" onclick="openComm('email')">${faceIcon('email')} Email</button>
+  </div>
   <div class="rows">
     <div class="row"><div class="k">Status</div><div class="v"><span class="stage-val">${t.st}</span><select class="select" onchange="recMove(this.value)"><option value="" selected disabled>Move along to…</option>${STATUSES.map(s=>`<option>${s.k}</option>`).join('')}</select></div></div>
-    <div class="row"><div class="k">Assigned to</div><div class="v"><span class="av-chip">${av(t.asg)}${PEOPLE[t.asg][2]}</span></div></div>
-    <div class="row"><div class="k">Due on</div><div class="v">${t.due} 2026</div></div>
-    <div class="row"><div class="k">Milestone</div><div class="v"><span class="chip link">${t.ms}</span></div></div>
-    <div class="row"><div class="k">Priority</div><div class="v"><span class="chip pr" style="background:${PR[t.pri]}">${t.pri}</span></div></div>
-    <div class="row"><div class="k">Estimate</div><div class="v"><span class="est">${t.est}</span></div></div>
   </div>
   <div class="trk ${trkRunning?'on':''}" id="trkCard">
     <div><div class="spent" id="trkSpent">${fmtHMS(trkSec)}</div><div class="lbl">Time spent</div></div>
@@ -562,8 +770,9 @@ const SECT={
   search:{title:'Search',body:searchBody},
   profile:{title:'Profile',body:accountBody}
 };
-function openSection(s){if(section===s){closeSection();return;}section=s;
-  document.querySelectorAll('.dock .di').forEach(b=>b.classList.remove('on'));
+function panelTabsClear(){document.querySelectorAll('.paneltabs .di, .dock .di').forEach(b=>b.classList.remove('on'));}
+function openSection(s){section=s; /* persistent context window — re-clicking a tab never collapses it */
+  panelTabsClear();
   document.querySelectorAll('#dockComm .dcf').forEach(b=>b.classList.remove('on'));
   document.getElementById('d-'+s)?.classList.add('on');
   const fly=document.getElementById('flyout');fly.classList.toggle('genie',s==='genie');
@@ -571,19 +780,25 @@ function openSection(s){if(section===s){closeSection();return;}section=s;
   document.getElementById('flyExtra').innerHTML=c.extra||'';
   const body=document.getElementById('flyBody');body.className='fly-body'+(s==='genie'?' genie':'');
   body.innerHTML=c.body();
+  document.body.classList.remove('panel-collapsed');
   flySize(flyW);document.getElementById('rdock')?.classList.add('open');fly.classList.add('show');closeApps();mScrim(true);mbarActive(s);}
-/* contextual communication (call / video / email) — always openable from the dock; shows the active record's content or a generic empty state */
+/* contextual communication (call / video / email) — a tab in the single panel; shows the active record's content or a generic empty state */
 function commBody(f){return commHost?commHost.content(f):commChannel(f,'');}
-function openComm(f){const sid='comm-'+f;if(section===sid){closeSection();return;}section=sid;
-  document.querySelectorAll('.dock .di').forEach(b=>b.classList.remove('on'));
+function openComm(f){const sid='comm-'+f;section=sid; /* persistent — re-clicking a comm tab never collapses */
+  panelTabsClear();
   document.getElementById('d-'+f)?.classList.add('on');
   const fly=document.getElementById('flyout');fly.classList.remove('genie');
-  document.getElementById('flyTitle').textContent=COMMFACE_LABEL[f]||'';
+  const cn=commContextName();
+  document.getElementById('flyTitle').textContent=(COMMFACE_LABEL[f]||'')+(cn?' · '+cn:'');
   document.getElementById('flyExtra').innerHTML='';
   const body=document.getElementById('flyBody');body.className='fly-body';body.innerHTML=commBody(f);
-  flySize(flyW);document.getElementById('rdock')?.classList.add('open');fly.classList.add('show');closeApps();mScrim(true);mbarActive(null);}
-function closeSection(){section=null;const fly=document.getElementById('flyout');fly.classList.remove('show');document.getElementById('rdock')?.classList.remove('open');flySize(0);document.querySelectorAll('.dock .di').forEach(b=>b.classList.remove('on'));mScrim(false);mbarActive(null);}
+  document.body.classList.remove('panel-collapsed');
+  flySize(flyW);document.getElementById('rdock')?.classList.add('open');fly.classList.add('show');closeApps();mScrim(true);mbarActive(null);syncCommActive();}
+function closeSection(){section=null;const fly=document.getElementById('flyout');fly.classList.remove('show');document.getElementById('rdock')?.classList.remove('open');flySize(0);panelTabsClear();document.body.classList.add('panel-collapsed');mScrim(false);mbarActive(null);syncCommActive();}
 function closeDrawer(){closeSection();}
+/* collapse the whole single sheet to reclaim the workspace; reopen via the floating Genie button */
+function collapsePanel(){closeSection();}
+function reopenPanel(){openSection('genie');}
 
 /* ===== MOBILE shell: bottom tab bar + bottom sheets (Apps launcher, Ask Ojo, comms) ===== */
 function mScrim(on){const s=document.getElementById('mscrim');if(!s)return;
@@ -596,11 +811,10 @@ function closeApps(){document.getElementById('appsSheet')?.classList.remove('sho
 function mApp(route){closeApps();mbarActive('apps');go(route);}
 function mCloseAll(){closeApps();closeSection();closeCommSheet();if(typeof closePeek==='function')closePeek();const s=document.getElementById('mscrim');if(s)s.classList.remove('show');}
 
-function genieBody(){return `<div class="gwrap"><div class="gmsgs" id="gmsgs"><div class="genie-hi"><img class="genie-logo" src="assets/ojo-logo.png" alt="OJO Genie">Hello, Vinoth<br><span>How can I help you?</span></div></div>
+function genieBody(){const ctx=genieContext();const ask=s=>s.replace(/'/g,"\\'");
+  return `<div class="gwrap"><div class="gmsgs" id="gmsgs"><div class="genie-hi"><img class="genie-logo" src="assets/ojo-logo.png" alt="OJO Genie">Hello, Vinoth<div class="gctx">${ctx.who?`Ask me anything about <b>${ctx.who}</b>`:'How can I help you today?'}</div></div></div>
   <div class="gfoot"><div class="gsugg">
-    <button onclick="genieAsk('Prioritize tasks for first half')">Prioritize tasks for first half</button>
-    <button onclick="genieAsk('Show My Leads')">Show My Leads</button>
-    <button onclick="genieAsk('Today\\'s calls')">Today's calls</button></div>
+    ${ctx.suggestions.map(s=>`<button onclick="genieAsk('${ask(s)}')">${s}</button>`).join('')}</div>
    <div class="gask"><input id="gIn" placeholder="Ask Ojo anything..." onkeydown="if(event.key==='Enter')genieAsk(this.value)">
      <span class="gic">${svg('<path d="M21.4 11.05 12.05 20.4a5 5 0 0 1-7.07-7.07l9.19-9.19a3 3 0 0 1 4.24 4.24l-9.2 9.19a1 1 0 0 1-1.41-1.41l8.49-8.49"/>',17)}</span>
      <span class="gic">${svg('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',17)}</span>
@@ -628,6 +842,7 @@ function accountBody(){const W=[['R','#C92F3A','Reliance','13 members · Org Adm
   return `<div class="acctwrap"><div class="idcard"><div class="lab">Your identity</div><div class="idrow"><div class="iav">VV</div><div style="flex:1"><div class="inm">Vinoth V V <span class="rolechip">Org Admin</span></div><div class="iem">vinotham@gmail.com</div></div></div></div>
    <div class="wslabel">Connected workspaces</div>${W.map(w=>`<div class="wsrow ${w[4]?'on':''}" onclick="toast('Switch to ${w[2]}')"><div class="wsi" style="background:${w[1]}">${w[0]}</div><div style="flex:1"><div class="wsn">${w[2]}</div><div class="wsm">${w[3]}</div></div>${w[4]?`<span class="wschk">${svg('<path d="M20 6 9 17l-5-5"/>',16)}</span>`:''}</div>`).join('')}
    <div class="wslabel" style="cursor:pointer" onclick="toast('Add profile')">＋ Add profile</div>
+   <div class="themerow"><span class="tlab">Appearance</span><span class="seg themeseg"><button data-t="light" class="${curTheme()==='light'?'on':''}" onclick="setTheme('light')">Light</button><button data-t="dark" class="${curTheme()==='dark'?'on':''}" onclick="setTheme('dark')">Dark</button></span></div>
    <div class="acctfoot"><button onclick="toast('Settings')">${svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H10a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V10a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',15)} Settings</button><button onclick="toast('Signed out')">Sign out</button></div></div>`;}
 
 /* ============ HR MODULE (cell-style database + pages) ============ */
@@ -642,7 +857,7 @@ const EST={Active:'var(--ok)','Onboarding':'var(--info)','Invitation Sent':'#9A6
 function eav(e,s){s=s||26;return `<span class="eav" style="background:${e.color};width:${s}px;height:${s}px;font-size:${Math.round(s/2.5)}px">${e.av}</span>`;}
 let hrPage='directory',hrEmp=null,hrEmpTab='Overview',hrAttTab='Attendance',hrAttView='List',hrNavCollapsed=false;
 let hrDirViews=[['All Employees','star','Table'],['By Status','Board','Board'],['By Dept','List','List']],hrDirActive='All Employees';
-let empPanelCollapsed=false,empFace='info';
+let empPanelCollapsed=true,empFace='info';
 let hrPerf=[{l:'On-Time Delivery',v:'75%',d:'+6'},{l:'Team Collaboration',v:'60%',d:'+3'},{l:'Tasks Completed',v:'12',d:'+4'},{l:'Avg Quality',v:'4.5/5',d:'+0.2'}];
 const HRPAGES=[['tasks','Tasks'],['directory','Employee Directory'],['attendance','Attendance & Leaves'],['communication','Communication'],['payroll','Payroll'],['settings','Settings']];
 const SVS={search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',filter:'<path d="M3 5h18M6 12h12M10 19h4"/>',sort:'<path d="M3 6h12M3 12h8M3 18h5M17 4v16m0 0 4-4m-4 4-4-4"/>',pencil:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',plus:'<path d="M12 5v14M5 12h14"/>',x:'<path d="M18 6 6 18M6 6l12 12"/>',caret:'<path d="m6 9 6 6 6-6"/>',arrow:'<path d="M19 12H5M12 19l-7-7 7-7"/>',more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',up:'<path d="M12 19V5M5 12l7-7 7 7"/>',trend:'<path d="M3 17 9 11l4 3 7-8"/><path d="M21 6v5M16 6h5"/>'};
@@ -676,27 +891,41 @@ function empTable(){return `<div class="tablewrap"><table><thead><tr><th>Employe
 function empBoard(){const sts=['Active','Onboarding','Invitation Sent','Inactive'];return `<div class="board color">`+sts.map(s=>{const items=EMP.filter(e=>e.status===s);return `<div class="col"><div class="col-head" style="--cc:${EST[s]||'var(--faint)'}"><span class="pill"><span class="dot"></span>${s}</span><span class="ct">${items.length}</span></div><div class="col-body">${items.map(e=>`<div class="card" onclick="hrOpenEmp('${e.code}')"><div class="nm">${e.name}</div><div class="by">${e.role} · ${e.code}</div><div class="foot"><span class="src">${e.dept==='—'?'No dept':e.dept}</span>${eav(e,23)}</div></div>`).join('')||'<div class="col-empty">None</div>'}</div></div>`;}).join('')+`</div>`;}
 function empList(){const depts=[...new Set(EMP.map(e=>e.dept))];return depts.map(d=>{const items=EMP.filter(e=>e.dept===d);return `<div class="lg"><div class="lg-head"><span class="pill">${d==='—'?'No department':d}</span><span class="ct">${items.length}</span></div>${items.map(e=>`<div class="lrow" onclick="hrOpenEmp('${e.code}')">${eav(e)}<span class="nm">${e.name}</span><span class="co">${e.role} · ${e.code}</span><span style="color:${EST[e.status]};font-weight:600;font-size:12.5px">${e.status}</span></div>`).join('')}</div>`;}).join('');}
 function hrOpenEmp(code){hrEmp=EMP.find(e=>e.code===code);hrEmpTab='Overview';mountEmpRecord();}
-function mountEmpRecord(){const e=hrEmp;const tabs=['Overview','Personal','Contact','Work','Salary','Documents','Activity'];
-  document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dbox ${empPanelCollapsed?'collapsed':''}" id="empbox"><div class="dmain">
+function mountEmpRecord(){const e=hrEmp;const tabs=['Overview','Personal','Contact','Work','Salary','Documents','Activity'];empPanelCollapsed=isMobile();
+  document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dside"><button class="dctl x" onclick="empClose()" title="Close">${svg(SVS.x,19)}</button><div class="dnav"><button class="dctl" onclick="empNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="empNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div><div class="dbox ${empPanelCollapsed?'collapsed':''}" id="empbox"><div class="dmain">
      <div class="crumbbar"><a onclick="go('hr')">Employee Directory</a> <span class="sep">‹</span> <b>${e.name}</b></div>
      <div class="mc-top"><div class="title-wrap"><span class="eav" style="background:${e.color};width:40px;height:40px;font-size:15px">${e.av}</span><div><h1>${e.name}</h1><div class="sub">${e.role} · ${e.status}</div></div></div><div class="sp"></div><button class="paneltoggle" onclick="empToggle()"><span id="empPtog">${empPanelCollapsed?'Show info':'Hide info'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
+     <div class="rec-actions" style="padding:0 22px 4px">
+       <button class="commbtn" data-f="call" onclick="openComm('call')">${faceIcon('call')} Call</button>
+       <button class="commbtn" data-f="email" onclick="openComm('email')">${faceIcon('email')} Email</button>
+       <button class="commbtn" data-f="chat" onclick="openComm('chat')">${faceIcon('chat')} Message</button></div>
      <div class="emp-tabs" style="padding:0 22px 10px">${tabs.map(t=>`<button class="vtab ${t===hrEmpTab?'on':''}" onclick="hrEmpSetTab('${t}')">${t}</button>`).join('')}</div>
      <div class="dcenter"><div class="inner" id="empBody">${hrEmpBody(e)}</div></div></div>
    <aside class="dpanel" id="emppanel"><div class="dpanel-head"><span class="nm">${e.name}</span><button class="ed" onclick="xpOpenFrom(this)" title="Expand">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button><button class="ed" style="margin-left:6px">${svg(SVS.pencil,15)}</button></div>
-     <div class="dpanel-body" id="emppanelbody"></div></aside></div>
-   <div class="dside"><button class="dctl x" onclick="empClose()" title="Close">${svg(SVS.x,19)}</button><div class="dnav"><button class="dctl" onclick="empNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="empNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div></div>`;
+     <div class="dpanel-body" id="emppanelbody"></div></aside></div></div>`;
   renderEmpInfo();
-  commSetHost({getFace:()=>empFace,setFace:empSetFace,content:commEmpContent});}
+  commSetHost({getFace:()=>empFace,setFace:empSetFace,content:commEmpContent});syncCommActive();}
 function empClose(){go('hr');}
 function empNav(dir){const i=EMP.findIndex(x=>x.code===hrEmp.code);if(i<0)return;const n=(i+dir+EMP.length)%EMP.length;hrEmp=EMP[n];empFace='info';xpClose();mountEmpRecord();}
 function hrEmpSetTab(t){hrEmpTab=t;document.getElementById('empBody').innerHTML=hrEmpBody(hrEmp);document.querySelectorAll('.emp-tabs .vtab').forEach(b=>b.classList.toggle('on',b.textContent===t));}
 function empToggle(){empPanelCollapsed=!empPanelCollapsed;document.getElementById('empbox').classList.toggle('collapsed',empPanelCollapsed);document.getElementById('empPtog').textContent=empPanelCollapsed?'Show info':'Hide info';}
 function empSetFace(f){empFace=f;document.querySelectorAll('#emppanel .xcface').forEach(b=>b.classList.toggle('on',b.dataset.face===f));renderEmpInfo();}
-function empInfoBody(){const e=hrEmp,sc=({REL0006:62,REL0005:40,REL0003:78,REL0004:85,REL0001:90,REL0002:30}[e.code])||60,lbl=sc>=80?'Strong':sc>=50?'Average':'Needs focus';
-  return `<div class="xscore" style="background:var(--ok-soft);border:1px solid #CFEEDF"><div class="xgauge">${ring(sc,'var(--ok)',122)}<div class="pct" style="color:var(--ok)">${sc}%</div></div><div class="r2"><span class="l">Performance <span class="xderive">derive</span></span><span class="vv">${lbl}</span></div></div>
-   <div class="xipanel"><div class="xirow"><span class="k">Role</span><span class="v">${e.role}</span></div><div class="xirow"><span class="k">Department</span><span class="v">${e.dept}</span></div><div class="xirow"><span class="k">Status</span><span class="v" style="color:${EST[e.status]}">${e.status}</span></div></div>
-   <div class="xigroup"><div class="gh">Contact ${chev2()}</div><div class="xipanel"><div class="xirow"><span class="k">Email</span><span class="v" style="font-size:13px">${e.email}</span></div><div class="xirow"><span class="k">Phone</span><span class="v">${e.phone}</span></div></div></div>
-   <div class="xigroup"><div class="gh">Employment ${chev2()}</div><div class="xipanel"><div class="xirow"><span class="k">Code</span><span class="v">${e.code}</span></div><div class="xirow"><span class="k">Joined</span><span class="v">${e.join}</span></div></div></div>`;}
+/* OJO read of an employee — derived from status, manager, department */
+function empInsights(e){const onboarding=e.status!=='Active';const out=[];
+  out.push(['flame',onboarding?`<b>${e.status}.</b> Finish onboarding — complete the profile and assign a manager.`:`<b>Active.</b> Profile is in good standing.`]);
+  out.push(['target',e.mgr==='—'?`<b>No manager assigned.</b> Assign one so approvals and reviews route correctly.`:`<b>Reports to ${e.mgr}.</b> Reviews route through them.`]);
+  out.push(['clock',e.dept==='—'?`<b>Department not set.</b> Add it to include them in team views and payroll.`:`<b>${e.dept} team.</b> Counted in that team's headcount.`]);
+  return out;}
+function empScore(e){return ({REL0006:62,REL0005:40,REL0003:78,REL0004:85,REL0001:90,REL0002:30}[e.code])||60;}
+function empPanelCells(e){const sc=empScore(e),lbl=sc>=80?'Strong':sc>=50?'Average':'Needs focus';
+  return [
+    {render:'score',props:{pct:sc,label:lbl,reason:`Performance this quarter · ${e.role}`,tag:'OJO read'}},
+    {render:'facts',props:{rows:[['Role',e.role],['Department',e.dept],['Status',`<span style="color:${EST[e.status]||'var(--ink)'}">${e.status}</span>`],['Manager',e.mgr],['Joined',e.join]]}},
+    {render:'insights',props:{items:empInsights(e),askNoun:'profile'}},
+    {render:'contacts',props:{title:'Contact',add:null,list:[[e.name,e.role,e.email,e.color,true]]}},
+    {render:'more',props:{rows:[['Employee code',e.code],['Email',e.email],['Phone',e.phone],['Added on',e.created]]}}
+  ];}
+function empInfoBody(){return `<div class="ip">${empPanelCells(hrEmp).map(renderPanelCell).join('')}</div>`;}
 function renderEmpInfo(){const el=document.getElementById('emppanelbody');if(!el)return;el.innerHTML=empInfoBody();}
 function hrEmpBody(e,tab){tab=tab||hrEmpTab;
   if(tab==='Overview')return hrPerfBlock()+hrFieldSec('Personal Details',[['Full Name',e.name],['Joining Date',e.join]])+hrFieldSec('Contact Details',[['Contact number',e.phone],['Work Email',e.email],['Address','—'],['City','—']]);
@@ -755,7 +984,7 @@ function renderProfPage(){const el=document.getElementById('profmain');if(!el)re
   else if(profPage==='payslips')el.innerHTML=profPayslips();
   else el.innerHTML=profIntegrations();}
 function profBody(){const e=profUser();const tabs=['Overview','Personal','Contact','Work','Salary','Documents','Activity'];
-  return `<div class="mc-top" style="padding:2px 0 14px"><div class="title-wrap"><span class="eav" style="background:${e.color};width:46px;height:46px;font-size:16px">${e.av}</span><div><h1 style="font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--navy);line-height:1.2">${e.name} <span class="rolechip">${e.role}</span></h1><div class="sub">${e.email} · ${e.status}</div></div></div></div>
+  return `<div class="mc-top" style="padding:2px 0 14px;align-items:center"><div class="title-wrap"><span class="eav" style="background:${e.color};width:46px;height:46px;font-size:16px">${e.av}</span><div><h1 style="font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--navy);line-height:1.2">${e.name} <span class="rolechip">${e.role}</span></h1><div class="sub">${e.email} · ${e.status}</div></div></div><div class="sp" style="flex:1"></div><span class="appearance-ctl"><span class="tlab">Appearance</span><span class="seg themeseg"><button data-t="light" class="${curTheme()==='light'?'on':''}" onclick="setTheme('light')">Light</button><button data-t="dark" class="${curTheme()==='dark'?'on':''}" onclick="setTheme('dark')">Dark</button></span></div></div>
    <div class="emp-tabs" style="margin-bottom:16px">${tabs.map(t=>`<button class="vtab ${t===profTab?'on':''}" onclick="profSetTab('${t}')">${t}</button>`).join('')}</div>
    <div id="profEmpBody">${hrEmpBody(e,profTab)}</div>`;}
 function profSetTab(t){profTab=t;const b=document.getElementById('profEmpBody');if(b)b.innerHTML=hrEmpBody(profUser(),profTab);document.querySelectorAll('#profmain .emp-tabs .vtab').forEach(x=>x.classList.toggle('on',x.textContent===t));}
@@ -889,7 +1118,7 @@ METRIC_DEFS.accounts={total:['Accounts',()=>ACCOUNTS.length],active:['Active',()
 METRIC_DEFS.vendors={total:['Vendors',()=>VENDORS.length],active:['Active',()=>VENDORS.filter(v=>v.status==='Active').length],pay:['Total payable',()=>fmt(VENDORS.reduce((s,v)=>s+v.balance,0))],overdue:['Overdue',()=>VENDORS.filter(v=>v.status==='Overdue').length]};
 METR.accounts=['total','active','bal'];METR.vendors=['total','active','pay'];
 const STC={Active:'var(--ok)',Overdue:'#9A6B12',Closed:'var(--muted)'};function stColor(s){return STC[s]||'var(--muted)';}
-let coll=null,collView='Table',collRec=null,collTab='Overview',collColl=false;
+let coll=null,collView='Table',collRec=null,collTab='Overview',collColl=true;
 function curColl(){return COLL[coll];}function curRec(){return curColl().data().find(r=>r.id===collRec);}
 function mountColl(key){coll=key;collRec=null;collView='Table';const c=COLL[key];
   document.getElementById('modcontent').innerHTML=`<div class="box"><div class="mc-top"><div class="title-wrap"><div class="picon">${svg(c.icon,20)}</div><div><h1>${c.name}</h1><div class="sub">${c.sub}</div></div></div><div class="sp"></div><span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span><div class="newbtn"><button class="a" onclick="toast('New ${c.sing}')">New</button><span class="b">${svg(SVS.caret,11)}</span></div></div>
@@ -903,15 +1132,14 @@ function collCell(r,col){const v=r[col[1]];if(col[2]==='money')return fmt(v);if(
 function collTable(c,rows){return `<div class="tablewrap"><table><thead><tr>${c.cols.map(col=>`<th class="${col[2]==='money'?'num':''}">${col[0]}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr onclick="collOpen('${r.id}')">${c.cols.map(col=>`<td class="${col[2]==='money'?'num':''}">${collCell(r,col)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;}
 function collBoard(c,rows){return `<div class="board color">`+c.statuses.map(s=>{const items=rows.filter(r=>r.status===s[0]);return `<div class="col"><div class="col-head" style="--cc:${s[1]}"><span class="pill"><span class="dot"></span>${s[0]}</span><span class="ct">${items.length}</span></div><div class="col-body">${items.map(r=>`<div class="card" onclick="collOpen('${r.id}')"><div class="nm">${r.name}</div><div class="by">${r.type} · ${r.owner}</div><div class="foot"><span class="val">${fmt(r.balance)}</span><span class="eav" style="background:${r.color};width:23px;height:23px;font-size:9px;margin-left:auto">${r.av}</span></div></div>`).join('')||'<div class="col-empty">None</div>'}</div></div>`;}).join('')+`</div>`;}
 function collList(c,rows){const gs=[...new Set(rows.map(r=>r.type))];return gs.map(g=>{const items=rows.filter(r=>r.type===g);return `<div class="lg"><div class="lg-head"><span class="pill">${g}</span><span class="ct">${items.length}</span></div>${items.map(r=>`<div class="lrow" onclick="collOpen('${r.id}')"><span class="eav" style="background:${r.color};width:26px;height:26px;font-size:10px">${r.av}</span><span class="nm">${r.name}</span><span class="co">${r.owner} · ${r.terms}</span><span class="val">${fmt(r.balance)}</span></div>`).join('')}</div>`;}).join('');}
-function collOpen(id){collRec=id;collTab='Overview';collColl=false;mountCollRecord();}
+function collOpen(id){collRec=id;collTab='Overview';collColl=true;mountCollRecord();}
 function mountCollRecord(){const c=curColl(),r=curRec();collFace='info';
-  document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dbox ${collColl?'collapsed':''}" id="cbox"><div class="dmain">
+  document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dside"><button class="dctl x" onclick="collClose()" title="Close">${svg(SVS.x,19)}</button><div class="dnav"><button class="dctl" onclick="collNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="collNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div><div class="dbox ${collColl?'collapsed':''}" id="cbox"><div class="dmain">
      <div class="crumbbar"><a onclick="go('${coll}')">${c.name}</a> <span class="sep">‹</span> <b>${r.name}</b></div>
      <div class="mc-top"><div class="title-wrap"><span class="eav" style="background:${r.color};width:38px;height:38px;font-size:14px">${r.av}</span><div><h1>${r.name}</h1><div class="sub">${r.type} · ${r.status}</div></div></div><div class="sp"></div><button class="paneltoggle" onclick="collTogglePanel()"><span id="cPtog">${collColl?'Show info':'Hide info'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
      <div class="emp-tabs">${c.tabs.map(t=>`<button class="vtab ${t===collTab?'on':''}" onclick="collSetTab('${t}')">${t}</button>`).join('')}</div>
      <div class="dcenter"><div class="inner" id="cinner">${collBody(c,r)}</div></div></div>
-   <aside class="dpanel" id="cpanel"><div class="dpanel-head"><span class="nm">${r.name}</span><button class="ed" onclick="xpOpenFrom(this)" title="Expand">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button><button class="ed" style="margin-left:6px">${svg(SVS.pencil,15)}</button></div><div class="dpanel-body">${collPanel(c,r)}</div></aside></div>
-   <div class="dside"><button class="dctl x" onclick="collClose()" title="Close">${svg(SVS.x,19)}</button><div class="dnav"><button class="dctl" onclick="collNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="collNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div></div>`;
+   <aside class="dpanel" id="cpanel"><div class="dpanel-head"><span class="nm">${r.name}</span><button class="ed" onclick="xpOpenFrom(this)" title="Expand">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button><button class="ed" style="margin-left:6px">${svg(SVS.pencil,15)}</button></div><div class="dpanel-body">${collPanel(c,r)}</div></aside></div></div>`;
   commSetHost({getFace:()=>collFace,setFace:collSetFace,content:commCollContent});}
 function collClose(){go(coll);}
 function collNav(dir){const rows=curColl().data();const i=rows.findIndex(x=>x.id===collRec);if(i<0)return;const n=(i+dir+rows.length)%rows.length;collRec=rows[n].id;xpClose();mountCollRecord();}
@@ -1104,7 +1332,7 @@ TASKS.forEach((t,i)=>{t.subs=[{t:'Gather context',done:i%2===0||t.status==='Done
 let bonusXP=0,streak=5,focusToday=45;
 let taskModule='leads',taskScope='leads',taskContainer='modcontent';
 let tView='Board';const tViews=['Board','Table','List'];
-let tRec=null,tTab='Overview',tFace='info',tCollapsed=false;
+let tRec=null,tTab='Overview',tFace='info',tCollapsed=true;
 const FOCUS_TOTAL=25*60;let focusLeft=FOCUS_TOTAL,focusRunning=false,focusInt=null;
 function scoped(){return taskScope==='all'?TASKS:TASKS.filter(t=>t.src===taskScope);}
 function totalXP(){return TASKS.filter(t=>t.status==='Done').reduce((a,t)=>a+t.pts,0)+bonusXP;}
@@ -1141,17 +1369,16 @@ function tCardOver(e){e.preventDefault();e.currentTarget.classList.add('dragover
 function tCardLeave(e){e.currentTarget.classList.remove('dragover');}
 function tCardDrop(e,s){e.preventDefault();e.currentTarget.classList.remove('dragover');const t=TASKS.find(x=>x.id===tDragId);if(t&&t.status!==s){const was=t.status;t.status=s;if(s==='Done'&&was!=='Done')toast('🎉 Task done · +'+t.pts+' XP');else toast('Moved to '+s);}tDragId=null;document.getElementById(taskContainer).innerHTML=tasksListHTML(taskScope);}
 /* ---- detail (lead-overview style) ---- */
-function openTaskRec(id){focusPause();focusLeft=FOCUS_TOTAL;tRec=TASKS.find(t=>t.id===id);if(!tRec)return;tTab='Overview';tFace='info';tCollapsed=false;mountTaskDetail();}
+function openTaskRec(id){focusPause();focusLeft=FOCUS_TOTAL;tRec=TASKS.find(t=>t.id===id);if(!tRec)return;tTab='Overview';tFace='info';tCollapsed=true;mountTaskDetail();}
 function taskBack(){focusPause();openTasks(taskModule);}
 function tFocusMode(){const list=scoped().filter(t=>t.status!=='Done');if(!list.length){toast('All caught up! 🎉');return;}const ord={High:0,Medium:1,Low:2};list.sort((a,b)=>ord[a.pri]-ord[b.pri]);openTaskRec(list[0].id);setTimeout(focusStart,80);toast('Focus mode · '+list[0].title);}
 function mountTaskDetail(){const t=tRec;
-  document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dbox ${tCollapsed?'collapsed':''}" id="tbox"><div class="dmain">
+  document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dside"><button class="dctl x" onclick="taskBack()" title="Close">${svg(SVS.x,19)}</button><div class="dnav"><button class="dctl" onclick="tNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="tNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div><div class="dbox ${tCollapsed?'collapsed':''}" id="tbox"><div class="dmain">
     <div class="dtop"><div class="crumbs"><a onclick="taskBack()">Tasks</a> <span class="sep">‹</span> <b>${t.title}</b> <span class="sep">‹</span> ${tTab}</div><div class="sp"></div><button class="paneltoggle" onclick="tToggle()"><span id="tPtog">${tCollapsed?'Show info':'Hide info'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
     <div class="viewbar">${['Overview','Activity'].map(x=>`<button class="vtab ${x===tTab?'on':''}" onclick="tSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[x==='Overview'?'star':'Feed']||ICONS.List,14)}</span>${x}</button>`).join('')}</div>
     <div class="dcenter"><div class="inner" id="tinner">${tBody()}</div></div></div>
    <aside class="dpanel" id="tpanel"><div class="dpanel-head"><span class="nm">${t.title}</span><button class="ed" onclick="xpOpenFrom(this)" title="Expand">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button><button class="ed" style="margin-left:6px">${svg(SVS.pencil,15)}</button></div>
-    <div class="dpanel-body" id="tpanelbody"></div></aside></div>
-   <div class="dside"><button class="dctl x" onclick="taskBack()" title="Close">${svg(SVS.x,19)}</button><div class="dnav"><button class="dctl" onclick="tNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="tNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div></div>`;
+    <div class="dpanel-body" id="tpanelbody"></div></aside></div></div>`;
   renderTaskInfo();bindTComment();
   commSetHost({getFace:()=>tFace,setFace:tSetFace,content:commTaskContent});}
 function tNav(dir){const list=scoped();const i=list.findIndex(x=>x.id===tRec.id);if(i<0)return;const n=(i+dir+list.length)%list.length;xpClose();openTaskRec(list[n].id);}
@@ -1196,6 +1423,7 @@ function tInfoBody(){const t=tRec,p=PEOPLE[t.asg],sm=SRC[t.src];const prog=t.sta
   return `<div class="xscore" style="background:var(--coral-soft);border:1px solid var(--coral-line)"><div class="xgauge">${ring(prog,'var(--coral)',122)}<div class="pct" style="color:var(--coral-ink);font-size:20px">${t.pts}<span style="font-size:10px"> XP</span></div></div><div class="r2"><span class="l">Reward <span class="xderive">derive</span></span><span class="vv">${t.status==='Done'?'Earned 🎉':'On completion'}</span></div></div>
    <div class="focuscard" id="focuscard">${focusCardHTML()}</div>
    <div class="xipanel"><div class="xirow"><span class="k">Source</span><span class="v"><span class="tsrc" style="color:${sm[1]};background:${sm[1]}1f">${sm[0]}</span></span></div><div class="xirow"><span class="k">Status</span><span class="v" style="color:${TSTC[t.status]}">${t.status}</span></div><div class="xirow"><span class="k">Priority</span><span class="v">${t.pri}</span></div><div class="xirow"><span class="k">Due</span><span class="v">${t.due||'—'}</span></div></div>
+   <div style="margin:4px 0">${ojoInsightsCard([['clock',t.status==='Done'?`<b>Done.</b> XP earned — nice focus.`:`<b>${t.pri} priority${t.due?` · due ${t.due}`:''}.</b> ${t.pri==='High'?'Best tackled in your next focus block.':'On track if started soon.'}`],['target',`<b>Linked to ${t.link}.</b> Completing it updates that record.`],['flame',`<b>${t.focusMin}m focused so far.</b> Finish a block for <b>+5 XP</b>.`]],'task')}</div>
    <div class="xigroup"><div class="gh">Linked ${chev2()}</div><div class="xipanel"><div class="xirow"><span class="k">Record</span><span class="v">${t.link}</span></div><div class="xirow"><span class="k">Owner</span><span class="v">${p[2]}</span></div></div></div>
    <div class="xigroup"><div class="gh">Effort ${chev2()}</div><div class="xipanel"><div class="xirow"><span class="k">Estimate</span><span class="v">${t.est}</span></div><div class="xirow"><span class="k">Focus logged</span><span class="v">${t.focusMin}m</span></div></div></div>`;}
 function renderTaskInfo(){const el=document.getElementById('tpanelbody');if(!el)return;el.innerHTML=tInfoBody();}
@@ -1235,7 +1463,8 @@ function mountHome(){setRail('navHome');
   const leadRows=topleads.map(l=>`<div class="lrow2" onclick="openDetail('lead','${l.id}')">${av(l.asg)}<span class="nm">${l.co}</span><span class="co">${l.st}</span><span class="ldval" style="margin-left:auto">${fmt(l.val)}</span></div>`).join('');
   const actRows=ACTS.slice(0,5).map(a=>{const p=PEOPLE[a.who];return `<div class="act"><span class="actav" style="background:${p[1]}">${p[0]}</span><div><div class="txt">${p[2]} ${a.txt}</div><div class="tm"><span class="src" style="color:${a.c}">${a.src}</span> · ${a.tm}</div></div></div>`;}).join('');
   document.getElementById('screen').innerHTML=`<div class="homescroll"><div class="homecard">
-   <div style="margin-bottom:26px"><h1>${greet}, Vinoth</h1><div class="sub" style="font-size:14px;color:var(--faint);margin-top:5px">${dstr} · here's your day at OJO</div></div>
+   <div style="margin-bottom:22px"><h1>${greet}, Vinoth</h1><div class="sub" style="font-size:14px;color:var(--faint);margin-top:5px">${dstr} · here's your day at OJO</div>
+     <div class="home-search" onclick="openSection('search')">${svg('<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',18)}<span>Search leads, projects, tasks, people…</span><kbd>⌘K</kbd></div></div>
    ${sec('Focus today','All tasks ›',"openTasks('all')",focusRows)}
    ${sec('Your projects','View all ›',"go('projectsDash')",projRows)}
    ${sec('Active leads','View all ›',"go('leads')",leadRows)}
@@ -1309,4 +1538,10 @@ document.addEventListener('mousedown',e=>{if(isMobile())return;const dp=e.target
  document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&xpShown())xpClose();});
 
+try{if(localStorage.getItem('ojo-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}
+try{recVariant=localStorage.getItem('ojo-rec-variant')||'A';}catch(e){}
+renderPanelTabs();
 go('home');
+/* Ojo Genie is the prominent, persistent anchor of the dock — open by default on
+   desktop, contextual to the current screen, and reachable in one click anywhere. */
+if(window.matchMedia('(min-width:701px)').matches)openSection('genie');
