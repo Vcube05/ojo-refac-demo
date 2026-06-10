@@ -1424,4 +1424,29 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
   .selrow,.kv2{grid-template-columns:1fr!important}
   .vmenu,.settings,.wpal,.docpal{left:12px!important;right:12px!important;width:auto!important;max-width:none}
   .toast{bottom:calc(96px + env(safe-area-inset-bottom))}
+  /* ---- Home v3 (bold command center) on phone ----
+     the global mobile .dpanel rule forces width:100%, so the homebox must stack
+     as a column (else the collapsed activity panel splits the row 50/50) */
+  .homebox{flex-direction:column}
+  .homebox .dmain.hfeed{width:100%!important;flex:1 1 auto!important}
+  .homebox.collapsed .dpanel{display:none!important}
+  .homebox .dpanel{border-left:none;border-top:8px solid var(--surface-2)}
+  .hero{padding:20px 16px 2px;gap:12px}
+  .hero h1{font-size:26px}
+  .hero-sub{font-size:13px;margin-top:8px}
+  .hmetrics{grid-template-columns:1fr 1fr;gap:10px;padding:16px 16px 4px}
+  .mtile{padding:13px 15px}
+  .mtile .mt-v{font-size:24px}
+  .hcal{padding:12px 12px 2px}
+  .feed-controls2{padding:16px 16px 2px;flex-wrap:wrap;gap:10px}
+  .tgrid{padding:14px 16px 8px;column-width:auto;columns:1}
+  /* ---- Task page v2 on phone ---- */
+  .tpage2{padding:4px 16px 30px}
+  .tp2-head{flex-wrap:wrap;gap:12px}
+  .tp2-head h1{font-size:22px}
+  .tp2-sub{font-size:12.5px}
+  .tp2-metrics{grid-template-columns:1fr 1fr}
+  .tpage2 .tgrid{column-width:auto;columns:1;padding:14px 0 0}
+  /* scheduler popover → bottom sheet (overrides JS inline left/top) */
+  .schedpop{position:fixed!important;left:12px!important;right:12px!important;top:auto!important;bottom:calc(92px + env(safe-area-inset-bottom))!important;width:auto!important;max-width:none;max-height:72dvh;overflow:auto}
 }
