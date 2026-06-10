@@ -21,7 +21,33 @@ function closePops(){document.querySelectorAll('.pop').forEach(p=>p.classList.re
 function curTheme(){return document.documentElement.getAttribute('data-theme')==='dark'?'dark':'light';}
 function setTheme(t){const r=document.documentElement;if(t==='dark')r.setAttribute('data-theme','dark');else r.removeAttribute('data-theme');try{localStorage.setItem('ojo-theme',t);}catch(e){}document.querySelectorAll('.themeseg button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));}
 function openPop(id){const m=document.getElementById(id);if(!m)return;const o=m.classList.contains('show');closePops();if(!o)m.classList.add('show');}
-document.addEventListener('click',e=>{if(e.target.closest('.pop')||e.target.closest('#setBtn')||e.target.closest('#vaddBtn'))return;closePops();});
+document.addEventListener('click',e=>{if(e.target.closest('.pop')||e.target.closest('#setBtn')||e.target.closest('#vaddBtn')||e.target.closest('#tbWs')||e.target.closest('#tbAdd'))return;closePops();});
+/* ---- search lightbox (opens centered in the main window) ---- */
+function searchResults(q){const R=[['Life Designer','Lead · Proposal'],['Apollo — Website Revamp','Project'],['Anjali Rao','Contact · Meridian Cafe'],['Wireframes','Task · Design'],['Sunrise Pharma','Lead · Won'],['Patel Logistics','Lead · Contacted']];
+  const list=q?R.filter(r=>(r[0]+' '+r[1]).toLowerCase().includes(q.toLowerCase())):R;
+  if(!list.length)return `<div class="lb-empty">No matches for “${q}”.</div>`;
+  return list.map(r=>`<div class="lb-row" onclick="closeSearchBox();toast('Open: ${r[0].replace(/'/g,"")}')"><span class="lb-ic">${svg(ICONS.List,16)}</span><span class="lb-rc"><span class="lb-t">${r[0]}</span><span class="lb-k">${r[1]}</span></span><span class="lb-go">${svg('<path d="M7 17 17 7M9 7h8v8"/>',14)}</span></div>`).join('');}
+function openSearchBox(){const lb=document.getElementById('searchBox'),sc=document.getElementById('lbScrim');if(!lb)return;closePops();
+  lb.innerHTML=`<div class="lb-input">${svg('<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',20)}<input id="lbInput" placeholder="Search leads, projects, tasks, people…" oninput="document.getElementById('lbResults').innerHTML=searchResults(this.value)"><kbd>esc</kbd></div>
+    <div class="lb-label">Recent</div><div class="lb-results" id="lbResults">${searchResults('')}</div>`;
+  sc.classList.add('show');lb.classList.add('show');setTimeout(()=>{const i=document.getElementById('lbInput');if(i)i.focus();},40);}
+function closeSearchBox(){document.getElementById('lbScrim')?.classList.remove('show');document.getElementById('searchBox')?.classList.remove('show');}
+document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&(e.key==='k'||e.key==='K')){e.preventDefault();openSearchBox();}else if(e.key==='Escape'&&document.getElementById('searchBox')?.classList.contains('show')){closeSearchBox();}});
+/* ---- shell layout switcher: Connected | Carded | Merged (relocates the OJO tabs) ---- */
+let shellMode='connected';
+function setShell(mode){shellMode=mode;const app=document.querySelector('.app');if(app)app.className='app shell-'+mode;document.body.dataset.shell=mode;
+  const tabs=document.getElementById('panelTabs');const home=mode==='merged'?document.getElementById('flyTabHome'):document.getElementById('tbOjo');
+  if(tabs&&home&&tabs.parentElement!==home)home.appendChild(tabs);
+  try{localStorage.setItem('ojo-shell',mode);}catch(e){}
+  renderPanelTabs();
+  document.querySelectorAll('.shellseg button').forEach(b=>b.classList.toggle('on',b.dataset.s===mode));}
+/* top-bar: Notion-style workspace switcher (OJO style) anchored to the profile */
+function toggleWsSwitcher(e){e.stopPropagation();const m=document.getElementById('wsSwitcher');if(m.classList.contains('show')){closePops();return;}m.innerHTML=accountBody();const r=e.currentTarget.getBoundingClientRect();m.style.top=(r.bottom+8)+'px';m.style.left=r.left+'px';openPop('wsSwitcher');}
+/* top-bar: quick-add menu (tasks now, more later) */
+function toggleAddMenu(e){e.stopPropagation();const m=document.getElementById('addMenu');if(m.classList.contains('show')){closePops();return;}
+  const items=[['New task','M9 11l3 3 8-8M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'],['New lead','M3 17 9 11l4 3 7-8M21 6v5M16 6h5'],['New project','M3 4h18v16H3z M3 9h18 M9 4v16'],['New contact','M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0'],['New event','M3 4h18v18H3z M3 10h18 M8 2v4 M16 2v4']];
+  m.innerHTML=`<div class="h">Quick add</div>`+items.map(i=>`<button class="addmenu-item" onclick="closePops();toast('${i[0]} — demo')">${svg('<path d="'+i[1]+'"/>',17)}<span>${i[0]}</span></button>`).join('');
+  const r=e.currentTarget.getBoundingClientRect();m.style.top=(r.bottom+8)+'px';m.style.left=Math.max(12,r.right-228)+'px';openPop('addMenu');}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closePeek();});
 
 /* ============ DATA ============ */
@@ -264,10 +290,8 @@ function renderDock(){
 function renderPanelTabs(){
   const el=document.getElementById('panelTabs'); if(!el)return;
   const g=k=>DOCK_CELLS.filter(c=>c.group===k);
-  el.innerHTML =
-    g('comm').map(panelTabBtn).join('') +
-    `<div class="dock-spacer"></div>` +
-    g('assist').map(panelTabBtn).join('');
+  const genie=g('assist').map(panelTabBtn).join(''), comm=g('comm').map(panelTabBtn).join(''), sp=`<div class="dock-spacer"></div>`;
+  el.innerHTML = shellMode==='connected' ? (genie+sp+comm) : (comm+sp+genie);
 }
 /* Contextual awareness: Genie + the comms group read whatever record/module is open. */
 function ctxName(){
@@ -754,7 +778,7 @@ function docAddOpen(e,pos){e.stopPropagation();docAddPos=pos;const m=document.ge
 function docPick(t){const nb=t==='list'?{t:'list',items:['New item']}:t==='metric'?{t:'metric',label:'Amount',value:'₹0'}:t==='divider'?{t:'divider'}:{t,x:t==='text'?'Type something…':'New heading'};curDoc().blocks[curDoc().cur].splice(docAddPos,0,nb);closePops();renderRec();}
 
 /* ============ GLOBAL RIGHT UTILITY RAIL (Genie / Notifications / Messages / Search / Account) ============ */
-let section=null, flyW=344;
+let section=null, flyW=400;
 function flySize(px){const f=document.getElementById('flyout');if(!f)return;f.style.flexBasis=px+'px';f.style.width=px+'px';}
 /* drag-to-resize the push panel */
 (function(){let rz=false;
@@ -811,8 +835,15 @@ function closeApps(){document.getElementById('appsSheet')?.classList.remove('sho
 function mApp(route){closeApps();mbarActive('apps');go(route);}
 function mCloseAll(){closeApps();closeSection();closeCommSheet();if(typeof closePeek==='function')closePeek();const s=document.getElementById('mscrim');if(s)s.classList.remove('show');}
 
+function homeGenieStats(){if(typeof homeStats!=='function')return '';const st=homeStats();const pct=st.total?Math.round(st.done/st.total*100):0;
+  return `<div class="g-stats"><div class="g-stat-h">Today at OJO</div><div class="g-stat-row">
+    <div class="g-stat"><span class="v">${st.done}</span><span class="l">Done</span></div>
+    <div class="g-stat"><span class="v">${st.active}</span><span class="l">To do</span></div>
+    <div class="g-stat ${st.over?'over':''}"><span class="v">${st.over}</span><span class="l">Overdue</span></div>
+    <div class="g-stat"><span class="v">${svg(HICON.flame,13)} ${typeof streak!=='undefined'?streak:0}</span><span class="l">Streak</span></div></div>
+   <div class="g-stat-bar"><div class="g-stat-fill" style="width:${pct}%"></div></div></div>`;}
 function genieBody(){const ctx=genieContext();const ask=s=>s.replace(/'/g,"\\'");
-  return `<div class="gwrap"><div class="gmsgs" id="gmsgs"><div class="genie-hi"><img class="genie-logo" src="assets/ojo-logo.png" alt="OJO Genie">Hello, Vinoth<div class="gctx">${ctx.who?`Ask me anything about <b>${ctx.who}</b>`:'How can I help you today?'}</div></div></div>
+  return `<div class="gwrap"><div class="gmsgs" id="gmsgs">${curRoute==='home'?homeGenieStats():''}<div class="genie-hi"><img class="genie-logo" src="assets/ojo-logo.png" alt="OJO Genie">Hello, Vinoth<div class="gctx">${ctx.who?`Ask me anything about <b>${ctx.who}</b>`:'How can I help you today?'}</div></div></div>
   <div class="gfoot"><div class="gsugg">
     ${ctx.suggestions.map(s=>`<button onclick="genieAsk('${ask(s)}')">${s}</button>`).join('')}</div>
    <div class="gask"><input id="gIn" placeholder="Ask Ojo anything..." onkeydown="if(event.key==='Enter')genieAsk(this.value)">
@@ -826,7 +857,7 @@ function genieAsk(q){if(!q||!q.trim())return;const m=document.getElementById('gm
 
 function nIcon(t){const m={bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>',people:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6"/>',check:'<circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',brief:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',person:'<circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/>'};return svg(m[t]||m.bell,17);}
 function notifBody(){const N=[['bell','New Message','You have a new message','8 hours ago',1],['people','Employee Updated','Employee information has been updated','14 hours ago',1],['check','Comment Resolved','Vinotham resolved a comment on BRO: “i will…”','1 day ago',1],['clock','Checked In','You checked in at 10:42 AM','4 days ago',0],['brief','Project Created Successfully','Your project is ready for review.','5 days ago',0],['brief','Project Generation In Progress','Generating project: 35% complete','5 days ago',0],['doc','Requirements Generated','Requirements have been generated for a lead','5 days ago',0],['person','Lead Updated','Lead has been updated','5 days ago',0]];
-  return N.map(n=>`<div class="nrow ${n[4]?'unread':''}" onclick="toast('Open: ${n[0]}')"><div class="nic">${nIcon(n[0])}</div><div style="flex:1"><div class="nt">${n[1]}</div><div class="ns">${n[2]}</div><div class="nm">${n[3]}</div></div>${n[4]?'<span class="ndot"></span>':''}</div>`).join('')+`<div class="nfoot">Showing ${N.length} of ${N.length}</div>`;}
+  return `<div class="notif-ai">${svg(SPARK,12)} OJO can turn any update into a task — just hit <b>+ Task</b>.</div>`+N.map(n=>`<div class="nrow ${n[4]?'unread':''}"><div class="nic">${nIcon(n[0])}</div><div style="flex:1;min-width:0"><div class="nt">${n[1]}</div><div class="ns">${n[2]}</div><div class="nm">${n[3]}</div></div><button class="nrow-task" onclick="notifTask(event,'${n[1].replace(/'/g,"")}')" title="Add as task">${svg('<path d="M12 5v14M5 12h14"/>',13)} Task</button>${n[4]?'<span class="ndot"></span>':''}</div>`).join('')+`<div class="nfoot">Showing ${N.length} of ${N.length}</div>`;}
 function markAllRead(){document.querySelectorAll('#flyBody .nrow').forEach(r=>{r.classList.remove('unread');r.querySelector('.ndot')?.remove();});document.querySelector('#u-notif .ubadge')?.remove();toast('All marked read');}
 
 function msgBody(){const F=['All','Unread','DMs','Groups','Leads','Projects','Vendors','Clients'];
@@ -839,10 +870,11 @@ function searchBody(){const R=[['Life Designer','Lead · Proposal'],['Apollo —
   return `<div class="ssrch">${svg('<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',16)}<input placeholder="Search leads, projects, tasks…"></div><div class="slabel">Recent</div>${R.map(r=>`<div class="srow" onclick="toast('Open: ${r[0]}')"><div class="si">${svg(ICONS.List,15)}</div><div><div class="st">${r[0]}</div><div class="sk">${r[1]}</div></div></div>`).join('')}`;}
 
 function accountBody(){const W=[['R','#C92F3A','Reliance','13 members · Org Admin',1],['OD','#E08A1E','Ojo Dojo','24 members · Product Team',0],['LD','#2F6FED','Life Designer Pvt Ltd','22 members · Sales Admin',0],['AM','#7C53E6','Amul','8 members · Development',0]];
-  return `<div class="acctwrap"><div class="idcard"><div class="lab">Your identity</div><div class="idrow"><div class="iav">VV</div><div style="flex:1"><div class="inm">Vinoth V V <span class="rolechip">Org Admin</span></div><div class="iem">vinotham@gmail.com</div></div></div></div>
+  return `<div class="acctwrap"><div class="idcard idcard-link" onclick="closePops();go('profile')" title="Open profile"><div class="lab">Your identity</div><div class="idrow"><div class="iav">VV</div><div style="flex:1"><div class="inm">Vinoth V V <span class="rolechip">Org Admin</span></div><div class="iem">vinotham@gmail.com</div></div><span class="idcard-go">${svg('<path d="m9 18 6-6-6-6"/>',16)}</span></div></div>
    <div class="wslabel">Connected workspaces</div>${W.map(w=>`<div class="wsrow ${w[4]?'on':''}" onclick="toast('Switch to ${w[2]}')"><div class="wsi" style="background:${w[1]}">${w[0]}</div><div style="flex:1"><div class="wsn">${w[2]}</div><div class="wsm">${w[3]}</div></div>${w[4]?`<span class="wschk">${svg('<path d="M20 6 9 17l-5-5"/>',16)}</span>`:''}</div>`).join('')}
    <div class="wslabel" style="cursor:pointer" onclick="toast('Add profile')">＋ Add profile</div>
    <div class="themerow"><span class="tlab">Appearance</span><span class="seg themeseg"><button data-t="light" class="${curTheme()==='light'?'on':''}" onclick="setTheme('light')">Light</button><button data-t="dark" class="${curTheme()==='dark'?'on':''}" onclick="setTheme('dark')">Dark</button></span></div>
+   <div class="themerow"><span class="tlab">Layout</span><span class="seg shellseg"><button data-s="connected" class="${shellMode==='connected'?'on':''}" onclick="setShell('connected')">Connected</button><button data-s="carded" class="${shellMode==='carded'?'on':''}" onclick="setShell('carded')">Carded</button><button data-s="merged" class="${shellMode==='merged'?'on':''}" onclick="setShell('merged')">Merged</button></span></div>
    <div class="acctfoot"><button onclick="toast('Settings')">${svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H10a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V10a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',15)} Settings</button><button onclick="toast('Signed out')">Sign out</button></div></div>`;}
 
 /* ============ HR MODULE (cell-style database + pages) ============ */
@@ -1331,7 +1363,7 @@ const TASKS=[
 TASKS.forEach((t,i)=>{t.subs=[{t:'Gather context',done:i%2===0||t.status==='Done'},{t:'Do the focused work',done:t.status==='Done'},{t:'Review & close',done:t.status==='Done'}];t.comments=[];});
 let bonusXP=0,streak=5,focusToday=45;
 let taskModule='leads',taskScope='leads',taskContainer='modcontent';
-let tView='Board';const tViews=['Board','Table','List'];
+let tView='Cards';const tViews=['Cards','Board','List'];
 let tRec=null,tTab='Overview',tFace='info',tCollapsed=true;
 const FOCUS_TOTAL=25*60;let focusLeft=FOCUS_TOTAL,focusRunning=false,focusInt=null;
 function scoped(){return taskScope==='all'?TASKS:TASKS.filter(t=>t.src===taskScope);}
@@ -1340,21 +1372,26 @@ function level(){return Math.floor(totalXP()/100)+1;}
 function fmtMin(m){const h=Math.floor(m/60),mm=m%60;return h?`${h}h ${mm}m`:`${mm}m`;}
 METRIC_DEFS.tasksall={open:['Open tasks',()=>scoped().filter(t=>t.status!=='Done').length],doing:['In progress',()=>scoped().filter(t=>t.status==='Doing').length],review:['In review',()=>scoped().filter(t=>t.status==='Review').length],done:['Completed',()=>scoped().filter(t=>t.status==='Done').length],xp:['XP earned',()=>totalXP()+' XP'],focus:['Focus today',()=>fmtMin(focusToday)]};
 METR.tasksall=['open','doing','done','xp'];
-function openTasks(scope){hideCommDock();taskModule=scope;taskScope=scope;tView='Board';tRec=null;
+function openTasks(scope){hideCommDock();taskModule=scope;taskScope=scope;tView='Cards';tRec=null;
   if(scope==='hr'){setRail('navHR');hrPage='tasks';mountHR();return;}
   if(scope==='account'){setRail('navAccounts');acctPage='tasks';mountAccounts();return;}
   const rail={leads:'navLeads',project:'navProjects',vendor:'navVendors'}[scope]||'navLeads';setRail(rail);
   renderShell(scope,'tasks');taskContainer='modcontent';document.getElementById('modcontent').innerHTML=tasksListHTML(scope);}
 function setTaskScope(mode){taskScope=mode==='all'?'all':taskModule;document.getElementById(taskContainer).innerHTML=tasksListHTML(taskScope);}
 function tV(v){tView=v;document.getElementById(taskContainer).innerHTML=tasksListHTML(taskScope);}
-function tasksListHTML(scope){taskScope=scope;const rows=scoped();const lvl=level(),xp=totalXP(),inLvl=xp%100;
-  const modName=(SRC[taskModule]&&SRC[taskModule][0])||'module';
-  return `<div class="taskpage">`+pageHeader('Tasks','Everything that needs closing · across your modules','<path d="M9 11l3 3 8-8"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>')
-   +tHero(lvl,xp,inLvl)
-   +`<div class="viewbar" style="padding:4px 0 10px"><div class="switch2"><button class="${scope!=='all'?'on':''}" onclick="setTaskScope('mod')">This ${modName}</button><button class="${scope==='all'?'on':''}" onclick="setTaskScope('all')">All tasks</button></div><div style="margin-left:auto;display:flex;gap:8px;align-items:center">${acctTools()}<button class="abtn" style="padding:8px 16px;border-radius:999px;font-weight:700;font-size:13px;background:var(--coral);color:#fff;display:inline-flex;gap:7px;align-items:center" onclick="tFocusMode()">${svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',15)} Focus mode</button></div></div>`
-   +metricsBar('tasksall')
-   +`<div class="viewbar" style="padding:6px 0 12px"><div style="display:flex;gap:5px">${tViews.map(v=>`<button class="vtab ${v===tView?'on':''}" onclick="tV('${v}')"><span class="${v==='Table'?'star':''}">${svg(ICONS[v]||ICONS.Table,15)}</span>${v}</button>`).join('')}</div><button class="vadd" onclick="toast('Add a view')">${svg(SVS.plus,15)}</button></div>`
-   +`<div id="twork">${tView==='Board'?tBoard(rows):tView==='List'?tList(rows):tView==='Table'?tTable(rows):placeholder(tView)}</div></div>`;}
+function tasksListHTML(scope){taskScope=scope;const rows=scoped();
+  const modName=(SRC[taskModule]&&SRC[taskModule][0])||'your modules';
+  const done=rows.filter(t=>t.status==='Done').length,over=rows.filter(t=>t.status!=='Done'&&(parseInt(t.due)||0)<11).length,active=rows.length-done;
+  const quick=rows.filter(t=>t.status!=='Done'&&['15m','20m','30m'].includes(t.est)).length;
+  const work=tView==='Board'?tBoard(rows):tView==='List'?`<div class="tlist">${rows.length?rows.map(taskRow).join(''):'<div class="tp-empty"><h3>No tasks</h3></div>'}</div>`:`<div class="tgrid">${rows.length?rows.map(tcard).join(''):'<div class="tp-empty"><h3>No tasks here</h3></div>'}</div>`;
+  return `<div class="taskpage tpage2">
+    <div class="tp2-head"><div class="tp2-hl"><h1>Tasks</h1><div class="tp2-sub"><b>${active}</b> open${over?` · <span class="over">${over} overdue</span>`:''} · ${modName} <span class="cell-tag" title="A UI cell — render:'cards' · bind:'collection:Task'">${svg(SPARK,10)} cell view</span></div></div>
+      <button class="focusbtn" onclick="tFocusMode()">${svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',15)} Focus mode</button></div>
+    ${ojoStrip(`<b>${over} overdue</b> across ${modName}. OJO auto-prioritised your day — start with the ${quick} quick wins, then the High-priority items. ${aiChip('auto-sorted')}`,'planned your day')}
+    <div class="tp2-metrics">${[['',active,'Open'],['over',over,'Overdue'],['ok',done,'Done'],['',fmtMin(focusToday),'Focus today']].map(t=>`<div class="mtile sm ${t[0]}"><div class="mt-v">${t[1]}</div><div class="mt-l">${t[2]}</div></div>`).join('')}</div>
+    <div class="tp2-controls"><span class="seg viewseg">${tViews.map(v=>`<button class="${v===tView?'on':''}" onclick="tV('${v}')">${v}</button>`).join('')}</span><span class="tp-sp"></span><button class="ctrl-chip" onclick="homeQuickOpenAt('${taskContainer}')">${svg('<path d="M12 5v14M5 12h14"/>',13)} Add task</button></div>
+    <div id="twork">${work}</div></div>`;}
+function homeQuickOpenAt(){toast('Quick add (demo) — use Home for the full composer');}
 function tHero(lvl,xp,inLvl){return `<div class="ghero"><div class="g-level"><div class="g-ring">${ring(inLvl,'var(--coral)',96)}<div class="g-lv">L${lvl}</div></div><div><div class="g-xp">${xp} XP</div><div class="g-next">${100-inLvl} XP to Level ${lvl+1}</div><div class="g-bar"><div style="width:${inLvl}%"></div></div></div></div>
    <div class="g-tiles"><div class="g-tile"><div class="gt-v">🔥 ${streak}</div><div class="gt-l">Day streak</div></div><div class="g-tile"><div class="gt-v">${fmtMin(focusToday)}</div><div class="gt-l">Focus today</div></div><div class="g-tile"><div class="gt-v">${TASKS.filter(t=>t.status==='Done').length}</div><div class="gt-l">Closed this week</div></div></div></div>`;}
 /* ---- listing views ---- */
@@ -1369,8 +1406,9 @@ function tCardOver(e){e.preventDefault();e.currentTarget.classList.add('dragover
 function tCardLeave(e){e.currentTarget.classList.remove('dragover');}
 function tCardDrop(e,s){e.preventDefault();e.currentTarget.classList.remove('dragover');const t=TASKS.find(x=>x.id===tDragId);if(t&&t.status!==s){const was=t.status;t.status=s;if(s==='Done'&&was!=='Done')toast('🎉 Task done · +'+t.pts+' XP');else toast('Moved to '+s);}tDragId=null;document.getElementById(taskContainer).innerHTML=tasksListHTML(taskScope);}
 /* ---- detail (lead-overview style) ---- */
-function openTaskRec(id){focusPause();focusLeft=FOCUS_TOTAL;tRec=TASKS.find(t=>t.id===id);if(!tRec)return;tTab='Overview';tFace='info';tCollapsed=true;mountTaskDetail();}
-function taskBack(){focusPause();openTasks(taskModule);}
+let taskFrom='module';
+function openTaskRec(id,from){focusPause();focusLeft=FOCUS_TOTAL;tRec=TASKS.find(t=>t.id===id);if(!tRec)return;taskFrom=from||'module';tTab='Overview';tFace='info';tCollapsed=true;mountTaskDetail();}
+function taskBack(){focusPause();if(taskFrom==='home'){go('home');}else{openTasks(taskModule);}}
 function tFocusMode(){const list=scoped().filter(t=>t.status!=='Done');if(!list.length){toast('All caught up! 🎉');return;}const ord={High:0,Medium:1,Low:2};list.sort((a,b)=>ord[a.pri]-ord[b.pri]);openTaskRec(list[0].id);setTimeout(focusStart,80);toast('Focus mode · '+list[0].title);}
 function mountTaskDetail(){const t=tRec;
   document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dside"><button class="dctl x" onclick="taskBack()" title="Close">${svg(SVS.x,19)}</button><div class="dnav"><button class="dctl" onclick="tNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="tNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div><div class="dbox ${tCollapsed?'collapsed':''}" id="tbox"><div class="dmain">
@@ -1450,26 +1488,122 @@ const ACTS=[
  {who:'ravi',txt:'commented on <b>layman brothers</b>',src:'Leads',c:'#E08A1E',tm:'2 days ago'},
  {who:'priya',txt:'created a new lead <b>Orbit Media</b>',src:'Leads',c:'#E08A1E',tm:'2 days ago'}];
 function homeFocus(){taskScope='all';taskModule='all';tFocusMode();}
+/* ===== Home = a compact, day-driven task feed (List · Board · Activity) ===== */
+let homeView='list', homeSelDay=11, homeWeekStart=8, homeQuick=false;
+const WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function wdOf(d){return new Date(2026,5,d).getDay();}
+const HICON={flame:'<path d="M12 2.5c2.5 2.6 3.5 4.7 3.5 7.2a3.5 3.5 0 0 1-7 0c0-1 .3-1.8.8-2.6.3 1.7 2 1.7 2 .2 0-1.3-.7-2.3.7-4.8z M8 13.5a4 4 0 1 0 8 0c0-.8-.2-1.5-.5-2.1.2 3.4-4 3.4-4 .6-1.9 1-3.5 2.1-3.5 1.5z"/>',cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',play:'<path d="M6 4l14 8-14 8z" fill="currentColor" stroke="none"/>',chat:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',link:'<path d="M10 13a4 4 0 0 0 6 0l3-3a4 4 0 1 0-6-6l-1 1"/><path d="M14 11a4 4 0 0 0-6 0l-3 3a4 4 0 1 0 6 6l1-1"/>',check:'<path d="M20 6 9 17l-5-5"/>',plus:'<path d="M12 5v14M5 12h14"/>'};
+function homeDay(t){return parseInt(t.due)||0;}
+function homeDayTasks(){const ord={High:0,Medium:1,Low:2};const active=TASKS.filter(t=>t.status!=='Done');
+  let list=homeSelDay===11?active.filter(t=>homeDay(t)<=11):active.filter(t=>homeDay(t)===homeSelDay);
+  return list.sort((x,y)=>{const ox=homeDay(x)<11?0:1,oy=homeDay(y)<11?0:1;return ox-oy||ord[x.pri]-ord[y.pri]||y.pts-x.pts;});}
+function homeDayStrip(){let days='';for(let i=0;i<7;i++){const d=homeWeekStart+i;const sel=d===homeSelDay,today=d===11;const n=TASKS.filter(t=>t.status!=='Done'&&homeDay(t)===d).length;
+   days+=`<button class="ds-day ${sel?'on':''} ${today?'today':''}" onclick="homeSelectDay(${d})"><span class="ds-wd">${WD[wdOf(d)][0]}</span><span class="ds-n">${d}</span>${n?'<span class="ds-dot"></span>':''}</button>`;}
+  return `<div class="daynav"><button class="dn-arrow" onclick="homeWeek(-7)">${svg('<path d="M15 18l-6-6 6-6"/>',16)}</button><div class="ds-strip">${days}</div><button class="dn-arrow" onclick="homeWeek(7)">${svg('<path d="M9 6l6 6-6 6"/>',16)}</button><button class="dn-today ${homeSelDay===11?'cur':''}" onclick="homeToday()">Today</button></div>`;}
+function homeStats(){const done=TASKS.filter(t=>t.status==='Done').length;const over=TASKS.filter(t=>t.status!=='Done'&&homeDay(t)<11).length;return {done,total:TASKS.length,active:TASKS.length-done,over};}
+function commentsThread(t){return `${t.comments.map(c=>`<div class="tc"><span class="tc-av">VV</span><div class="tc-b"><div class="tc-h"><b>Vinoth V V</b><span class="tc-tm">just now</span></div><div class="tc-x">${c}</div></div></div>`).join('')}
+  <div class="tc-add"><span class="tc-av">VV</span><input placeholder="Add a comment or note…" onkeydown="if(event.key==='Enter')homeAddComment('${t.id}',this)"></div>`;}
+const ARROW='<path d="M7 17 17 7M9 7h8v8"/>';
+function taskRow(t){const sm=SRC[t.src];const over=homeDay(t)<11&&t.status!=='Done';const done=t.status==='Done';const ds=t.subs.filter(s=>s.done).length;
+  return `<div class="titem ${done?'done':''} ${t._open?'open':''}" id="ti-${t.id}">
+   <div class="trow">
+    <button class="tr-ck" onclick="homeComplete('${t.id}')" title="${done?'Undo':'Complete'}">${svg(HICON.check,13)}</button>
+    <div class="tr-mid" onclick="homeExpand('${t.id}')">
+     <div class="tr-t">${t.title}</div>
+     <div class="tr-m"><span class="tr-src" style="--c:${sm[1]}"><span class="d"></span>${sm[0]}</span><span class="tr-pri p-${t.pri[0]}">${t.pri}</span><span class="tr-due ${over?'over':''}">${over?'Overdue':t.due} · ${t.est}</span>${t.subs.length?`<span class="tr-mini">${svg(HICON.check,10)} ${ds}/${t.subs.length}</span>`:''}${t.comments.length?`<span class="tr-mini">${svg(HICON.chat,10)} ${t.comments.length}</span>`:''}</div>
+    </div>
+    <button class="tr-open" onclick="openTaskRec('${t.id}','${curRoute==="home"?"home":"module"}')" title="Open task">${svg(ARROW,15)}</button>
+   </div>
+   <div class="tr-exp" ${t._open?'':'hidden'}>
+    <div class="tr-ctx2">${svg(HICON.link,12)} ${t.link} · ${PEOPLE[t.asg][2]}</div>
+    ${t.subs.length?`<div class="tp-subs">${t.subs.map((s,i)=>`<button class="tp-sub ${s.done?'done':''}" onclick="homeSub('${t.id}',${i})"><span class="ck">${svg(HICON.check,10)}</span>${s.t}</button>`).join('')}</div>`:''}
+    <div class="tr-actbar"><button class="tp-act" onclick="homeSchedule(event,'${t.id}')">${svg(HICON.cal,14)} Schedule</button><button class="tp-act" onclick="openTaskRec('${t.id}','${curRoute==="home"?"home":"module"}')">${svg(ARROW,14)} Open</button><button class="tp-act" onclick="homeCommentFocus('${t.id}')">${svg(HICON.chat,14)} Comment</button><span class="tp-sp"></span><span class="tp-pts">+${t.pts} XP</span></div>
+    <div class="tp-thread">${commentsThread(t)}</div>
+   </div>
+  </div>`;}
+function homeBoard(){return `<div class="tboard">${TSTAGES.map(c=>{const items=TASKS.filter(t=>t.status===c);return `<div class="tbcol"><div class="tbc-h"><span class="tbc-dot" style="background:${TSTC[c]}"></span>${c}<span class="tbc-n">${items.length}</span></div><div class="tbc-body">${items.map(t=>{const sm=SRC[t.src];const over=homeDay(t)<11&&t.status!=='Done';return `<div class="tbcard" onclick="openTaskRec('${t.id}','${curRoute==="home"?"home":"module"}')"><div class="tbc-src" style="--c:${sm[1]}"><span class="d"></span>${sm[0]}</div><div class="tbc-t">${t.title}</div><div class="tbc-m"><span class="tr-pri p-${t.pri[0]}">${t.pri}</span><span class="${over?'over':''}">${over?'Overdue':t.due}</span></div></div>`;}).join('')||'<div class="tbc-empty">No tasks</div>'}</div></div>`;}).join('')}</div>`;}
+function homeSuggest(){const q=TASKS.filter(t=>t.status!=='Done'&&['15m','20m','30m'].includes(t.est));if(!q.length)return '';
+  return `<div class="ojo-sugg"><span class="os-ic"><img class="ojo-mini" src="assets/ojo-logo.png" alt="OJO"></span><div class="os-b"><b>${q.length} quick wins under 30 min.</b> OJO suggests clearing them in one focus block to cut your overdue.</div><button class="os-cta" onclick="tFocusMode()">Start</button></div>`;}
+function homeQuickHTML(){if(!homeQuick)return `<button class="qadd-trigger" onclick="homeQuickOpen()">${svg(HICON.plus,15)} Add a task</button>`;
+  const chip=(ic,lbl)=>`<button class="qa-chip">${svg(ic,13)} ${lbl}</button>`;
+  return `<div class="qadd"><div class="qa-top"><span class="qa-cell" title="Each task is a cell">cell</span><input id="qaddInput" class="qa-title" placeholder="What needs doing?" onkeydown="if(event.key==='Enter')homeAddTask(this.value)"></div>
+   <div class="qa-chips">${chip(HICON.cal,'Today')}${chip('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>','--:--')}${chip('<path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/>','channel')}${chip('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/>','Effort')}${chip('<path d="M5 21V4h11l-1 4h6v8h-9l-1-4H5"/>','Priority')}<span class="qa-sp"></span><button class="qa-cancel" onclick="homeQuickClose()">Cancel</button><button class="qa-add" onclick="homeAddTask(document.getElementById('qaddInput').value)">Add task</button></div>
+  </div>`;}
+function activityFeed(){return `<div class="act-feed">${ACTS.map(a=>{const p=PEOPLE[a.who];return `<div class="act2"><span class="act2-av" style="background:${p[1]}">${p[0]}</span><div class="act2-b"><div class="act2-x">${p[2]} ${a.txt}</div><div class="act2-tm"><span class="act2-src" style="--c:${a.c}">${a.src}</span> · ${a.tm}</div></div></div>`;}).join('')}</div>`;}
+function tiRerender(id){const t=TASKS.find(x=>x.id===id);const el=document.getElementById('ti-'+id);if(t&&el)el.outerHTML=taskRow(t);}
+function homeSub(id,i){const t=TASKS.find(x=>x.id===id);if(!t)return;t.subs[i].done=!t.subs[i].done;tiRerender(id);}
+function homeExpand(id){const t=TASKS.find(x=>x.id===id);if(!t)return;t._open=!t._open;tiRerender(id);}
+function homeCommentFocus(id){const t=TASKS.find(x=>x.id===id);if(!t)return;t._open=true;tiRerender(id);const i=document.querySelector('#ti-'+id+' .tc-add input');if(i)i.focus();}
+function homeAddComment(id,el){const t=TASKS.find(x=>x.id===id);if(!t||!el.value.trim())return;t.comments.push(el.value.trim());t._open=true;tiRerender(id);}
+function homeComplete(id){const t=TASKS.find(x=>x.id===id);if(!t)return;const was=t.status==='Done';t.status=was?'Todo':'Done';if(!was){t.subs.forEach(s=>s.done=true);streak++;bonusXP+=t.pts;toast('✓ '+t.title+'  ·  +'+t.pts+' XP');}else{streak=Math.max(0,streak-1);}mountHome();}
+/* ---- AI-native helpers: chip + OJO insight strip (cell-aware) ---- */
+function aiChip(t){return `<span class="ai-chip">${svg(SPARK,11)} ${t}</span>`;}
+function ojoStrip(inner,noun){return `<div class="ojo-strip"><span class="ojs-mark"><img class="ojo-mini" src="assets/ojo-logo.png" alt="OJO"></span><div class="ojs-b"><span class="ojs-h">OJO ${noun||'is on it'}<span class="ojs-live">live</span></span><span class="ojs-x">${inner}</span></div></div>`;}
+/* ---- Capability cell: Schedule (Sunsama-style, OJO-suggested) ---- */
+const ICAL='<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',IBACK='<path d="M4 6h16M4 12h16M4 18h10"/>';
+const SCHEDOPTS=[['Today','clears an overdue'],['Tomorrow',''],['This weekend',''],['Next week',''],['Backlog','']];
+let schedTarget=null;
+function homeSchedule(e,id){openSched(e,id);}
+function openSched(e,id){if(e)e.stopPropagation();schedTarget=id;const m=document.getElementById('schedPop');if(!m)return;
+  m.innerHTML=`<div class="sched-h">${svg(SPARK,12)} Reschedule — OJO suggests the best slot</div>
+   ${SCHEDOPTS.map(o=>`<button class="sched-opt ${o[1]?'sug':''}" onclick="doSched('${o[0]}')">${svg(o[0]==='Backlog'?IBACK:ICAL,15)}<span class="so-l">${o[0]}</span>${o[1]?`<span class="so-ai">${svg(SPARK,10)} OJO · ${o[1]}</span>`:''}</button>`).join('')}
+   <div class="sched-cal">${schedMiniCal()}</div>`;
+  const r=e&&e.currentTarget?e.currentTarget.getBoundingClientRect():{bottom:120,left:400};
+  m.style.top=Math.min(r.bottom+6,window.innerHeight-380)+'px';m.style.left=Math.max(12,Math.min(r.left,window.innerWidth-292))+'px';openPop('schedPop');}
+function schedMiniCal(){const first=wdOf(1);let c='';for(let i=0;i<first;i++)c+='<span class="sc-d e"></span>';for(let d=1;d<=30;d++)c+=`<button class="sc-d ${d===11?'today':''}" onclick="doSchedDay(${d})">${d}</button>`;
+  return `<div class="sc-cap">Or pick a day · June 2026</div><div class="sc-grid">${['S','M','T','W','T','F','S'].map(x=>`<span class="sc-wd">${x}</span>`).join('')}${c}</div>`;}
+function schedRefresh(){if(curRoute==='home')mountHome();else if(document.getElementById('twork'))document.getElementById(taskContainer).innerHTML=tasksListHTML(taskScope);}
+function doSched(label){closePops();toast('Scheduled · '+label);schedRefresh();}
+function doSchedDay(d){closePops();const t=TASKS.find(x=>x.id===schedTarget);if(t)t.due=d+' Jun';toast('Scheduled · Jun '+d);schedRefresh();}
+/* ---- Capability cell: Convert notification → task ---- */
+function notifTask(e,title){if(e)e.stopPropagation();const id='TKN'+(TASKS.length+1);TASKS.unshift({id,title:title,src:'project',link:'From notification',asg:'priya',status:'Todo',pri:'Medium',due:'11 Jun',est:'30m',pts:15,focusMin:0,subs:[{t:'Review the update',done:false},{t:'Take action',done:false}],comments:[]});toast('Added as task — OJO scheduling…');openSched(e,id);}
+function homeSetView(v){homeView=v;mountHome();}
+function homeSelectDay(d){homeSelDay=d;if(homeView==='activity')homeView='list';mountHome();}
+function homeWeek(delta){homeWeekStart+=delta;mountHome();}
+function homeToday(){homeWeekStart=8;homeSelDay=11;mountHome();}
+function homeQuickOpen(){homeQuick=true;mountHome();setTimeout(()=>{const i=document.getElementById('qaddInput');if(i)i.focus();},30);}
+function homeQuickClose(){homeQuick=false;mountHome();}
+function homeAddTask(title){if(!title||!title.trim())return;const id='TKX'+(TASKS.length+1);TASKS.unshift({id,title:title.trim(),src:'project',link:'Inbox',asg:'priya',status:'Todo',pri:'Medium',due:homeSelDay+' Jun',est:'30m',pts:15,focusMin:0,subs:[{t:'Define the work',done:false},{t:'Do it',done:false}],comments:[]});homeQuick=false;mountHome();toast('Task added to '+(homeSelDay===11?'Today':homeSelDay+' Jun'));}
+function homeMetrics(){const st=homeStats();const pct=st.total?Math.round(st.done/st.total*100):0;const fmin=TASKS.reduce((a,t)=>a+(t.focusMin||0),0);
+  const tiles=[['over',st.over,'Overdue','need attention'],['',st.active,'To do','on your plate'],['ok',st.done,'Done today','+'+bonusXP+' XP'],['',fmin+'m','Focused','today']];
+  return `<div class="hmetrics">${tiles.map(t=>`<div class="mtile ${t[0]}"><div class="mt-v">${t[1]}</div><div class="mt-l">${t[2]}</div><div class="mt-s">${t[3]}</div></div>`).join('')}
+   <div class="mtile ring"><div class="mt-ring">${ring(pct,pct>=66?'var(--ok)':pct>=33?'var(--warn)':'var(--coral)',64)}<span class="mt-pct">${pct}%</span></div><div class="mt-l" style="margin-top:6px">Day progress</div></div></div>`;}
+function tcard(t){const sm=SRC[t.src];const p=PEOPLE[t.asg];const over=homeDay(t)<11&&t.status!=='Done';const done=t.status==='Done';
+  return `<article class="tcard ${done?'done':''}" id="tc-${t.id}">
+   <div class="tcd-top"><button class="tcd-ck" onclick="homeComplete('${t.id}')" title="${done?'Undo':'Complete'}">${svg(HICON.check,14)}</button><span class="tr-src" style="--c:${sm[1]}"><span class="d"></span>${sm[0]}</span><span class="tr-pri p-${t.pri[0]}">${t.pri}</span><span class="tp-sp"></span><span class="tr-due ${over?'over':''}">${over?'Overdue':t.due}${t.est?' · '+t.est:''}</span></div>
+   <h3 class="tcd-title" onclick="openTaskRec('${t.id}','${curRoute==="home"?"home":"module"}')">${t.title}</h3>
+   <div class="tcd-ctx"><span class="tp-link">${svg(HICON.link,12)} ${t.link}</span><span class="tp-asg">${av(t.asg)}<span>${p[2]}</span></span></div>
+   ${t.subs.length?`<div class="tp-subs">${t.subs.map((s,i)=>`<button class="tp-sub ${s.done?'done':''}" onclick="homeSub2('${t.id}',${i})"><span class="ck">${svg(HICON.check,10)}</span>${s.t}</button>`).join('')}</div>`:''}
+   <div class="tcd-bar"><button class="tp-act" onclick="homeSchedule(event,'${t.id}')">${svg(HICON.cal,15)} Schedule</button><button class="tp-act" onclick="openTaskRec('${t.id}','${curRoute==="home"?"home":"module"}')">${svg(ARROW,15)} Open</button><span class="tp-sp"></span><span class="tp-pts">+${t.pts} XP</span></div>
+  </article>`;}
+function homeSub2(id,i){const t=TASKS.find(x=>x.id===id);if(!t)return;t.subs[i].done=!t.subs[i].done;const el=document.getElementById('tc-'+id);if(el)el.outerHTML=tcard(t);}
+let homeActCollapsed=true;
+function homeToggleAct(){homeActCollapsed=!homeActCollapsed;const b=document.getElementById('homebox');if(b)b.classList.toggle('collapsed',homeActCollapsed);const t=document.getElementById('homActTxt');if(t)t.textContent=homeActCollapsed?'Activity':'Hide activity';const btn=document.getElementById('homActBtn');if(btn)btn.classList.toggle('on',!homeActCollapsed);}
 function mountHome(){setRail('navHome');
   const h=new Date().getHours(),greet=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
   const dstr=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-  const ord={High:0,Medium:1,Low:2};
-  const focus=[...TASKS].filter(t=>t.status!=='Done').sort((a,b)=>ord[a.pri]-ord[b.pri]||b.pts-a.pts).slice(0,4);
-  const topleads=[...leads].filter(l=>!['Won','Lost'].includes(l.st)).sort((a,b)=>b.val-a.val).slice(0,4);
-  const projs=PROJECTS.slice(0,4);
-  const sec=(title,more,onclick,rows)=>`<div class="home-sec"><div class="sec-h"><h2>${title}</h2>${more?`<span class="more" onclick="${onclick}">${more}</span>`:''}</div>${rows}</div>`;
-  const focusRows=focus.map(t=>{const sm=SRC[t.src];return `<div class="lrow2" onclick="openTaskRec('${t.id}')"><span class="dotc" style="background:${PR[t.pri]}"></span><span class="nm">${t.title}</span><span class="co">${sm[0]} · ${t.est}</span><span class="tpts" style="margin-left:auto">★ ${t.pts}</span>${av(t.asg)}</div>`;}).join('');
-  const projRows=projs.map(p=>`<div class="lrow2" onclick="${p.open?"go('project')":"toast('Demo: only Apollo is wired')"}"><span class="hp-ic" style="background:${p.color};width:26px;height:26px;font-size:10px;border-radius:7px">${p.ic}</span><span class="nm">${p.name}</span><span class="co">${p.done}/${p.total} tasks</span><span style="margin-left:auto;font-weight:700;color:var(--navy);font-size:13px">${p.pct}%</span></div>`).join('');
-  const leadRows=topleads.map(l=>`<div class="lrow2" onclick="openDetail('lead','${l.id}')">${av(l.asg)}<span class="nm">${l.co}</span><span class="co">${l.st}</span><span class="ldval" style="margin-left:auto">${fmt(l.val)}</span></div>`).join('');
-  const actRows=ACTS.slice(0,5).map(a=>{const p=PEOPLE[a.who];return `<div class="act"><span class="actav" style="background:${p[1]}">${p[0]}</span><div><div class="txt">${p[2]} ${a.txt}</div><div class="tm"><span class="src" style="color:${a.c}">${a.src}</span> · ${a.tm}</div></div></div>`;}).join('');
-  document.getElementById('screen').innerHTML=`<div class="homescroll"><div class="homecard">
-   <div style="margin-bottom:22px"><h1>${greet}, Vinoth</h1><div class="sub" style="font-size:14px;color:var(--faint);margin-top:5px">${dstr} · here's your day at OJO</div>
-     <div class="home-search" onclick="openSection('search')">${svg('<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',18)}<span>Search leads, projects, tasks, people…</span><kbd>⌘K</kbd></div></div>
-   ${sec('Focus today','All tasks ›',"openTasks('all')",focusRows)}
-   ${sec('Your projects','View all ›',"go('projectsDash')",projRows)}
-   ${sec('Active leads','View all ›',"go('leads')",leadRows)}
-  </div>
-  <aside class="homeside"><div class="side-h">Recent activity <span class="more" onclick="toast('All activity')">View all</span></div>${actRows}</aside></div>`;}
+  const st=homeStats();const views=[['list','List'],['board','Board']];
+  const dayLabel=homeSelDay===11?'today':WD[wdOf(homeSelDay)]+', Jun '+homeSelDay;
+  if(homeView==='activity')homeView='list';
+  const list=homeView==='board'?null:homeDayTasks();
+  const body=homeView==='board'?homeBoard():(list.length?`<div class="tgrid">${list.map(tcard).join('')}</div>`:`<div class="tp-empty"><div class="tp-empty-ic">${svg(HICON.check,26)}</div><h3>Nothing on ${dayLabel}</h3><p>You're all clear here. Add a task or jump to another day.</p></div>`);
+  document.getElementById('screen').innerHTML=`<div class="homebox ${homeActCollapsed?'collapsed':''}" id="homebox">
+    <div class="dmain hfeed"><div class="hfeed-scroll">
+      <header class="hero"><div class="hero-l"><h1>${greet}, Vinoth.</h1><p class="hero-sub">${st.over?`<b class="over">${st.over} overdue</b> · `:''}${st.active} on your plate · ${streak}-day streak · ${dstr}</p></div>
+        <button class="paneltoggle hero-act" id="homActBtn" onclick="homeToggleAct()"><span id="homActTxt">${homeActCollapsed?'Activity':'Hide activity'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></header>
+      ${homeMetrics()}
+      <div class="hcal">${homeDayStrip()}</div>
+      <div class="feed-controls2"><h2 class="fc-h">${homeSelDay===11?"Today's tasks":WD[wdOf(homeSelDay)]+', Jun '+homeSelDay}</h2><span class="tp-sp"></span><span class="seg viewseg">${views.map(([k,l])=>`<button class="${homeView===k?'on':''}" onclick="homeSetView('${k}')">${l}</button>`).join('')}</span></div>
+      ${homeView==='list'?homeSuggest():''}
+      ${homeView==='list'?homeQuickHTML():''}
+      <div class="feed-list" id="feedList">${body}</div>
+    </div></div>
+    <aside class="dpanel hact-panel">
+      <div class="dpanel-head"><span class="nm">Recent activity</span><button class="ed" onclick="toast('All activity')">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button></div>
+      <div class="dpanel-body">${activityFeed()}</div>
+    </aside>
+  </div>`;
+  syncGenie();}
 
 /* ===== Email tab + expandable right drawer (shared across all module panels) ===== */
 const EMAILS=[
@@ -1540,7 +1674,8 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&xpShown())xpClose()
 
 try{if(localStorage.getItem('ojo-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}
 try{recVariant=localStorage.getItem('ojo-rec-variant')||'A';}catch(e){}
-renderPanelTabs();
+let _shell='carded';try{_shell=localStorage.getItem('ojo-shell')||'carded';}catch(e){}
+setShell(_shell);
 go('home');
 /* Ojo Genie is the prominent, persistent anchor of the dock — open by default on
    desktop, contextual to the current screen, and reachable in one click anywhere. */

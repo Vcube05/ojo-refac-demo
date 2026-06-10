@@ -13,6 +13,21 @@
 </head>
 <body>
 <div class="app">
+  <!-- Top bar: profile (human) · search · quick-add · notifications · OJO tabs (AI) -->
+  <header class="topbar">
+    <div class="tb-left">
+      <button class="ws-switch" id="tbWs" onclick="toggleWsSwitcher(event)" title="Switch workspace"><span class="ws-av">R</span><span class="ws-name">Reliance</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"/></svg></button>
+      <button class="tb-icon tb-add" id="tbAdd" onclick="toggleAddMenu(event)" title="Quick add"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg></button>
+    </div>
+    <div class="tb-center">
+      <div class="tb-search" onclick="openSearchBox()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><span>Search leads, projects, tasks, people…</span><kbd>⌘K</kbd></div>
+    </div>
+    <div class="tb-actions">
+      <button class="tb-icon tb-notif" onclick="openSection('notif')" title="Notifications"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="tb-badge">3</span></button>
+    </div>
+    <div class="tb-ojo" id="tbOjo"><div class="paneltabs" id="panelTabs"></div></div>
+  </header>
+  <div class="appbody">
   <aside class="rail">
     <a class="rnav" id="navHome" onclick="go('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11 12 3l9 8"/><path d="M5 9.5V20h14V9.5"/></svg><span class="lb">Home</span></a>
     <a class="rnav" id="navContacts" onclick="toast('Contacts — demo')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6"/></svg><span class="lb">Contacts</span></a>
@@ -23,7 +38,6 @@
     <a class="rnav" id="navVendors" onclick="go('vendor')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9 5 4h14l2 5M4 9v11h16V9M4 9h16M9 13h6"/></svg><span class="lb">Vendors</span></a>
     <div class="railbtm">
       <a class="rnav" id="navOrgAdmin" onclick="go('admin')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/></svg><span class="lb">Admin</span></a>
-      <a class="rnav rnotif" id="navNotif" onclick="openSection('notif')" title="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="lb">Alerts</span><span class="rnav-badge">3</span></a>
       <button class="railprofile" id="r-profile" onclick="go('profile')" title="Profile · Vinoth V V"><span class="rav">VV</span></button>
     </div>
   </aside>
@@ -31,13 +45,20 @@
   <div class="rdock" id="rdock">
   <aside class="flyout" id="flyout">
     <div class="fly-resize" id="flyResize" title="Drag to resize"></div>
-    <!-- single sheet: horizontal tab bar (comm + tools + Genie), rendered from DOCK_CELLS -->
-    <div class="paneltabs" id="panelTabs"></div>
+    <!-- AI card header slot (merged mode places the tabs here) -->
+    <div id="flyTabHome"></div>
     <div class="fly-head"><span class="ft" id="flyTitle"></span><div class="fr"><span id="flyExtra"></span><button class="ib" title="Collapse panel" onclick="collapsePanel()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m13 17 5-5-5-5M6 17l5-5-5-5"/></svg></button></div></div>
     <div class="fly-body" id="flyBody"></div>
   </aside>
   </div>
+  </div>
   <button class="rdock-reopen" id="rdockReopen" onclick="reopenPanel()" title="Open Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"></button>
+  <div class="pop wsswitcher" id="wsSwitcher"></div>
+  <div class="pop addmenu" id="addMenu"></div>
+  <div class="pop schedpop" id="schedPop"></div>
+  <!-- Search lightbox (opens centered in the main window) -->
+  <div class="lb-scrim" id="lbScrim" onclick="closeSearchBox()"></div>
+  <div class="lightbox" id="searchBox" role="dialog" aria-label="Search"></div>
 </div>
 
 <div class="scrim" id="scrim" onclick="closePeek()"></div>
