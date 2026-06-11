@@ -779,12 +779,19 @@ function docPick(t){const nb=t==='list'?{t:'list',items:['New item']}:t==='metri
 
 /* ============ GLOBAL RIGHT UTILITY RAIL (Genie / Notifications / Messages / Search / Account) ============ */
 let section=null, flyW=400;
-function flySize(px){const f=document.getElementById('flyout');if(!f)return;f.style.flexBasis=px+'px';f.style.width=px+'px';}
+const TAB_WIDE=540; /* panel width past which the comm tabs reveal their labels (Claude-desktop style) */
+/* the top comm/Genie pill (#tbOjo) glides with the panel so they stay one aligned family,
+   and the tabs open their names once the panel is dragged wide enough */
+function flySize(px){const f=document.getElementById('flyout');if(!f)return;f.style.flexBasis=px+'px';f.style.width=px+'px';
+  const o=document.getElementById('tbOjo');
+  if(o&&shellMode!=='merged'){if(px>0){o.style.width=px+'px';o.style.flexBasis=px+'px';}else{o.style.width='';o.style.flexBasis='';}}
+  const t=document.getElementById('panelTabs');if(t)t.classList.toggle('wide',px>=TAB_WIDE);}
 /* drag-to-resize the push panel */
 (function(){let rz=false;
-  document.addEventListener('mousedown',e=>{if(e.target&&e.target.id==='flyResize'){rz=true;document.body.style.userSelect='none';const f=document.getElementById('flyout');if(f)f.style.transition='none';e.preventDefault();}});
+  const noTrans=on=>{['flyout','tbOjo'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.transition=on?'none':'';});};
+  document.addEventListener('mousedown',e=>{if(e.target&&e.target.id==='flyResize'){rz=true;document.body.style.userSelect='none';noTrans(true);e.preventDefault();}});
   document.addEventListener('mousemove',e=>{if(!rz)return;flyW=Math.min(680,Math.max(300,(window.innerWidth-74)-e.clientX));flySize(flyW);});
-  document.addEventListener('mouseup',()=>{if(rz){rz=false;document.body.style.userSelect='';const f=document.getElementById('flyout');if(f)f.style.transition='';}});
+  document.addEventListener('mouseup',()=>{if(rz){rz=false;document.body.style.userSelect='';noTrans(false);}});
 })();
 /* ---- floating dock → section flyout (Ojo Genie / Notifications / Chat / Search / Profile) ---- */
 const SECT={
