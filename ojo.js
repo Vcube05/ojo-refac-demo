@@ -13,6 +13,7 @@ const ICONS={star:'<path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z" fill="cu
   Map:'<path d="M9 3 3 5v16l6-2 6 2 6-2V3l-6 2-6-2zM9 3v16M15 5v16"/>',user:'<circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/>',
   Overview:'<rect x="3" y="3" width="8" height="5" rx="1"/><rect x="3" y="11" width="8" height="10" rx="1"/><rect x="13" y="3" width="8" height="10" rx="1"/><rect x="13" y="16" width="8" height="5" rx="1"/>',
   notes:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
+  Details:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
   activity:'<path d="M3 12h4l3 8 4-16 3 8h4"/>'};
 const fmt=n=>'₹'+new Intl.NumberFormat('en-IN').format(n);
 let tT;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('show'),2100);}
@@ -83,7 +84,7 @@ const M={
     views:[{name:'All Leads',icon:'star',type:'Table'},{name:'By Stage',icon:'Board',type:'Board'},{name:'My Leads',icon:'user',type:'List'}],
     active:'By Stage',color:true,size:'medium',types:['Board','Table','List','Gallery','Calendar','Timeline'],group:()=>'Stage',render:renderLeadsWork},
   project:{title:'Apollo — Website Revamp',sub:'Project · 4 milestones · 10 tasks',crumb:true,crumbName:'Apollo — Website Revamp',peek:'task',
-    views:[{name:'Overview',icon:'star',type:'Overview'},{name:'All Tasks',icon:'List',type:'List'},{name:'By Status',icon:'Board',type:'Board'},{name:'Table',icon:'Table',type:'Table'}],
+    views:[{name:'Overview',icon:'star',type:'Overview'},{name:'All Tasks',icon:'List',type:'List'},{name:'By Status',icon:'Board',type:'Board'},{name:'Table',icon:'Table',type:'Table'},{name:'Details',icon:'Details',type:'Details'}],
     active:'Overview',color:true,size:'medium',types:['Overview','List','Board','Table','Gallery','Calendar'],group:t=>t==='Board'?'Status':'Milestone',render:renderProjWork},
   projdash:{title:'Projects',sub:'4 active · workspace dashboard',crumb:false,peek:null,icon:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/>',
     views:[{name:'All Projects',icon:'Gallery',type:'Gallery'},{name:'By Status',icon:'Board',type:'Board'},{name:'Table',icon:'Table',type:'Table'}],
@@ -140,6 +141,7 @@ function mountModule(){const c=cm();
       <div class="dmain">
         <div class="crumbbar"><a onclick="go('projectsDash')">Projects</a> <span class="sep">‹</span> <b>${c.crumbName}</b></div>
         <div class="mc-top"><div class="title-wrap"><div class="picon">${svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/>',20)}</div><div><h1>${c.title}</h1><div class="sub">${c.sub}</div></div></div>
+          <div class="projcomm"><button class="commbtn" data-f="call" onclick="openComm('call')">${faceIcon('call')} Call</button><button class="commbtn" data-f="email" onclick="openComm('email')">${faceIcon('email')} Email</button><button class="commbtn" data-f="chat" onclick="openComm('chat')">${faceIcon('chat')} Message</button></div>
           <div class="sp"></div><span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span>${modNew()}
           <button class="paneltoggle" onclick="modToggle()"><span id="modPtogTxt">${modCollapsed?'Show info':'Hide info'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
         ${modViewbar()}
@@ -185,9 +187,10 @@ function projPanelCells(){const a=projScore();const done=tasks.filter(t=>t.st===
    {render:'more',props:{rows:[['Website','ojo.io'],['Location','—'],['Vendor','Ojo Dojo (outsourced)'],['Vendor POC','ojodeveloper1'],['Vendor email','ojodeveloper1@gmail.com']]}}
   ];}
 function projInfoBody(){
+  const dyn=projPanelCells().filter(c=>c.render==='score'||c.render==='insights');
   return `<div class="ip">
-   <div class="ip-share"><div><div class="ip-share-t">Share with client</div><div class="ip-share-s">When on, this project appears in the client portal.</div></div><span class="toggle on" onclick="this.classList.toggle('on')"></span></div>
-   ${projPanelCells().map(renderPanelCell).join('')}</div>`;}
+   ${dyn.map(renderPanelCell).join('')}
+   <div class="ip-act"><div class="ip-act-h">Recent activity</div>${bActivity()}</div></div>`;}
 function renderModInfo(){const el=document.getElementById('modpanelbody');if(!el)return;el.innerHTML=projInfoBody();}
 
 /* ---- floating info/comm bar: replaces the stacked info/comm panel on mobile (overview + detail pages) ----
@@ -371,7 +374,7 @@ function setSize(s){cm().size=s;syncSizeToggle();renderWork();}
 function syncSizeToggle(){const s=cm().size;const c=document.getElementById('szC'),m=document.getElementById('szM');if(c&&m){c.classList.toggle('on',s==='compact');m.classList.toggle('on',s==='medium');}}
 function updateGroup(){const g=document.getElementById('groupVal');if(g)g.firstChild.textContent=cm().group(curType())+' ';}
 function renderWork(){cm().render(curType());updateToolbar();updateMetrics();updateCommDock();}
-function updateToolbar(){const vt=document.getElementById('viewTools');if(!vt)return;vt.style.display=(curMod==='project'&&curType()==='Overview')?'none':'flex';}
+function updateToolbar(){const vt=document.getElementById('viewTools');if(!vt)return;vt.style.display=(curMod==='project'&&(curType()==='Overview'||curType()==='Details'))?'none':'flex';}
 function placeholder(t){return `<div class="placeholder"><div class="pic">${svg(ICONS[t]||ICONS.List,28)}</div><h2>${t} view</h2><p>Same cells, arranged as a <b>${t}</b>. Group, filter, and sort — one database, many lenses.</p></div>`;}
 
 /* ============ LEADS RENDER ============ */
@@ -387,7 +390,14 @@ function lList(){let h='';LSTAGES.forEach(s=>{const items=leads.filter(l=>l.st==
 
 /* ============ PROJECT RENDER ============ */
 function renderProjWork(type){const el=document.getElementById('work');
-  if(type==='Overview')el.innerHTML=projOverview();else if(type==='List')el.innerHTML=pList();else if(type==='Board')el.innerHTML=pBoard();else if(type==='Table')el.innerHTML=pTable();else el.innerHTML=placeholder(type);}
+  if(type==='Overview')el.innerHTML=projOverview();else if(type==='Details')el.innerHTML=projDetails();else if(type==='List')el.innerHTML=pList();else if(type==='Board')el.innerHTML=pBoard();else if(type==='Table')el.innerHTML=pTable();else el.innerHTML=placeholder(type);}
+/* static project data (separated from the live/dynamic panel) — clean aligned grid, few section starters */
+function projDetails(){
+  const about=[['Status','Active'],['Due date','20 Jul 2026'],['Milestones','4'],['Tasks','10 total'],['Budget','₹4,80,000'],['Budget left','₹3,80,000'],['Owner','Priya Nair'],['Created','7 May 2026']];
+  const client=[['Primary contact','Rajeeshlal'],['Role','POC'],['Email','vinoth+lal@palpx.com'],['Portal','Shared with client']];
+  const vendor=[['Vendor','Ojo Dojo (outsourced)'],['Vendor POC','ojodeveloper1'],['Vendor email','ojodeveloper1@gmail.com'],['Website','ojo.io']];
+  const block=(h,rows)=>`<div class="pd-block"><div class="pd-h">${h}</div><div class="pd-grid">${rows.map(([k,v])=>`<div class="pd-cell"><div class="pd-k">${k}</div><div class="pd-v">${v}</div></div>`).join('')}</div></div>`;
+  return `<div class="pdetails">${block('About this project',about)}${block('Client',client)}${block('Delivery',vendor)}</div>`;}
 function chev(){return svg('<path d="m9 18 6-6-6-6"/>',15);}
 function miniCal(){const y=2026,m=5;const first=new Date(y,m,1).getDay();const days=new Date(y,m+1,0).getDate();let c='';for(let i=0;i<first;i++)c+='<span class="cd"></span>';for(let d=1;d<=days;d++)c+=`<span class="cd ${d===5?'hl':''}">${d}</span>`;return `<div class="cal-h">June 2026</div><div class="cal-grid">${['S','M','T','W','T','F','S'].map(x=>`<span class="dow">${x}</span>`).join('')}${c}</div>`;}
 /* project home data + customisable modular boxes (each is a cell) */
@@ -408,7 +418,6 @@ function bActivity(){const items=[['#E0A21E','msg','Jun 5','Priya Nair','comment
   return `<div class="bact">${items.map(i=>`<div class="arow"><span class="ic" style="background:${i[0]}">${actGlyph(i[1])}</span><span><span class="dt">${i[2]}</span><span class="mut">${i[3]} ${i[4]} </span><a onclick="toast('Open: ${i[5]}')">${i[5]}</a></span></div>`).join('')}
    <div class="more"><span class="av">VK</span>1 person active in the last 7 days · <a onclick="setView('All Tasks')">View all activity…</a></div></div>`;}
 function projOverview(){return `<div class="bhome">
-  ${bActivity()}
   <div class="bgrid">${pjWidgets.map(widgetCard).join('')}</div>
   <div class="baddtile" onclick="pjAddOpen(event)" title="Add a box">${svg('<path d="M12 5v14M5 12h14"/>',20)}</div>
 </div>`;}
@@ -1118,7 +1127,7 @@ function metAdd(ctx,id){if(!METR[ctx].includes(id))METR[ctx].push(id);closePops(
 function metAddOpen(e,ctx){e.stopPropagation();const m=document.getElementById('metpal');const avail=Object.keys(METRIC_DEFS[ctx]||{}).filter(id=>!METR[ctx].includes(id));
   m.innerHTML='<div class="h">Add metric</div>'+(avail.length?avail.map(id=>`<button class="pi" onclick="metAdd('${ctx}','${id}')"><span class="ic">${svg(SVS.trend,15)}</span>${METRIC_DEFS[ctx][id][0]}</button>`).join(''):'<div style="padding:8px 10px;color:var(--ghost);font-size:13px">All metrics added</div>');
   const r=e.currentTarget.getBoundingClientRect();m.style.top=Math.min(r.bottom+6,window.innerHeight-300)+'px';m.style.left=Math.max(12,Math.min(r.left,window.innerWidth-240))+'px';openPop('metpal');}
-function updateMetrics(){const el=document.getElementById('metricsBar');if(!el)return;if(curMod==='leads')el.innerHTML=metricsInner('leads');else if(curMod==='project'&&curType()!=='Overview')el.innerHTML=metricsInner('tasks');else if(curMod==='projdash')el.innerHTML=metricsInner('projdash');else el.innerHTML='';}
+function updateMetrics(){const el=document.getElementById('metricsBar');if(!el)return;if(curMod==='leads')el.innerHTML=metricsInner('leads');else if(curMod==='project'&&curType()!=='Overview'&&curType()!=='Details')el.innerHTML=metricsInner('tasks');else if(curMod==='projdash')el.innerHTML=metricsInner('projdash');else el.innerHTML='';}
 /* projects landing — multi-view (Gallery default, +Table/Board/List) */
 function renderDashWork(type){const el=document.getElementById('work');if(!el)return;
   if(type==='Gallery')el.innerHTML=dashGallery();else if(type==='Table')el.innerHTML=dashTable();else if(type==='Board')el.innerHTML=dashBoard();else if(type==='List')el.innerHTML=dashList();else el.innerHTML=placeholder(type);}
