@@ -91,7 +91,7 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 /* hybrid: thin divider between the notification icon and the comm/Genie pill —
    anchored to the pill's left edge so it glides along as the pill resizes */
 .shell-hybrid .tb-ojo{position:relative}
-.shell-hybrid .tb-ojo::before{content:'';position:absolute;left:-6px;top:50%;transform:translateY(-50%);width:1px;height:26px;background:var(--line-2)}
+.shell-hybrid .tb-ojo::before{content:'';position:absolute;left:-7px;top:50%;transform:translateY(-50%);width:2px;height:30px;border-radius:2px;background:var(--line-3)}
 /* merged: no AI region in the top bar (tabs live inside the panel card) */
 .shell-merged .tb-ojo{display:none}
 .tb-icon{position:relative;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--muted);background:transparent;border:none;cursor:pointer;transition:.14s}
@@ -491,10 +491,9 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 .os-b{flex:1;font-size:13px;color:var(--ink);line-height:1.45}.os-b b{font-weight:700}
 .os-cta{flex:0 0 auto;padding:8px 16px;border-radius:999px;background:var(--coral);color:#fff;font-size:13px;font-weight:700}.os-cta:hover{filter:brightness(1.05)}
 .qadd-trigger{display:flex;align-items:center;gap:9px;width:calc(100% - 44px);margin:14px 22px 0;padding:13px 16px;border:1.5px dashed var(--line-2);border-radius:14px;color:var(--muted);font-size:14px;font-weight:600;background:transparent;transition:.14s}.qadd-trigger:hover{border-color:var(--coral-line);color:var(--coral-ink)}.qadd-trigger svg{color:var(--coral)}
-/* quick-add → centered modal */
-.qadd-modal{position:fixed;top:17vh;left:50%;transform:translateX(-50%) translateY(-8px) scale(.985);width:min(540px,92vw);z-index:91;opacity:0;pointer-events:none;transition:.2s var(--ease)}
-.qadd-modal.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0) scale(1)}
-.qadd{border:1px solid var(--line-2);border-radius:18px;background:var(--surface);box-shadow:var(--sh-lg);overflow:hidden}
+/* quick-add → dropdown anchored to the Add task button */
+.qaddpop{width:340px;padding:0;overflow:hidden}
+.qadd{border:none;border-radius:0;background:transparent;box-shadow:none;overflow:hidden}
 .qa-top{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
 .qa-cell{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--coral-ink);background:var(--coral-soft);border:1px solid var(--coral-line);border-radius:6px;padding:2px 6px}
 .qa-title{flex:1;border:none;outline:none;background:transparent;font-size:16px;font-weight:600;color:var(--ink)}.qa-title::placeholder{color:var(--placeholder);font-weight:500}
@@ -1601,7 +1600,6 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
   .viewseg.big{flex:1 1 auto;min-width:0}
   .hctrl-filter,.hctrl-add{flex:0 0 auto;padding:0 11px}
   .hctrl-add span{display:none}
-  .qadd-modal{top:auto;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%)}
-  .qadd-modal.show{transform:translateX(-50%)}
+  .qaddpop{width:min(340px,calc(100vw - 24px))}
   .hlist{padding:6px 14px 22px}
 }
