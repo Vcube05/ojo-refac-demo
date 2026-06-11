@@ -142,20 +142,20 @@ function mountModule(){const c=cm();
         <div class="crumbbar"><a onclick="go('projectsDash')">Projects</a> <span class="sep">/</span> <span id="crumbTab">${c.active}</span></div>
         <div class="mc-top"><div class="title-wrap"><div class="picon">${svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/>',20)}</div><div><h1>${c.title}</h1><div class="sub">${c.sub}</div></div></div>
           <div class="sp"></div>
-          <div class="commpill">${[['call','Call'],['email','Email'],['video','Meet']].map(([f,l])=>`<button title="${l} client" onclick="openComm('${f}')">${faceIcon(f)}</button>`).join('')}</div>
           <span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span>
-          <button class="ptog-ic ${modCollapsed?'':'on'}" id="modPtogBtn" onclick="modToggle()" title="${modCollapsed?'Show activity':'Hide activity'}">${svg('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',17)}</button></div>
+          <div class="commpill">${[['call','Call'],['email','Email'],['video','Meet']].map(([f,l])=>`<button title="${l} client" onclick="openComm('${f}')">${faceIcon(f)}</button>`).join('')}</div>
+          <button class="ptog-ic ${modCollapsed?'':'on'}" id="modPtogBtn" onclick="modToggle()" title="${modCollapsed?'Show activity':'Hide activity'}">${svg('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',17)}</button>
+          <button class="mtool hdr-x" onclick="go('projectsDash')" title="Close">${svg(SVS.x,18)}</button></div>
         ${modViewbar()}
         <div id="metricsBar" class="metrics" style="padding-left:22px;padding-right:22px"></div>
         <div class="work" id="work"></div>
       </div>
       <aside class="dpanel" id="modpanel">
-        <div class="dpanel-head"><span class="nm">Recent activity</span><button class="ed" onclick="xpOpenFrom(this)" title="Expand">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button></div>
+        <div class="dpanel-head"><span class="nm">Recent activity</span></div>
         <div class="dpanel-body" id="modpanelbody"></div>
       </aside></div>`;
     document.getElementById('shell')?.classList.add('dockgut');
     const sc=document.getElementById('screen');sc.querySelector('.modclose')?.remove();
-    sc.insertAdjacentHTML('beforeend',`<button class="dctl x modclose" onclick="go('projectsDash')" title="Close">${svg(SVS.x,19)}</button>`);
     renderVTabs();buildVMenu();buildVTypes();updateGroup();syncSizeToggle();renderWork();renderModInfo();
     commSetHost({getFace:()=>modFace,setFace:setModFace,content:commProjectContent,visible:()=>curMod==='project'});
     return;

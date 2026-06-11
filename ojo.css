@@ -772,6 +772,7 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 .ptog-ic svg{width:17px;height:17px}
 .ptog-ic:hover{background:var(--surface-2);color:var(--ink)}
 .ptog-ic.on{background:var(--coral-soft);color:var(--coral-ink)}
+.hdr-x:hover{background:var(--coral-soft);color:var(--coral-ink)}
 .newbtn{display:inline-flex;align-items:center;border-radius:var(--r-sm);overflow:hidden;box-shadow:var(--sh-xs)}
 .newbtn .a{background:var(--coral);color:#fff;font-weight:700;font-size:13px;padding:7px 14px}.newbtn .b{background:var(--coral-ink);color:#fff;display:grid;place-items:center;width:26px;align-self:stretch}
 .viewbar{display:flex;align-items:center;gap:5px;padding:4px 22px 12px;border-bottom:none;position:relative}
