@@ -192,11 +192,11 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 /* project header: don't truncate the project name (it's the only place the name lives) */
 #modbox .title-wrap{flex:0 1 auto;min-width:0}
 #modbox .title-wrap h1{white-space:normal;overflow:visible;text-overflow:clip}
-/* comm pill — Ojo-Genie-pill style (dark, rounded), grouped */
-.commpill{display:inline-flex;align-items:center;gap:2px;background:#0E0E10;border-radius:999px;padding:4px;flex:0 0 auto}
-.commpill button{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;color:#fff;font-size:12.5px;font-weight:600;transition:background .14s}
-.commpill button svg{width:15px;height:15px;opacity:.9}
-.commpill button:hover{background:rgba(255,255,255,.13)}
+/* comm — icon-only, grouped pill (consistent with the view-tool icons); opens the side panel with context */
+.commpill{display:inline-flex;align-items:center;gap:2px;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px;flex:0 0 auto}
+.commpill button{width:32px;height:32px;display:grid;place-items:center;border-radius:50%;color:var(--muted);transition:.14s}
+.commpill button svg{width:17px;height:17px}
+.commpill button:hover{background:var(--surface);color:var(--ink);box-shadow:var(--sh-xs)}
 /* overview: OJO insights + score promoted into the main window */
 .proj-ai{display:flex;flex-wrap:wrap;gap:18px 22px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin:4px 0 24px;max-width:940px}
 .pa-score{display:flex;align-items:center;gap:14px;flex:0 0 auto}

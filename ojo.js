@@ -139,10 +139,10 @@ function mountModule(){const c=cm();
   if(curMod==='project'){
     document.getElementById('modcontent').innerHTML=`<div class="box dbox ${modCollapsed?'collapsed':''}" id="modbox">
       <div class="dmain">
-        <div class="crumbbar"><a onclick="go('projectsDash')">Projects</a></div>
+        <div class="crumbbar"><a onclick="go('projectsDash')">Projects</a> <span class="sep">/</span> <span id="crumbTab">${c.active}</span></div>
         <div class="mc-top"><div class="title-wrap"><div class="picon">${svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/>',20)}</div><div><h1>${c.title}</h1><div class="sub">${c.sub}</div></div></div>
           <div class="sp"></div>
-          <div class="commpill">${[['call','Call'],['email','Email'],['video','Meet']].map(([f,l])=>`<button onclick="openComm('${f}')">${faceIcon(f)}<span>${l}</span></button>`).join('')}</div>
+          <div class="commpill">${[['call','Call'],['email','Email'],['video','Meet']].map(([f,l])=>`<button title="${l} client" onclick="openComm('${f}')">${faceIcon(f)}</button>`).join('')}</div>
           <span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span>
           <button class="paneltoggle" onclick="modToggle()"><span id="modPtogTxt">${modCollapsed?'Show activity':'Hide activity'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
         ${modViewbar()}
@@ -359,7 +359,7 @@ function mountDash(){
 
 /* ============ GENERIC VIEW CONTROLS ============ */
 function renderVTabs(){const c=cm();document.getElementById('vtabs').innerHTML=c.views.map(v=>`<button class="vtab ${v.name===c.active?'on':''}" onclick="setView('${v.name.replace(/'/g,"\\'")}')"><span class="${v.icon==='star'?'star':''}">${svg(ICONS[v.icon]||ICONS.List,15)}</span>${v.name}</button>`).join('');}
-function setView(n){cm().active=n;renderVTabs();renderWork();buildVTypes();updateGroup();}
+function setView(n){cm().active=n;renderVTabs();renderWork();buildVTypes();updateGroup();const ct=document.getElementById('crumbTab');if(ct)ct.textContent=n;}
 function buildVMenu(){document.getElementById('vgrid').innerHTML=['Table','Board','List','Gallery','Calendar','Timeline','Chart','Feed','Map'].map(t=>`<button class="vitem" onclick="addView('${t}')"><span class="ic">${svg(ICONS[t],22)}</span><span class="n">${t}</span></button>`).join('');}
 function toggleVMenu(e){e.stopPropagation();openPop('vmenu');}
 function addView(t){cm().views.push({name:t,icon:t,type:t});closePops();setView(t);toast(t+' view added');}
