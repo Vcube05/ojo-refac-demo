@@ -59,7 +59,10 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 /* Gmail-style carded top bar: transparent canvas, floating segments */
 .topbar{flex:0 0 58px;display:flex;align-items:center;gap:12px;height:58px;padding:0 12px;z-index:42}
 /* shell modes set top-bar surface */
-.shell-connected .topbar,.shell-hybrid .topbar{background:var(--surface);border-bottom:1px solid var(--line-2);padding-right:0}
+.shell-connected .topbar{background:var(--surface);border-bottom:1px solid var(--line-2);padding-right:0}
+/* hybrid: connected white bar + thin line, but the comm/Genie pill floats so it aligns
+   with (and feels like family with) the carded panel below — so keep the default right padding */
+.shell-hybrid .topbar{background:var(--surface);border-bottom:1px solid var(--line-2)}
 .shell-carded .topbar,.shell-merged .topbar{background:transparent;border-bottom:none}
 .tb-left{flex:0 0 auto;display:flex;align-items:center;gap:8px}
 /* workspace switcher pill (top-left) — frosted glass */
@@ -82,9 +85,9 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 .tb-ojo{flex:0 0 400px;width:400px;display:flex;align-items:center;box-sizing:border-box}
 .tb-ojo .paneltabs{width:100%;border-bottom:none;padding:0;min-width:0;gap:5px}
 /* connected: AI region is a flush, left-bordered strip aligned to the sheet below */
-.shell-connected .tb-ojo,.shell-hybrid .tb-ojo{height:100%;border-left:1px solid var(--line-2);padding:0 12px}
+.shell-connected .tb-ojo{height:100%;border-left:1px solid var(--line-2);padding:0 12px}
 /* carded: AI region is a floating frosted-glass pill-card */
-.shell-carded .tb-ojo{height:46px;background:var(--glass-strong);border:1px solid var(--glass-border);border-radius:14px;box-shadow:var(--sh-sm);padding:0 7px 0 5px;backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5)}
+.shell-carded .tb-ojo,.shell-hybrid .tb-ojo{height:46px;background:var(--glass-strong);border:1px solid var(--glass-border);border-radius:14px;box-shadow:var(--sh-sm);padding:0 7px 0 5px;backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5)}
 /* merged: no AI region in the top bar (tabs live inside the panel card) */
 .shell-merged .tb-ojo{display:none}
 .tb-icon{position:relative;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--muted);background:transparent;border:none;cursor:pointer;transition:.14s}
