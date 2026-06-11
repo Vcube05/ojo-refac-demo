@@ -578,17 +578,21 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 .tl-now .nt{font-size:11px;font-weight:800;color:var(--coral);text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:6px;white-space:nowrap}
 .tl-now .nt::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--coral);box-shadow:0 0 0 3px var(--coral-soft)}
 .tl-now .nl{flex:1;height:2px;background:linear-gradient(90deg,var(--coral),transparent);border-radius:2px}
-/* ===== Schedule outlook — hour rail ===== */
-.agenda{padding:10px 30px 24px}
-.ag-row{display:flex;gap:16px;min-height:52px;border-top:1px solid var(--line)}
-.ag-row:last-child{border-bottom:1px solid var(--line)}
-.ag-h{flex:0 0 50px;font-size:12px;font-weight:700;color:var(--faint);padding-top:9px;font-variant-numeric:tabular-nums}
-.ag-slot{flex:1;min-width:0;padding:7px 0;display:flex;flex-direction:column;gap:7px}
-.ag-block{border-left:3px solid var(--c,var(--coral));background:color-mix(in srgb,var(--c,var(--coral)) 9%,var(--surface));border-radius:9px;padding:9px 13px;cursor:pointer;transition:.14s}
-.ag-block:hover{filter:brightness(.99);transform:translateX(2px)}
-.ag-bt{font-size:14px;font-weight:650;color:var(--navy);letter-spacing:-.01em}
-.ag-block.done .ag-bt{text-decoration:line-through;color:var(--faint)}
-.ag-bm{font-size:12px;color:var(--muted);margin-top:3px}
+/* ===== Schedule outlook — horizontal time-blocked calendar ===== */
+.sched{overflow-x:auto;padding:8px 30px 24px;-webkit-overflow-scrolling:touch}
+.sched::-webkit-scrollbar{height:8px}.sched::-webkit-scrollbar-thumb{background:var(--line-3);border-radius:99px}
+.sched-inner{position:relative;min-width:100%}
+.sched-head{position:relative;height:24px;margin-bottom:8px}
+.sched-hr{position:absolute;top:0;font-size:11.5px;font-weight:700;color:var(--faint);font-variant-numeric:tabular-nums;transform:translateX(-1px)}
+.sched-body{position:relative;border-top:1px solid var(--line-2);background-image:linear-gradient(90deg,var(--line) 1px,transparent 1px);background-repeat:repeat-x;background-position:0 0}
+.sblock{position:absolute;border:1px solid var(--c);border-left-width:4px;background:color-mix(in srgb,var(--c) 13%,var(--surface));border-radius:11px;padding:9px 12px;cursor:pointer;overflow:hidden;transition:transform .14s,box-shadow .14s;box-shadow:var(--sh-sm)}
+.sblock:hover{transform:translateY(-2px);box-shadow:var(--sh);z-index:4}
+.sb-t{font-size:13px;font-weight:700;color:var(--navy);letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sblock.done .sb-t{text-decoration:line-through;color:var(--faint)}
+.sb-m{font-size:11px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.snow{position:absolute;top:-8px;bottom:0;width:2px;background:var(--coral);z-index:5;border-radius:2px}
+.snow-t{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--coral);border-radius:5px;padding:1px 5px}
+.sched-empty{position:absolute;top:18px;left:0;font-size:13px;color:var(--muted)}
 .tgrid{padding:16px 30px 8px;column-width:380px;column-gap:14px}
 .tcard{break-inside:avoid;margin-bottom:14px;border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:16px;transition:border-color .14s,box-shadow .14s}
 .tcard:hover{border-color:var(--line-3);box-shadow:var(--sh-sm)}.tcard.done{opacity:.6}
@@ -1528,6 +1532,5 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
   .tl-ctx{font-size:11.5px;gap:5px}
   .tl-right{flex-direction:column;align-items:flex-end;gap:6px}
   .tl-xp{display:none}
-  .agenda{padding:8px 14px 22px}
-  .ag-h{flex-basis:42px}
+  .sched{padding:8px 14px 22px}
 }

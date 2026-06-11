@@ -1615,12 +1615,23 @@ function homeTimeline(){const active=TASKS.filter(t=>t.status!=='Done');
   fdays.forEach(d=>{const rows=active.filter(t=>homeDay(t)===d).sort((a,b)=>t2m(a.time)-t2m(b.time));
     html+=tlGroup(`<div class="d">${d}</div>`,WD[wdOf(d)],rows.length+(d===12?' planned':' '),rows.map(tlRow).join(''));});
   return `<div class="timeline">${html}</div>`;}
-function agBlock(t){const sm=SRC[t.src];const p=PEOPLE[t.asg];const done=t.status==='Done';
-  return `<div class="ag-block ${done?'done':''}" style="--c:${sm[1]}" onclick="openTaskRec('${t.id}','home')"><div class="ag-bt">${t.time} · ${t.title}</div><div class="ag-bm">${sm[0]} · ${t.link} · ${p[2]} · ${t.est}</div></div>`;}
-function homeHourRail(){const day=homeSelDay;const dt=TASKS.filter(t=>t.status!=='Done'&&homeDay(t)===day).sort((a,b)=>t2m(a.time)-t2m(b.time));
-  let rows='';for(let h=8;h<=18;h++){const slot=dt.filter(t=>Math.floor(t2m(t.time)/60)===h);const now=(day===11&&Math.floor(NOW_MIN/60)===h);
-    rows+=`<div class="ag-row ${slot.length?'has':''}"><span class="ag-h">${String(h).padStart(2,'0')}:00</span><div class="ag-slot">${now?nowLineHTML():''}${slot.map(agBlock).join('')}</div></div>`;}
-  return `<div class="agenda">${rows}</div>`;}
+function estMin(e){if(!e)return 60;let v=0;const h=e.match(/(\d+)\s*h/),m=e.match(/(\d+)\s*m/);if(h)v+=(+h[1])*60;if(m)v+=(+m[1]);return v||60;}
+const SCH_START=8,SCH_END=18,HOUR_W=128,LANE_H=76;
+/* Schedule outlook — horizontal time-blocked calendar: hours run left→right, each task
+   a block positioned by start time + sized by duration, lane-packed to avoid overlap */
+function homeHourRail(){const day=homeSelDay;const px=m=>((m-SCH_START*60)/60)*HOUR_W;
+  const items=TASKS.filter(t=>t.status!=='Done'&&homeDay(t)===day).map(t=>({t,s:t2m(t.time),e:t2m(t.time)+estMin(t.est)})).sort((a,b)=>a.s-b.s);
+  const laneEnds=[];items.forEach(it=>{let l=laneEnds.findIndex(end=>end<=it.s);if(l<0){l=laneEnds.length;laneEnds.push(it.e);}else laneEnds[l]=it.e;it.lane=l;});
+  const lanes=Math.max(1,laneEnds.length);
+  let ruler='';for(let h=SCH_START;h<=SCH_END;h++)ruler+=`<span class="sched-hr" style="left:${px(h*60)}px">${String(h).padStart(2,'0')}:00</span>`;
+  const blocks=items.map(it=>{const sm=SRC[it.t.src];const p=PEOPLE[it.t.asg];const w=Math.max(px(it.e)-px(it.s)-6,116);const done=it.t.status==='Done';
+    return `<div class="sblock ${done?'done':''}" style="--c:${sm[1]};left:${px(it.s)}px;top:${it.lane*LANE_H+4}px;width:${w}px;height:${LANE_H-12}px" onclick="openTaskRec('${it.t.id}','home')"><div class="sb-t">${it.t.title}</div><div class="sb-m">${it.t.time} · ${sm[0]} · ${p[2]} · ${it.t.est}</div></div>`;}).join('');
+  const now=(day===11)?`<div class="snow" style="left:${px(NOW_MIN)}px"><span class="snow-t">Now</span></div>`:'';
+  const bodyW=px(SCH_END*60)+24,bodyH=lanes*LANE_H+8;
+  return `<div class="sched"><div class="sched-inner" style="width:${bodyW}px">
+    <div class="sched-head">${ruler}</div>
+    <div class="sched-body" style="height:${bodyH}px;background-size:${HOUR_W}px 100%">${now}${blocks||'<div class="sched-empty">Nothing scheduled — pick another day.</div>'}</div>
+  </div></div>`;}
 function homeSetOutlook(v){homeOutlook=v;try{localStorage.setItem('ojo-home-view',v);}catch(e){}mountHome();}
 function mountHome(){setRail('navHome');
   const h=new Date().getHours(),greet=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
