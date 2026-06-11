@@ -144,7 +144,7 @@ function mountModule(){const c=cm();
           <div class="sp"></div>
           <div class="commpill">${[['call','Call'],['email','Email'],['video','Meet']].map(([f,l])=>`<button title="${l} client" onclick="openComm('${f}')">${faceIcon(f)}</button>`).join('')}</div>
           <span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span>
-          <button class="paneltoggle" onclick="modToggle()"><span id="modPtogTxt">${modCollapsed?'Show activity':'Hide activity'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
+          <button class="ptog-ic ${modCollapsed?'':'on'}" id="modPtogBtn" onclick="modToggle()" title="${modCollapsed?'Show activity':'Hide activity'}">${svg('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',17)}</button></div>
         ${modViewbar()}
         <div id="metricsBar" class="metrics" style="padding-left:22px;padding-right:22px"></div>
         <div class="work" id="work"></div>
@@ -170,7 +170,7 @@ function mountModule(){const c=cm();
   renderVTabs();buildVMenu();buildVTypes();updateGroup();syncSizeToggle();renderWork();
 }
 /* project right info/comm panel (same expandable pattern as the detail page) */
-function modToggle(){modCollapsed=!modCollapsed;document.getElementById('modbox').classList.toggle('collapsed',modCollapsed);document.getElementById('modPtogTxt').textContent=modCollapsed?'Show activity':'Hide activity';}
+function modToggle(){modCollapsed=!modCollapsed;document.getElementById('modbox').classList.toggle('collapsed',modCollapsed);const b=document.getElementById('modPtogBtn');if(b){b.classList.toggle('on',!modCollapsed);b.title=modCollapsed?'Show activity':'Hide activity';}}
 function setModFace(f){modFace=f;document.querySelectorAll('#modpanel .xcface').forEach(b=>b.classList.toggle('on',b.dataset.face===f));renderModInfo();}
 /* OJO read of the project — derived from task completion, work-in-progress and budget */
 function projInsights(){const a=projScore();const done=tasks.filter(t=>t.st==='Done').length;const doing=tasks.filter(t=>t.st==='Doing').length;const total=tasks.length||1;
