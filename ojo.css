@@ -88,6 +88,10 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 .shell-connected .tb-ojo{height:100%;border-left:1px solid var(--line-2);padding:0 12px}
 /* carded: AI region is a floating frosted-glass pill-card */
 .shell-carded .tb-ojo,.shell-hybrid .tb-ojo{height:46px;background:var(--glass-strong);border:1px solid var(--glass-border);border-radius:14px;box-shadow:var(--sh-sm);padding:0 7px 0 5px;backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5)}
+/* hybrid: thin divider between the notification icon and the comm/Genie pill —
+   anchored to the pill's left edge so it glides along as the pill resizes */
+.shell-hybrid .tb-ojo{position:relative}
+.shell-hybrid .tb-ojo::before{content:'';position:absolute;left:-6px;top:50%;transform:translateY(-50%);width:1px;height:26px;background:var(--line-2)}
 /* merged: no AI region in the top bar (tabs live inside the panel card) */
 .shell-merged .tb-ojo{display:none}
 .tb-icon{position:relative;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--muted);background:transparent;border:none;cursor:pointer;transition:.14s}
