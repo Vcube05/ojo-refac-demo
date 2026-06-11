@@ -1503,7 +1503,7 @@ const WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 function wdOf(d){return new Date(2026,5,d).getDay();}
 const HICON={flame:'<path d="M12 2.5c2.5 2.6 3.5 4.7 3.5 7.2a3.5 3.5 0 0 1-7 0c0-1 .3-1.8.8-2.6.3 1.7 2 1.7 2 .2 0-1.3-.7-2.3.7-4.8z M8 13.5a4 4 0 1 0 8 0c0-.8-.2-1.5-.5-2.1.2 3.4-4 3.4-4 .6-1.9 1-3.5 2.1-3.5 1.5z"/>',cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',play:'<path d="M6 4l14 8-14 8z" fill="currentColor" stroke="none"/>',chat:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',link:'<path d="M10 13a4 4 0 0 0 6 0l3-3a4 4 0 1 0-6-6l-1 1"/><path d="M14 11a4 4 0 0 0-6 0l-3 3a4 4 0 1 0 6 6l1-1"/>',check:'<path d="M20 6 9 17l-5-5"/>',plus:'<path d="M12 5v14M5 12h14"/>'};
 function homeDay(t){return parseInt(t.due)||0;}
-function homeDayTasks(){const ord={High:0,Medium:1,Low:2};const active=TASKS.filter(t=>t.status!=='Done');
+function homeDayTasks(){const ord={High:0,Medium:1,Low:2};const active=homeActiveTasks();
   let list=homeSelDay===11?active.filter(t=>homeDay(t)<=11):active.filter(t=>homeDay(t)===homeSelDay);
   return list.sort((x,y)=>{const ox=homeDay(x)<11?0:1,oy=homeDay(y)<11?0:1;return ox-oy||ord[x.pri]-ord[y.pri]||y.pts-x.pts;});}
 function homeDayStrip(){let days='';for(let i=0;i<7;i++){const d=homeWeekStart+i;const sel=d===homeSelDay,today=d===11;const n=TASKS.filter(t=>t.status!=='Done'&&homeDay(t)===d).length;
@@ -1592,8 +1592,36 @@ function homeToggleAct(){homeActCollapsed=!homeActCollapsed;const b=document.get
 let homeOutlook='timeline';try{homeOutlook=localStorage.getItem('ojo-home-view')||'timeline';}catch(e){}
 const HVIEWS=[['timeline','Timeline','<path d="M5 3v18"/><circle cx="5" cy="7" r="2.3" fill="currentColor" stroke="none"/><circle cx="5" cy="16" r="2.3" fill="currentColor" stroke="none"/><path d="M10 7h9M10 16h6"/>'],
  ['schedule','Schedule','<rect x="3" y="4.5" width="18" height="16.5" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>'],
+ ['list','List','<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1.5" fill="currentColor" stroke="none"/>'],
  ['cards','Cards','<rect x="3.5" y="4" width="7" height="16" rx="1.6"/><rect x="13.5" y="4" width="7" height="16" rx="1.6"/>']];
 const WARN='<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h16.9a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>';
+const FILTER_IC='<path d="M3 7h12M19 7h2"/><circle cx="17" cy="7" r="2.1"/><path d="M3 17h4M11 17h10"/><circle cx="9" cy="17" r="2.1"/>';
+/* ===== Home filter (single control, applies across every outlook) ===== */
+let homeFilterMod=null;   /* null = all modules */
+let homeGroup='time';     /* list grouping: time | module | level */
+function homeActiveTasks(){let a=TASKS.filter(t=>t.status!=='Done');if(homeFilterMod)a=a.filter(t=>t.src===homeFilterMod);return a;}
+const HMODS=[['','All'],['leads','Leads'],['project','Projects'],['hr','HR'],['account','Accounts'],['vendor','Vendors']];
+const HGRP=[['time','By time'],['module','By module'],['level','By level']];
+function homeFilterHTML(){return `<div class="hf-sec">Module</div><div class="hf-chips">${HMODS.map(([k,l])=>`<button class="hf-chip ${(homeFilterMod||'')===k?'on':''}" onclick="homeSetFilter('${k}')">${k?`<span class="hf-dot" style="--c:${SRC[k][1]}"></span>`:''}${l}</button>`).join('')}</div>
+  <div class="hf-sec">Group by</div><div class="hf-chips">${HGRP.map(([k,l])=>`<button class="hf-chip ${homeGroup===k?'on':''}" onclick="homeSetGroup('${k}')">${l}</button>`).join('')}</div>`;}
+function openHomeFilter(e){e.stopPropagation();const m=document.getElementById('homeFilterPop');if(!m)return;m.innerHTML=homeFilterHTML();const r=e.currentTarget.getBoundingClientRect();m.style.top=(r.bottom+8)+'px';m.style.left=Math.max(12,Math.min(r.left,window.innerWidth-258))+'px';openPop('homeFilterPop');}
+function homeSetFilter(k){homeFilterMod=k||null;mountHome();const m=document.getElementById('homeFilterPop');if(m)m.innerHTML=homeFilterHTML();}
+function homeSetGroup(k){homeGroup=k;if(homeOutlook!=='list')homeSetOutlook('list');else mountHome();const m=document.getElementById('homeFilterPop');if(m)m.innerHTML=homeFilterHTML();}
+/* ===== List outlook — calm, polished rows (grouped) ===== */
+function listRow(t){const sm=SRC[t.src];const done=t.status==='Done';const over=homeDay(t)<11&&!done;
+  return `<div class="hl-row ${done?'done':''}" onclick="openTaskRec('${t.id}','home')">
+    <button class="hl-ck ${done?'on':''}" onclick="event.stopPropagation();homeComplete('${t.id}')" title="${done?'Undo':'Complete'}">${svg(HICON.check,12)}</button>
+    <span class="hl-pri p-${t.pri[0]}" title="${t.pri} priority"></span>
+    <div class="hl-main"><div class="hl-t">${t.title}</div><div class="hl-sub"><span class="hl-mod" style="--c:${sm[1]}">${sm[0]}</span><span class="hl-x">·</span>${t.link}</div></div>
+    <span class="hl-asg">${av(t.asg)}</span>
+    <span class="hl-time ${over?'over':''}">${over?'Overdue':((homeDay(t)===11?t.time:t.due))}</span>
+  </div>`;}
+function homeList(){const a=homeActiveTasks();let groups=[];
+  if(homeGroup==='module'){groups=HMODS.slice(1).map(([k,l])=>[l,a.filter(t=>t.src===k).sort((x,y)=>t2m(x.time)-t2m(y.time)),'',SRC[k][1]]);}
+  else if(homeGroup==='level'){const ord={High:0,Medium:1,Low:2};groups=[['High',a.filter(t=>t.pri==='High'),'over'],['Medium',a.filter(t=>t.pri==='Medium'),''],['Low',a.filter(t=>t.pri==='Low'),'']].map(g=>{g[1].sort((x,y)=>homeDay(x)-homeDay(y)||t2m(x.time)-t2m(y.time));return g;});}
+  else{const by=d=>a.filter(t=>d(homeDay(t))).sort((x,y)=>homeDay(x)-homeDay(y)||t2m(x.time)-t2m(y.time));groups=[['Overdue',by(d=>d<11),'over'],['Today',by(d=>d===11),''],['Upcoming',by(d=>d>11),'']];}
+  const html=groups.filter(g=>g[1].length).map(g=>`<div class="hl-group"><div class="hl-gh ${g[2]||''}">${g[3]?`<span class="hf-dot" style="--c:${g[3]}"></span>`:''}${g[0]}<span class="hl-gn">${g[1].length}</span></div>${g[1].map(listRow).join('')}</div>`).join('');
+  return `<div class="hlist">${html||`<div class="tp-empty"><div class="tp-empty-ic">${svg(HICON.check,26)}</div><h3>Nothing here</h3><p>No tasks match this filter.</p></div>`}</div>`;}
 function nowLineHTML(){const h=Math.floor(NOW_MIN/60),m=NOW_MIN%60;return `<div class="tl-now"><span class="nt">Now · ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}</span><span class="nl"></span></div>`;}
 function tlRow(t){const sm=SRC[t.src];const p=PEOPLE[t.asg];const done=t.status==='Done';const over=homeDay(t)<11&&!done;
   return `<div class="tl-row ${done?'done':''}" id="tl-${t.id}">
@@ -1604,7 +1632,7 @@ function tlRow(t){const sm=SRC[t.src];const p=PEOPLE[t.asg];const done=t.status=
     <div class="tl-right"><span class="tr-pri p-${t.pri[0]}">${t.pri}</span><span class="tl-xp">+${t.pts}</span><button class="tl-ck ${done?'on':''}" onclick="homeComplete('${t.id}')" title="${done?'Undo':'Complete'}">${svg(HICON.check,13)}</button></div>
   </div>`;}
 function tlGroup(numHTML,wd,cnt,rows,cls){return `<div class="tl-day ${cls||''}"><div class="tl-num ${cls||''}">${numHTML}${wd?`<div class="wd">${wd}</div>`:''}${cnt?`<div class="cnt">${cnt}</div>`:''}</div><div class="tl-rows">${rows}</div></div>`;}
-function homeTimeline(){const active=TASKS.filter(t=>t.status!=='Done');
+function homeTimeline(){const active=homeActiveTasks();
   const over=active.filter(t=>homeDay(t)<11).sort((a,b)=>homeDay(a)-homeDay(b)||t2m(a.time)-t2m(b.time));
   const today=active.filter(t=>homeDay(t)===11).sort((a,b)=>t2m(a.time)-t2m(b.time));
   const fdays=[...new Set(active.filter(t=>homeDay(t)>11).map(homeDay))].sort((a,b)=>a-b);
@@ -1620,7 +1648,7 @@ const SCH_START=8,SCH_END=18,HOUR_W=128,LANE_H=76;
 /* Schedule outlook — horizontal time-blocked calendar: hours run left→right, each task
    a block positioned by start time + sized by duration, lane-packed to avoid overlap */
 function homeHourRail(){const day=homeSelDay;const px=m=>((m-SCH_START*60)/60)*HOUR_W;
-  const items=TASKS.filter(t=>t.status!=='Done'&&homeDay(t)===day).map(t=>({t,s:t2m(t.time),e:t2m(t.time)+estMin(t.est)})).sort((a,b)=>a.s-b.s);
+  const items=homeActiveTasks().filter(t=>homeDay(t)===day).map(t=>({t,s:t2m(t.time),e:t2m(t.time)+estMin(t.est)})).sort((a,b)=>a.s-b.s);
   const laneEnds=[];items.forEach(it=>{let l=laneEnds.findIndex(end=>end<=it.s);if(l<0){l=laneEnds.length;laneEnds.push(it.e);}else laneEnds[l]=it.e;it.lane=l;});
   const lanes=Math.max(1,laneEnds.length);
   let ruler='';for(let h=SCH_START;h<=SCH_END;h++)ruler+=`<span class="sched-hr" style="left:${px(h*60)}px">${String(h).padStart(2,'0')}:00</span>`;
@@ -1639,18 +1667,20 @@ function mountHome(){setRail('navHome');
   const st=homeStats();const fmin=TASKS.reduce((a,t)=>a+(t.focusMin||0),0);
   const todayN=TASKS.filter(t=>t.status!=='Done'&&homeDay(t)===11).length;
   const qw=TASKS.filter(t=>t.status!=='Done'&&['15m','20m','30m'].includes(t.est)).length;
-  const cellHint={timeline:"render:'timeline' · bind:'collection:Task' · group:'day'",schedule:"render:'schedule' · bind:'collection:Task' · group:'hour'",cards:"render:'cards' · bind:'collection:Task'"}[homeOutlook];
+  const cellHint={timeline:"render:'timeline' · bind:'collection:Task' · group:'day'",schedule:"render:'schedule' · bind:'collection:Task' · group:'hour'",list:"render:'list' · bind:'collection:Task' · group:'"+homeGroup+"'",cards:"render:'cards' · bind:'collection:Task'"}[homeOutlook];
   const dayLabel=homeSelDay===11?'today':WD[wdOf(homeSelDay)]+', Jun '+homeSelDay;
+  const fLbl=homeFilterMod?SRC[homeFilterMod][0]:'All';
   let body='';
   if(homeOutlook==='timeline')body=homeTimeline();
   else if(homeOutlook==='schedule')body=`<div class="hcal">${homeDayStrip()}</div>`+homeHourRail();
+  else if(homeOutlook==='list')body=homeList();
   else{const list=homeDayTasks();body=homeMetrics()+`<div class="hcal">${homeDayStrip()}</div>`+`<div class="feed-controls2"><h2 class="fc-h">${homeSelDay===11?"Today's tasks":WD[wdOf(homeSelDay)]+', Jun '+homeSelDay}</h2></div>`+homeQuickHTML()+(list.length?`<div class="tgrid">${list.map(tcard).join('')}</div>`:`<div class="tp-empty"><div class="tp-empty-ic">${svg(HICON.check,26)}</div><h3>Nothing on ${dayLabel}</h3><p>You're all clear here.</p></div>`);}
   document.getElementById('screen').innerHTML=`<div class="homebox ${homeActCollapsed?'collapsed':''}" id="homebox">
     <div class="dmain hfeed"><div class="hfeed-scroll">
       <header class="hero"><div class="hero-l"><h1>${greet}, Vinoth.</h1><p class="hero-sub">${st.over?`<b class="over">${st.over} overdue</b> · `:''}${st.active} on your plate · ${streak}-day streak · ${fmin}m focused · ${dstr}</p></div>
         <button class="paneltoggle hero-act" id="homActBtn" onclick="homeToggleAct()"><span id="homActTxt">${homeActCollapsed?'Activity':'Hide activity'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></header>
       ${ojoStrip(`<b>${st.over} overdue, ${todayN} today.</b> OJO laid your day on the timeline — clear the ${qw} quick wins first, then your focus block. ${aiChip('auto-planned')}`,'planned your day')}
-      <div class="home-controls"><span class="seg viewseg big">${HVIEWS.map(([k,l,ic])=>`<button class="${homeOutlook===k?'on':''}" onclick="homeSetOutlook('${k}')">${svg(ic,15)} ${l}</button>`).join('')}</span><span class="tp-sp"></span><span class="cell-tag" title="UI cell — ${cellHint}">${svg(SPARK,10)} ${homeOutlook} cell</span></div>
+      <div class="home-controls"><span class="seg viewseg big">${HVIEWS.map(([k,l,ic])=>`<button class="${homeOutlook===k?'on':''}" onclick="homeSetOutlook('${k}')">${svg(ic,15)} ${l}</button>`).join('')}</span><span class="tp-sp"></span><button class="hctrl-filter ${homeFilterMod?'on':''}" onclick="openHomeFilter(event)" title="Filter & group">${svg(FILTER_IC,16)}<span>${fLbl}</span></button><span class="cell-tag" title="UI cell — ${cellHint}">${svg(SPARK,10)} ${homeOutlook} cell</span></div>
       <div class="feed-list" id="feedList">${body}</div>
     </div></div>
     <aside class="dpanel hact-panel">

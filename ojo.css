@@ -593,6 +593,43 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 .snow{position:absolute;top:-8px;bottom:0;width:2px;background:var(--coral);z-index:5;border-radius:2px}
 .snow-t{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--coral);border-radius:5px;padding:1px 5px}
 .sched-empty{position:absolute;top:18px;left:0;font-size:13px;color:var(--muted)}
+/* ===== Filter control (single, across every outlook) ===== */
+.hctrl-filter{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 14px;border-radius:11px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:650;color:var(--muted);transition:.14s}
+.hctrl-filter svg{width:16px;height:16px}
+.hctrl-filter:hover{color:var(--ink);border-color:var(--line-3)}
+.hctrl-filter.on{color:var(--coral-ink);border-color:var(--coral-line);background:var(--coral-soft)}
+.homefilter{width:248px;padding:12px 12px 8px}
+.hf-sec{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);padding:6px 2px 8px}
+.hf-chips{display:flex;flex-wrap:wrap;gap:6px;padding-bottom:8px}
+.hf-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:12.5px;font-weight:600;color:var(--ink);transition:.12s}
+.hf-chip:hover{background:var(--surface-2)}
+.hf-chip.on{background:var(--ink-bg);color:#fff;border-color:var(--ink-bg)}
+.hf-dot{width:8px;height:8px;border-radius:50%;background:var(--c);flex:0 0 auto}
+.hf-chip.on .hf-dot{box-shadow:0 0 0 2px rgba(255,255,255,.45)}
+/* ===== List outlook — calm, polished rows (flat, hairline-divided) ===== */
+.hlist{padding:6px 30px 24px}
+.hl-group{margin-top:20px}
+.hl-group:first-child{margin-top:8px}
+.hl-gh{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);padding:0 2px 4px}
+.hl-gh.over{color:var(--coral-ink)}
+.hl-gn{font-size:11px;font-weight:700;color:var(--muted);background:var(--surface-2);border-radius:999px;padding:1px 8px}
+.hl-row{display:flex;align-items:center;gap:13px;padding:13px 8px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s}
+.hl-group .hl-row:last-child{border-bottom:none}
+.hl-row:hover{background:var(--surface-2)}
+.hl-ck{flex:0 0 auto;width:22px;height:22px;border-radius:50%;border:1.6px solid var(--line-3);display:grid;place-items:center;color:transparent;transition:.14s}
+.hl-ck:hover{border-color:var(--ok)}
+.hl-ck.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.hl-pri{flex:0 0 auto;width:3px;height:26px;border-radius:3px;background:var(--line-3)}
+.hl-pri.p-H{background:var(--coral)}.hl-pri.p-M{background:var(--warn)}.hl-pri.p-L{background:var(--line-3)}
+.hl-main{flex:1;min-width:0}
+.hl-t{font-size:14.5px;font-weight:600;color:var(--navy);letter-spacing:-.012em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hl-row.done .hl-t{text-decoration:line-through;color:var(--faint)}
+.hl-sub{font-size:12.5px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hl-mod{font-weight:700;color:var(--c)}
+.hl-x{color:var(--ghost)}
+.hl-asg{flex:0 0 auto}.hl-asg .av{width:24px;height:24px;font-size:9.5px}
+.hl-time{flex:0 0 auto;font-size:12.5px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums;min-width:58px;text-align:right}
+.hl-time.over{color:var(--coral-ink);font-weight:700}
 .tgrid{padding:16px 30px 8px;column-width:380px;column-gap:14px}
 .tcard{break-inside:avoid;margin-bottom:14px;border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:16px;transition:border-color .14s,box-shadow .14s}
 .tcard:hover{border-color:var(--line-3);box-shadow:var(--sh-sm)}.tcard.done{opacity:.6}
@@ -1533,4 +1570,10 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
   .tl-right{flex-direction:column;align-items:flex-end;gap:6px}
   .tl-xp{display:none}
   .sched{padding:8px 14px 22px}
+  .home-controls{gap:8px}
+  .home-controls .tp-sp{display:none}
+  .home-controls .cell-tag{display:none}
+  .viewseg.big{flex:1 1 auto;min-width:0}
+  .hctrl-filter{flex:0 0 auto;padding:0 11px}
+  .hlist{padding:6px 14px 22px}
 }
