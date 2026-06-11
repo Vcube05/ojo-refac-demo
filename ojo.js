@@ -842,21 +842,16 @@ function closeApps(){document.getElementById('appsSheet')?.classList.remove('sho
 function mApp(route){closeApps();mbarActive('apps');go(route);}
 function mCloseAll(){closeApps();closeSection();closeCommSheet();if(typeof closePeek==='function')closePeek();const s=document.getElementById('mscrim');if(s)s.classList.remove('show');}
 
-function homeGenieStats(){if(typeof homeStats!=='function')return '';const st=homeStats();const pct=st.total?Math.round(st.done/st.total*100):0;
+/* OJO's dynamic hint — a single contextual suggestion + CTA, shown at the BOTTOM of the Genie panel */
+function homeGeniePlan(){if(typeof homeStats!=='function')return '';const st=homeStats();
   const todayN=TASKS.filter(t=>t.status!=='Done'&&homeDay(t)===11).length;
   const qw=TASKS.filter(t=>t.status!=='Done'&&['15m','20m','30m'].includes(t.est)).length;
-  return `<div class="g-stats"><div class="g-stat-h">Today at OJO</div><div class="g-stat-row">
-    <div class="g-stat"><span class="v">${st.done}</span><span class="l">Done</span></div>
-    <div class="g-stat"><span class="v">${st.active}</span><span class="l">To do</span></div>
-    <div class="g-stat ${st.over?'over':''}"><span class="v">${st.over}</span><span class="l">Overdue</span></div>
-    <div class="g-stat"><span class="v">${svg(HICON.flame,13)} ${typeof streak!=='undefined'?streak:0}</span><span class="l">Streak</span></div></div>
-   <div class="g-stat-bar"><div class="g-stat-fill" style="width:${pct}%"></div></div></div>
-   <div class="g-plan"><div class="g-plan-h">${svg(SPARK,12)} OJO planned your day<span class="ojs-live">live</span></div>
-    <div class="g-plan-x"><b>${st.over} overdue, ${todayN} today.</b> Clear the ${qw} quick wins first, then your focus block.</div>
+  return `<div class="g-plan"><div class="g-plan-h">${svg(SPARK,12)} OJO suggests<span class="ojs-live">live</span></div>
+    <div class="g-plan-x"><b>${st.over} overdue, ${todayN} today.</b> Clear the ${qw} quick wins first, then a focus block.</div>
     <button class="g-plan-cta" onclick="tFocusMode()">${svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',14)} Start focus block</button></div>`;}
 function genieBody(){const ctx=genieContext();const ask=s=>s.replace(/'/g,"\\'");
-  return `<div class="gwrap"><div class="gmsgs" id="gmsgs">${curRoute==='home'?homeGenieStats():''}<div class="genie-hi"><img class="genie-logo" src="assets/ojo-logo.png" alt="OJO Genie">Hello, Vinoth<div class="gctx">${ctx.who?`Ask me anything about <b>${ctx.who}</b>`:'How can I help you today?'}</div></div></div>
-  <div class="gfoot"><div class="gsugg">
+  return `<div class="gwrap"><div class="gmsgs" id="gmsgs"><div class="genie-hi"><img class="genie-logo" src="assets/ojo-logo.png" alt="OJO Genie">Hello, Vinoth<div class="gctx">${ctx.who?`Ask me anything about <b>${ctx.who}</b>`:'How can I help you today?'}</div></div></div>
+  <div class="gfoot">${curRoute==='home'?homeGeniePlan():''}<div class="gsugg">
     ${ctx.suggestions.map(s=>`<button onclick="genieAsk('${ask(s)}')">${s}</button>`).join('')}</div>
    <div class="gask"><input id="gIn" placeholder="Ask Ojo anything..." onkeydown="if(event.key==='Enter')genieAsk(this.value)">
      <span class="gic">${svg('<path d="M21.4 11.05 12.05 20.4a5 5 0 0 1-7.07-7.07l9.19-9.19a3 3 0 0 1 4.24 4.24l-9.2 9.19a1 1 0 0 1-1.41-1.41l8.49-8.49"/>',17)}</span>
@@ -1538,10 +1533,10 @@ function taskRow(t){const sm=SRC[t.src];const over=homeDay(t)<11&&t.status!=='Do
 function homeBoard(){return `<div class="tboard">${TSTAGES.map(c=>{const items=TASKS.filter(t=>t.status===c);return `<div class="tbcol"><div class="tbc-h"><span class="tbc-dot" style="background:${TSTC[c]}"></span>${c}<span class="tbc-n">${items.length}</span></div><div class="tbc-body">${items.map(t=>{const sm=SRC[t.src];const over=homeDay(t)<11&&t.status!=='Done';return `<div class="tbcard" onclick="openTaskRec('${t.id}','${curRoute==="home"?"home":"module"}')"><div class="tbc-src" style="--c:${sm[1]}"><span class="d"></span>${sm[0]}</div><div class="tbc-t">${t.title}</div><div class="tbc-m"><span class="tr-pri p-${t.pri[0]}">${t.pri}</span><span class="${over?'over':''}">${over?'Overdue':t.due}</span></div></div>`;}).join('')||'<div class="tbc-empty">No tasks</div>'}</div></div>`;}).join('')}</div>`;}
 function homeSuggest(){const q=TASKS.filter(t=>t.status!=='Done'&&['15m','20m','30m'].includes(t.est));if(!q.length)return '';
   return `<div class="ojo-sugg"><span class="os-ic"><img class="ojo-mini" src="assets/ojo-logo.png" alt="OJO"></span><div class="os-b"><b>${q.length} quick wins under 30 min.</b> OJO suggests clearing them in one focus block to cut your overdue.</div><button class="os-cta" onclick="tFocusMode()">Start</button></div>`;}
-function homeQuickHTML(){if(!homeQuick)return '';
+function homeQuickHTML(){
   const chip=(ic,lbl)=>`<button class="qa-chip">${svg(ic,13)} ${lbl}</button>`;
   const MODIC='<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>';
-  return `<div class="qadd"><div class="qa-top"><input id="qaddInput" class="qa-title" placeholder="What needs doing?" onkeydown="if(event.key==='Enter')homeAddTask(this.value)"></div>
+  return `<div class="qadd"><div class="qa-top"><input id="qaddInput" class="qa-title" placeholder="What needs doing?" onkeydown="if(event.key==='Enter')homeAddTask(this.value);else if(event.key==='Escape')homeQuickClose()"></div>
    <div class="qa-chips">${chip(HICON.cal,'Today')}${chip(MODIC,'Module')}${chip('<path d="M5 21V4h11l-1 4h6v8h-9l-1-4H5"/>','Priority')}<span class="qa-sp"></span><button class="qa-cancel" onclick="homeQuickClose()">Cancel</button><button class="qa-add" onclick="homeAddTask(document.getElementById('qaddInput').value)">Add task</button></div>
   </div>`;}
 function activityFeed(){return `<div class="act-feed">${ACTS.map(a=>{const p=PEOPLE[a.who];return `<div class="act2"><span class="act2-av" style="background:${p[1]}">${p[0]}</span><div class="act2-b"><div class="act2-x">${p[2]} ${a.txt}</div><div class="act2-tm"><span class="act2-src" style="--c:${a.c}">${a.src}</span> · ${a.tm}</div></div></div>`;}).join('')}</div>`;}
@@ -1576,9 +1571,9 @@ function homeSetView(v){homeView=v;mountHome();}
 function homeSelectDay(d){homeSelDay=d;if(homeView==='activity')homeView='list';mountHome();}
 function homeWeek(delta){homeWeekStart+=delta;mountHome();}
 function homeToday(){homeWeekStart=8;homeSelDay=11;mountHome();}
-function homeQuickOpen(){homeQuick=true;mountHome();setTimeout(()=>{const i=document.getElementById('qaddInput');if(i)i.focus();},30);}
-function homeQuickClose(){homeQuick=false;mountHome();}
-function homeAddTask(title){if(!title||!title.trim())return;const id='TKX'+(TASKS.length+1);TASKS.unshift({id,title:title.trim(),src:'project',link:'Inbox',asg:'priya',status:'Todo',pri:'Medium',due:homeSelDay+' Jun',est:'30m',pts:15,focusMin:0,subs:[{t:'Define the work',done:false},{t:'Do it',done:false}],comments:[]});homeQuick=false;mountHome();toast('Task added to '+(homeSelDay===11?'Today':homeSelDay+' Jun'));}
+function homeQuickOpen(){const m=document.getElementById('qaddModal'),s=document.getElementById('qaddScrim');if(!m)return;m.innerHTML=homeQuickHTML();s.classList.add('show');m.classList.add('show');setTimeout(()=>{const i=document.getElementById('qaddInput');if(i)i.focus();},30);}
+function homeQuickClose(){document.getElementById('qaddModal')?.classList.remove('show');document.getElementById('qaddScrim')?.classList.remove('show');}
+function homeAddTask(title){if(!title||!title.trim())return;const id='TKX'+(TASKS.length+1);TASKS.unshift({id,title:title.trim(),src:'project',link:'Inbox',asg:'priya',status:'Todo',pri:'Medium',due:homeSelDay+' Jun',time:'12:00',est:'30m',pts:15,focusMin:0,subs:[{t:'Define the work',done:false},{t:'Do it',done:false}],comments:[]});homeQuickClose();mountHome();toast('Task added to '+(homeSelDay===11?'Today':homeSelDay+' Jun'));}
 function homeMetrics(){const st=homeStats();const pct=st.total?Math.round(st.done/st.total*100):0;const fmin=TASKS.reduce((a,t)=>a+(t.focusMin||0),0);
   const tiles=[['over',st.over,'Overdue','need attention'],['',st.active,'To do','on your plate'],['ok',st.done,'Done today','+'+bonusXP+' XP'],['',fmin+'m','Focused','today']];
   return `<div class="hmetrics">${tiles.map(t=>`<div class="mtile ${t[0]}"><div class="mt-v">${t[1]}</div><div class="mt-l">${t[2]}</div><div class="mt-s">${t[3]}</div></div>`).join('')}
@@ -1697,8 +1692,8 @@ function mountHome(){setRail('navHome');
     <div class="dmain hfeed"><div class="hfeed-scroll">
       <header class="hero"><div class="hero-l"><h1>${greet}, Vinoth.</h1><p class="hero-sub">${st.over?`<b class="over">${st.over} overdue</b> · `:''}${st.active} on your plate · ${streak}-day streak · ${fmin}m focused · ${dstr}</p></div>
         <button class="paneltoggle hero-act" id="homActBtn" onclick="homeToggleAct()"><span id="homActTxt">${homeActCollapsed?'Activity':'Hide activity'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></header>
-      <div class="home-controls"><span class="seg viewseg big">${HVIEWS.map(([k,l,ic])=>`<button class="${homeOutlook===k?'on':''}" onclick="homeSetOutlook('${k}')">${svg(ic,15)} ${l}</button>`).join('')}</span><span class="tp-sp"></span>${homeOutlook==='timeline'?`<span class="seg orientseg" title="Orientation">${ORIENTS.map(([o,ic])=>`<button class="${homeOrient===o?'on':''}" onclick="homeSetOrient('${o}')">${svg(ic,16)}</button>`).join('')}</span>`:''}<button class="hctrl-add ${homeQuick?'on':''}" onclick="homeQuickOpen()">${svg(HICON.plus,15)}<span>Add task</span></button><button class="hctrl-filter ${homeFilterMod?'on':''}" onclick="openHomeFilter(event)" title="Filter & group">${svg(FILTER_IC,16)}<span>${fLbl}</span></button></div>
-      <div class="feed-list" id="feedList">${homeQuickHTML()}${body}</div>
+      <div class="home-controls"><span class="seg viewseg big">${HVIEWS.map(([k,l,ic])=>`<button class="${homeOutlook===k?'on':''}" onclick="homeSetOutlook('${k}')">${svg(ic,15)} ${l}</button>`).join('')}</span><span class="tp-sp"></span>${homeOutlook==='timeline'?`<span class="seg orientseg" title="Orientation">${ORIENTS.map(([o,ic])=>`<button class="${homeOrient===o?'on':''}" onclick="homeSetOrient('${o}')">${svg(ic,16)}</button>`).join('')}</span>`:''}<button class="hctrl-add" onclick="homeQuickOpen()">${svg(HICON.plus,15)}<span>Add task</span></button><button class="hctrl-filter ${homeFilterMod?'on':''}" onclick="openHomeFilter(event)" title="Filter & group">${svg(FILTER_IC,16)}<span>${fLbl}</span></button></div>
+      <div class="feed-list" id="feedList">${body}</div>
     </div></div>
     <aside class="dpanel hact-panel">
       <div class="dpanel-head"><span class="nm">Recent activity</span><button class="ed" onclick="toast('All activity')">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button></div>

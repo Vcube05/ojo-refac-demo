@@ -491,7 +491,10 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 .os-b{flex:1;font-size:13px;color:var(--ink);line-height:1.45}.os-b b{font-weight:700}
 .os-cta{flex:0 0 auto;padding:8px 16px;border-radius:999px;background:var(--coral);color:#fff;font-size:13px;font-weight:700}.os-cta:hover{filter:brightness(1.05)}
 .qadd-trigger{display:flex;align-items:center;gap:9px;width:calc(100% - 44px);margin:14px 22px 0;padding:13px 16px;border:1.5px dashed var(--line-2);border-radius:14px;color:var(--muted);font-size:14px;font-weight:600;background:transparent;transition:.14s}.qadd-trigger:hover{border-color:var(--coral-line);color:var(--coral-ink)}.qadd-trigger svg{color:var(--coral)}
-.qadd{max-width:600px;margin:6px 30px 16px;border:1px solid var(--coral-line);border-radius:14px;background:var(--surface);box-shadow:var(--sh-sm);overflow:hidden}
+/* quick-add → centered modal */
+.qadd-modal{position:fixed;top:17vh;left:50%;transform:translateX(-50%) translateY(-8px) scale(.985);width:min(540px,92vw);z-index:91;opacity:0;pointer-events:none;transition:.2s var(--ease)}
+.qadd-modal.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0) scale(1)}
+.qadd{border:1px solid var(--line-2);border-radius:18px;background:var(--surface);box-shadow:var(--sh-lg);overflow:hidden}
 .qa-top{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
 .qa-cell{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--coral-ink);background:var(--coral-soft);border:1px solid var(--coral-line);border-radius:6px;padding:2px 6px}
 .qa-title{flex:1;border:none;outline:none;background:transparent;font-size:16px;font-weight:600;color:var(--ink)}.qa-title::placeholder{color:var(--placeholder);font-weight:500}
@@ -499,7 +502,7 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 .qa-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;background:var(--surface-2);font-size:12.5px;font-weight:600;color:var(--muted)}.qa-chip:hover{color:var(--ink)}.qa-chip svg{width:13px;height:13px}
 .qa-sp{flex:1}
 .qa-cancel{padding:7px 13px;border-radius:999px;font-size:12.5px;font-weight:600;color:var(--muted)}.qa-cancel:hover{background:var(--surface-2)}
-.qa-add{padding:7px 16px;border-radius:999px;background:var(--coral);color:#fff;font-size:12.5px;font-weight:700}.qa-add:hover{filter:brightness(1.05)}
+.qa-add{padding:8px 18px;border-radius:999px;background:var(--ink-bg);color:#fff;font-size:12.5px;font-weight:700}.qa-add:hover{filter:brightness(1.15)}
 .tlist{display:flex;flex-direction:column;gap:7px}
 .titem{border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden;transition:border-color .14s,box-shadow .14s}
 .titem:hover{border-color:var(--line-3)}.titem.open{box-shadow:var(--sh-sm)}.titem.done{opacity:.6}
@@ -527,6 +530,8 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 .tbc-empty{font-size:12px;color:var(--ghost);padding:10px;text-align:center}
 /* ===== Home v3: bold command-center (hero · metrics · calendar · card grid) ===== */
 .hfeed-scroll{padding-bottom:26px}
+/* centralise the home feed in a column with breathing room on both ends */
+.hfeed-scroll>.hero,.hfeed-scroll>.home-controls,.hfeed-scroll>.feed-list{max-width:940px;margin-left:auto;margin-right:auto}
 .hero{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:30px 30px 2px}
 .hero h1{font-size:34px;font-weight:800;letter-spacing:-.03em;color:var(--navy);line-height:1.04}
 .hero-sub{font-size:14.5px;color:var(--muted);margin-top:11px;font-weight:500}.hero-sub .over{color:var(--coral-ink);font-weight:800}
@@ -1596,6 +1601,7 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
   .viewseg.big{flex:1 1 auto;min-width:0}
   .hctrl-filter,.hctrl-add{flex:0 0 auto;padding:0 11px}
   .hctrl-add span{display:none}
-  .qadd{margin:6px 14px 16px}
+  .qadd-modal{top:auto;bottom:calc(92px + env(safe-area-inset-bottom));transform:translateX(-50%)}
+  .qadd-modal.show{transform:translateX(-50%)}
   .hlist{padding:6px 14px 22px}
 }
