@@ -1355,18 +1355,20 @@ const SRC={leads:['Leads','#E08A1E'],project:['Projects','#2F6FED'],hr:['HR','#7
 const TSTAGES=['Todo','Doing','Review','Done'];
 const TSTC={Todo:'#64748B',Doing:'#2F6FED',Review:'#9A6B12',Done:'#15A06A'};
 const TASKS=[
- {id:'TK01',title:'Send proposal to Hexathalon',src:'leads',link:'Hexathalon Apparel Brand',asg:'priya',status:'Doing',pri:'High',due:'06 Jun',est:'2h',pts:30,focusMin:0},
- {id:'TK02',title:'Qualify inbound — Movie',src:'leads',link:'Movie',asg:'sam',status:'Todo',pri:'Medium',due:'08 Jun',est:'1h',pts:20,focusMin:0},
- {id:'TK03',title:'Follow up: layman brothers (overdue)',src:'leads',link:'layman brothers',asg:'ravi',status:'Review',pri:'High',due:'05 Jun',est:'30m',pts:25,focusMin:15},
- {id:'TK04',title:'Design home page hero',src:'project',link:'Apollo · Design',asg:'mei',status:'Doing',pri:'High',due:'10 Jun',est:'6h',pts:40,focusMin:50},
- {id:'TK05',title:'Stakeholder sign-off',src:'project',link:'Apollo · Discovery',asg:'priya',status:'Review',pri:'Medium',due:'07 Jun',est:'2h',pts:25,focusMin:0},
- {id:'TK06',title:'QA build checklist',src:'project',link:'Apollo · Build',asg:'sam',status:'Todo',pri:'Low',due:'14 Jun',est:'3h',pts:15,focusMin:0},
- {id:'TK07',title:'Onboard Vinoth V V',src:'hr',link:'Vinoth V V',asg:'mei',status:'Doing',pri:'Medium',due:'09 Jun',est:'1h',pts:20,focusMin:25},
- {id:'TK08',title:'Approve March leave requests',src:'hr',link:'HR · Leaves',asg:'priya',status:'Todo',pri:'Low',due:'06 Jun',est:'20m',pts:10,focusMin:0},
- {id:'TK09',title:'Confirm BILL-2026-00002',src:'account',link:'BILL-2026-00002',asg:'sam',status:'Review',pri:'High',due:'07 Jun',est:'30m',pts:25,focusMin:0},
- {id:'TK10',title:'Record payment INV/26-27/0003',src:'account',link:'INV/26-27/0003',asg:'priya',status:'Todo',pri:'High',due:'06 Jun',est:'15m',pts:30,focusMin:0},
- {id:'TK11',title:'Renew CloudNine hosting',src:'vendor',link:'CloudNine Hosting',asg:'ravi',status:'Todo',pri:'Medium',due:'12 Jun',est:'30m',pts:20,focusMin:0},
- {id:'TK12',title:'Stakeholder interviews',src:'project',link:'Apollo · Discovery',asg:'priya',status:'Done',pri:'High',due:'05 May',est:'8h',pts:40,focusMin:75}];
+ {id:'TK01',title:'Send proposal to Hexathalon',src:'leads',link:'Hexathalon Apparel Brand',asg:'priya',status:'Doing',pri:'High',due:'11 Jun',time:'09:00',est:'2h',pts:30,focusMin:0},
+ {id:'TK02',title:'Qualify inbound — Movie',src:'leads',link:'Movie',asg:'sam',status:'Todo',pri:'Medium',due:'11 Jun',time:'16:30',est:'1h',pts:20,focusMin:0},
+ {id:'TK03',title:'Follow up: layman brothers (overdue)',src:'leads',link:'layman brothers',asg:'ravi',status:'Review',pri:'High',due:'05 Jun',time:'14:00',est:'30m',pts:25,focusMin:15},
+ {id:'TK04',title:'Design home page hero',src:'project',link:'Apollo · Design',asg:'mei',status:'Doing',pri:'High',due:'12 Jun',time:'10:00',est:'6h',pts:40,focusMin:50},
+ {id:'TK05',title:'Stakeholder sign-off',src:'project',link:'Apollo · Discovery',asg:'priya',status:'Review',pri:'Medium',due:'11 Jun',time:'10:30',est:'2h',pts:25,focusMin:0},
+ {id:'TK06',title:'QA build checklist',src:'project',link:'Apollo · Build',asg:'sam',status:'Todo',pri:'Low',due:'14 Jun',time:'14:00',est:'3h',pts:15,focusMin:0},
+ {id:'TK07',title:'Onboard Vinoth V V',src:'hr',link:'Vinoth V V',asg:'mei',status:'Doing',pri:'Medium',due:'11 Jun',time:'12:00',est:'1h',pts:20,focusMin:25},
+ {id:'TK08',title:'Approve March leave requests',src:'hr',link:'HR · Leaves',asg:'priya',status:'Todo',pri:'Low',due:'13 Jun',time:'11:00',est:'20m',pts:10,focusMin:0},
+ {id:'TK09',title:'Confirm BILL-2026-00002',src:'account',link:'BILL-2026-00002',asg:'sam',status:'Review',pri:'High',due:'11 Jun',time:'14:30',est:'30m',pts:25,focusMin:0},
+ {id:'TK10',title:'Record payment INV/26-27/0003',src:'account',link:'INV/26-27/0003',asg:'priya',status:'Todo',pri:'High',due:'06 Jun',time:'09:15',est:'15m',pts:30,focusMin:0},
+ {id:'TK11',title:'Renew CloudNine hosting',src:'vendor',link:'CloudNine Hosting',asg:'ravi',status:'Todo',pri:'Medium',due:'12 Jun',time:'15:00',est:'30m',pts:20,focusMin:0},
+ {id:'TK12',title:'Stakeholder interviews',src:'project',link:'Apollo · Discovery',asg:'priya',status:'Done',pri:'High',due:'05 May',time:'09:00',est:'8h',pts:40,focusMin:75}];
+function t2m(t){if(!t)return 0;const a=t.split(':');return (+a[0])*60+(+a[1]);}
+const NOW_MIN=13*60+20; /* demo "now" for the timeline/now-line */
 TASKS.forEach((t,i)=>{t.subs=[{t:'Gather context',done:i%2===0||t.status==='Done'},{t:'Do the focused work',done:t.status==='Done'},{t:'Review & close',done:t.status==='Done'}];t.comments=[];});
 let bonusXP=0,streak=5,focusToday=45;
 let taskModule='leads',taskScope='leads',taskContainer='modcontent';
@@ -1586,23 +1588,58 @@ function tcard(t){const sm=SRC[t.src];const p=PEOPLE[t.asg];const over=homeDay(t
 function homeSub2(id,i){const t=TASKS.find(x=>x.id===id);if(!t)return;t.subs[i].done=!t.subs[i].done;const el=document.getElementById('tc-'+id);if(el)el.outerHTML=tcard(t);}
 let homeActCollapsed=true;
 function homeToggleAct(){homeActCollapsed=!homeActCollapsed;const b=document.getElementById('homebox');if(b)b.classList.toggle('collapsed',homeActCollapsed);const t=document.getElementById('homActTxt');if(t)t.textContent=homeActCollapsed?'Activity':'Hide activity';const btn=document.getElementById('homActBtn');if(btn)btn.classList.toggle('on',!homeActCollapsed);}
+/* ===== Home outlooks — each is a UI cell: render(timeline|schedule|cards) + bind:collection:Task ===== */
+let homeOutlook='timeline';try{homeOutlook=localStorage.getItem('ojo-home-view')||'timeline';}catch(e){}
+const HVIEWS=[['timeline','Timeline','<path d="M5 3v18"/><circle cx="5" cy="7" r="2.3" fill="currentColor" stroke="none"/><circle cx="5" cy="16" r="2.3" fill="currentColor" stroke="none"/><path d="M10 7h9M10 16h6"/>'],
+ ['schedule','Schedule','<rect x="3" y="4.5" width="18" height="16.5" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>'],
+ ['cards','Cards','<rect x="3.5" y="4" width="7" height="16" rx="1.6"/><rect x="13.5" y="4" width="7" height="16" rx="1.6"/>']];
+const WARN='<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h16.9a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>';
+function nowLineHTML(){const h=Math.floor(NOW_MIN/60),m=NOW_MIN%60;return `<div class="tl-now"><span class="nt">Now · ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}</span><span class="nl"></span></div>`;}
+function tlRow(t){const sm=SRC[t.src];const p=PEOPLE[t.asg];const done=t.status==='Done';const over=homeDay(t)<11&&!done;
+  return `<div class="tl-row ${done?'done':''}" id="tl-${t.id}">
+    <span class="tl-time ${over?'over':''}">${t.time||'--:--'}</span>
+    <span class="tl-dot" style="--c:${sm[1]}"></span>
+    <div class="tl-main"><div class="tl-t" onclick="openTaskRec('${t.id}','home')">${t.title}</div>
+      <div class="tl-ctx"><span class="tr-src" style="--c:${sm[1]}"><span class="d"></span>${sm[0]}</span><span class="tl-sep">·</span>${t.link}<span class="tl-sep">·</span>${av(t.asg)}<span class="tl-asg">${p[2]}</span><span class="tl-sep">·</span>${t.est}</div></div>
+    <div class="tl-right"><span class="tr-pri p-${t.pri[0]}">${t.pri}</span><span class="tl-xp">+${t.pts}</span><button class="tl-ck ${done?'on':''}" onclick="homeComplete('${t.id}')" title="${done?'Undo':'Complete'}">${svg(HICON.check,13)}</button></div>
+  </div>`;}
+function tlGroup(numHTML,wd,cnt,rows,cls){return `<div class="tl-day ${cls||''}"><div class="tl-num ${cls||''}">${numHTML}${wd?`<div class="wd">${wd}</div>`:''}${cnt?`<div class="cnt">${cnt}</div>`:''}</div><div class="tl-rows">${rows}</div></div>`;}
+function homeTimeline(){const active=TASKS.filter(t=>t.status!=='Done');
+  const over=active.filter(t=>homeDay(t)<11).sort((a,b)=>homeDay(a)-homeDay(b)||t2m(a.time)-t2m(b.time));
+  const today=active.filter(t=>homeDay(t)===11).sort((a,b)=>t2m(a.time)-t2m(b.time));
+  const fdays=[...new Set(active.filter(t=>homeDay(t)>11).map(homeDay))].sort((a,b)=>a-b);
+  let html='';
+  if(over.length)html+=tlGroup(`<div class="lbl">${svg(WARN,13)} Overdue</div>`,'',over.length+' slipped',over.map(tlRow).join(''),'over');
+  let trows='',np=false;today.forEach(t=>{if(!np&&t2m(t.time)>NOW_MIN){trows+=nowLineHTML();np=true;}trows+=tlRow(t);});if(!np)trows+=nowLineHTML();
+  html+=tlGroup(`<div class="d">11</div>`,WD[wdOf(11)]+' · Today',today.length+' scheduled',trows,'today');
+  fdays.forEach(d=>{const rows=active.filter(t=>homeDay(t)===d).sort((a,b)=>t2m(a.time)-t2m(b.time));
+    html+=tlGroup(`<div class="d">${d}</div>`,WD[wdOf(d)],rows.length+(d===12?' planned':' '),rows.map(tlRow).join(''));});
+  return `<div class="timeline">${html}</div>`;}
+function agBlock(t){const sm=SRC[t.src];const p=PEOPLE[t.asg];const done=t.status==='Done';
+  return `<div class="ag-block ${done?'done':''}" style="--c:${sm[1]}" onclick="openTaskRec('${t.id}','home')"><div class="ag-bt">${t.time} · ${t.title}</div><div class="ag-bm">${sm[0]} · ${t.link} · ${p[2]} · ${t.est}</div></div>`;}
+function homeHourRail(){const day=homeSelDay;const dt=TASKS.filter(t=>t.status!=='Done'&&homeDay(t)===day).sort((a,b)=>t2m(a.time)-t2m(b.time));
+  let rows='';for(let h=8;h<=18;h++){const slot=dt.filter(t=>Math.floor(t2m(t.time)/60)===h);const now=(day===11&&Math.floor(NOW_MIN/60)===h);
+    rows+=`<div class="ag-row ${slot.length?'has':''}"><span class="ag-h">${String(h).padStart(2,'0')}:00</span><div class="ag-slot">${now?nowLineHTML():''}${slot.map(agBlock).join('')}</div></div>`;}
+  return `<div class="agenda">${rows}</div>`;}
+function homeSetOutlook(v){homeOutlook=v;try{localStorage.setItem('ojo-home-view',v);}catch(e){}mountHome();}
 function mountHome(){setRail('navHome');
   const h=new Date().getHours(),greet=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
   const dstr=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-  const st=homeStats();const views=[['list','List'],['board','Board']];
+  const st=homeStats();const fmin=TASKS.reduce((a,t)=>a+(t.focusMin||0),0);
+  const todayN=TASKS.filter(t=>t.status!=='Done'&&homeDay(t)===11).length;
+  const qw=TASKS.filter(t=>t.status!=='Done'&&['15m','20m','30m'].includes(t.est)).length;
+  const cellHint={timeline:"render:'timeline' · bind:'collection:Task' · group:'day'",schedule:"render:'schedule' · bind:'collection:Task' · group:'hour'",cards:"render:'cards' · bind:'collection:Task'"}[homeOutlook];
   const dayLabel=homeSelDay===11?'today':WD[wdOf(homeSelDay)]+', Jun '+homeSelDay;
-  if(homeView==='activity')homeView='list';
-  const list=homeView==='board'?null:homeDayTasks();
-  const body=homeView==='board'?homeBoard():(list.length?`<div class="tgrid">${list.map(tcard).join('')}</div>`:`<div class="tp-empty"><div class="tp-empty-ic">${svg(HICON.check,26)}</div><h3>Nothing on ${dayLabel}</h3><p>You're all clear here. Add a task or jump to another day.</p></div>`);
+  let body='';
+  if(homeOutlook==='timeline')body=homeTimeline();
+  else if(homeOutlook==='schedule')body=`<div class="hcal">${homeDayStrip()}</div>`+homeHourRail();
+  else{const list=homeDayTasks();body=homeMetrics()+`<div class="hcal">${homeDayStrip()}</div>`+`<div class="feed-controls2"><h2 class="fc-h">${homeSelDay===11?"Today's tasks":WD[wdOf(homeSelDay)]+', Jun '+homeSelDay}</h2></div>`+homeQuickHTML()+(list.length?`<div class="tgrid">${list.map(tcard).join('')}</div>`:`<div class="tp-empty"><div class="tp-empty-ic">${svg(HICON.check,26)}</div><h3>Nothing on ${dayLabel}</h3><p>You're all clear here.</p></div>`);}
   document.getElementById('screen').innerHTML=`<div class="homebox ${homeActCollapsed?'collapsed':''}" id="homebox">
     <div class="dmain hfeed"><div class="hfeed-scroll">
-      <header class="hero"><div class="hero-l"><h1>${greet}, Vinoth.</h1><p class="hero-sub">${st.over?`<b class="over">${st.over} overdue</b> · `:''}${st.active} on your plate · ${streak}-day streak · ${dstr}</p></div>
+      <header class="hero"><div class="hero-l"><h1>${greet}, Vinoth.</h1><p class="hero-sub">${st.over?`<b class="over">${st.over} overdue</b> · `:''}${st.active} on your plate · ${streak}-day streak · ${fmin}m focused · ${dstr}</p></div>
         <button class="paneltoggle hero-act" id="homActBtn" onclick="homeToggleAct()"><span id="homActTxt">${homeActCollapsed?'Activity':'Hide activity'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></header>
-      ${homeMetrics()}
-      <div class="hcal">${homeDayStrip()}</div>
-      <div class="feed-controls2"><h2 class="fc-h">${homeSelDay===11?"Today's tasks":WD[wdOf(homeSelDay)]+', Jun '+homeSelDay}</h2><span class="tp-sp"></span><span class="seg viewseg">${views.map(([k,l])=>`<button class="${homeView===k?'on':''}" onclick="homeSetView('${k}')">${l}</button>`).join('')}</span></div>
-      ${homeView==='list'?homeSuggest():''}
-      ${homeView==='list'?homeQuickHTML():''}
+      ${ojoStrip(`<b>${st.over} overdue, ${todayN} today.</b> OJO laid your day on the timeline — clear the ${qw} quick wins first, then your focus block. ${aiChip('auto-planned')}`,'planned your day')}
+      <div class="home-controls"><span class="seg viewseg big">${HVIEWS.map(([k,l,ic])=>`<button class="${homeOutlook===k?'on':''}" onclick="homeSetOutlook('${k}')">${svg(ic,15)} ${l}</button>`).join('')}</span><span class="tp-sp"></span><span class="cell-tag" title="UI cell — ${cellHint}">${svg(SPARK,10)} ${homeOutlook} cell</span></div>
       <div class="feed-list" id="feedList">${body}</div>
     </div></div>
     <aside class="dpanel hact-panel">
