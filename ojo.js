@@ -139,17 +139,18 @@ function mountModule(){const c=cm();
   if(curMod==='project'){
     document.getElementById('modcontent').innerHTML=`<div class="box dbox ${modCollapsed?'collapsed':''}" id="modbox">
       <div class="dmain">
-        <div class="crumbbar"><a onclick="go('projectsDash')">Projects</a> <span class="sep">‹</span> <b>${c.crumbName}</b></div>
+        <div class="crumbbar"><a onclick="go('projectsDash')">Projects</a></div>
         <div class="mc-top"><div class="title-wrap"><div class="picon">${svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/>',20)}</div><div><h1>${c.title}</h1><div class="sub">${c.sub}</div></div></div>
-          <div class="projcomm"><button class="commbtn" data-f="call" onclick="openComm('call')">${faceIcon('call')} Call</button><button class="commbtn" data-f="email" onclick="openComm('email')">${faceIcon('email')} Email</button><button class="commbtn" data-f="chat" onclick="openComm('chat')">${faceIcon('chat')} Message</button></div>
-          <div class="sp"></div><span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span>${modNew()}
-          <button class="paneltoggle" onclick="modToggle()"><span id="modPtogTxt">${modCollapsed?'Show info':'Hide info'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
+          <div class="sp"></div>
+          <div class="commpill">${[['call','Call'],['email','Email'],['video','Meet']].map(([f,l])=>`<button onclick="openComm('${f}')">${faceIcon(f)}<span>${l}</span></button>`).join('')}</div>
+          <span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span>
+          <button class="paneltoggle" onclick="modToggle()"><span id="modPtogTxt">${modCollapsed?'Show activity':'Hide activity'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
         ${modViewbar()}
         <div id="metricsBar" class="metrics" style="padding-left:22px;padding-right:22px"></div>
         <div class="work" id="work"></div>
       </div>
       <aside class="dpanel" id="modpanel">
-        <div class="dpanel-head"><span class="nm">Apollo — Website Revamp</span><button class="ed" onclick="xpOpenFrom(this)" title="Expand">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button><button class="ed" style="margin-left:6px">${svg('<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',15)}</button></div>
+        <div class="dpanel-head"><span class="nm">Recent activity</span><button class="ed" onclick="xpOpenFrom(this)" title="Expand">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button></div>
         <div class="dpanel-body" id="modpanelbody"></div>
       </aside></div>`;
     document.getElementById('shell')?.classList.add('dockgut');
@@ -169,7 +170,7 @@ function mountModule(){const c=cm();
   renderVTabs();buildVMenu();buildVTypes();updateGroup();syncSizeToggle();renderWork();
 }
 /* project right info/comm panel (same expandable pattern as the detail page) */
-function modToggle(){modCollapsed=!modCollapsed;document.getElementById('modbox').classList.toggle('collapsed',modCollapsed);document.getElementById('modPtogTxt').textContent=modCollapsed?'Show info':'Hide info';}
+function modToggle(){modCollapsed=!modCollapsed;document.getElementById('modbox').classList.toggle('collapsed',modCollapsed);document.getElementById('modPtogTxt').textContent=modCollapsed?'Show activity':'Hide activity';}
 function setModFace(f){modFace=f;document.querySelectorAll('#modpanel .xcface').forEach(b=>b.classList.toggle('on',b.dataset.face===f));renderModInfo();}
 /* OJO read of the project — derived from task completion, work-in-progress and budget */
 function projInsights(){const a=projScore();const done=tasks.filter(t=>t.st==='Done').length;const doing=tasks.filter(t=>t.st==='Doing').length;const total=tasks.length||1;
@@ -186,11 +187,7 @@ function projPanelCells(){const a=projScore();const done=tasks.filter(t=>t.st===
    {render:'contacts',props:{title:'Client contact',add:null,list:[['Rajeeshlal','Primary · POC','vinoth+lal@palpx.com','#2F6FED',true]]}},
    {render:'more',props:{rows:[['Website','ojo.io'],['Location','—'],['Vendor','Ojo Dojo (outsourced)'],['Vendor POC','ojodeveloper1'],['Vendor email','ojodeveloper1@gmail.com']]}}
   ];}
-function projInfoBody(){
-  const dyn=projPanelCells().filter(c=>c.render==='score'||c.render==='insights');
-  return `<div class="ip">
-   ${dyn.map(renderPanelCell).join('')}
-   <div class="ip-act"><div class="ip-act-h">Recent activity</div>${bActivity()}</div></div>`;}
+function projInfoBody(){return `<div class="ip"><div class="ip-actonly">${bActivity()}</div></div>`;}
 function renderModInfo(){const el=document.getElementById('modpanelbody');if(!el)return;el.innerHTML=projInfoBody();}
 
 /* ---- floating info/comm bar: replaces the stacked info/comm panel on mobile (overview + detail pages) ----
@@ -394,7 +391,7 @@ function renderProjWork(type){const el=document.getElementById('work');
 /* static project data (separated from the live/dynamic panel) — clean aligned grid, few section starters */
 function projDetails(){
   const about=[['Status','Active'],['Due date','20 Jul 2026'],['Milestones','4'],['Tasks','10 total'],['Budget','₹4,80,000'],['Budget left','₹3,80,000'],['Owner','Priya Nair'],['Created','7 May 2026']];
-  const client=[['Primary contact','Rajeeshlal'],['Role','POC'],['Email','vinoth+lal@palpx.com'],['Portal','Shared with client']];
+  const client=[['Primary contact','Rajeeshlal'+pcommMini('Rajeeshlal')],['Role','POC'],['Email','vinoth+lal@palpx.com'],['Portal','Shared with client']];
   const vendor=[['Vendor','Ojo Dojo (outsourced)'],['Vendor POC','ojodeveloper1'],['Vendor email','ojodeveloper1@gmail.com'],['Website','ojo.io']];
   const block=(h,rows)=>`<div class="pd-block"><div class="pd-h">${h}</div><div class="pd-grid">${rows.map(([k,v])=>`<div class="pd-cell"><div class="pd-k">${k}</div><div class="pd-v">${v}</div></div>`).join('')}</div></div>`;
   return `<div class="pdetails">${block('About this project',about)}${block('Client',client)}${block('Delivery',vendor)}</div>`;}
@@ -417,7 +414,12 @@ function actGlyph(t){return t==='done'?svg('<path d="M20 6 9 17l-5-5"/>',11):svg
 function bActivity(){const items=[['#E0A21E','msg','Jun 5','Priya Nair','commented on','Wireframes'],['#15A06A','done','Jun 4','Mei Lin','completed a to-do:','Competitive audit'],['#2F6FED','msg','Jun 3','Victor Cooper','commented on','Project Kickoff']];
   return `<div class="bact">${items.map(i=>`<div class="arow"><span class="ic" style="background:${i[0]}">${actGlyph(i[1])}</span><span><span class="dt">${i[2]}</span><span class="mut">${i[3]} ${i[4]} </span><a onclick="toast('Open: ${i[5]}')">${i[5]}</a></span></div>`).join('')}
    <div class="more"><span class="av">VK</span>1 person active in the last 7 days · <a onclick="setView('All Tasks')">View all activity…</a></div></div>`;}
+function projTopInsights(){const a=projScore();const done=tasks.filter(t=>t.st==='Done').length;const total=tasks.length||1;
+  return `<div class="proj-ai">
+    <div class="pa-score"><div class="pa-ring">${ring(a[0],a[0]>=70?'var(--ok)':a[0]>=40?'var(--warn)':'var(--coral)',72)}<span class="pa-pct">${a[0]}%</span></div><div class="pa-meta"><div class="pa-lbl">${a[1]}</div><div class="pa-sub">${done}/${total} tasks done · 4 milestones</div></div></div>
+    <div class="pa-ins">${ojoInsightsCard(projInsights(),'project')}</div></div>`;}
 function projOverview(){return `<div class="bhome">
+  ${projTopInsights()}
   <div class="bgrid">${pjWidgets.map(widgetCard).join('')}</div>
   <div class="baddtile" onclick="pjAddOpen(event)" title="Add a box">${svg('<path d="M12 5v14M5 12h14"/>',20)}</div>
 </div>`;}
@@ -441,7 +443,8 @@ function wStatus(){return `<div class="wkv"><span class="k">Budget</span><span c
 function wClient(){return `<div class="wkv"><span class="k">Name</span><span class="v">Acme Co. (internal)</span></div><div class="wkv"><span class="k">Owner</span><span class="v">Priya Nair</span></div><div class="wkv"><span class="k">Email</span><span class="v" style="font-weight:500">team@acme.co</span></div>`;}
 function wProfessional(){return `<div class="wkv"><span class="k">Organisation</span><span class="v">Acme Co.</span></div><div class="wkv"><span class="k">Role</span><span class="v" style="color:var(--ghost)">—</span></div><div class="wkv"><span class="k">Department</span><span class="v" style="color:var(--ghost)">—</span></div><div class="wkv"><span class="k">Address</span><span class="v" style="color:var(--ghost)">—</span></div>`;}
 function wTimeline(){const overall=projScore()[0];const due={Discovery:'7 May',Design:'20 Jun',Build:'8 Jul',Launch:'20 Jul'};return `<div class="wtl"><div class="wtl-track"><div class="wtl-fill" style="width:${overall}%"></div></div><div class="wtl-nodes">${MILESTONES.map(ms=>{const its=tasks.filter(t=>t.ms===ms);const done=its.length&&its.every(t=>t.st==='Done');return `<div class="wtl-node ${done?'done':''}"><div class="nd"></div><div class="nm">${ms}</div><div class="due">${due[ms]||''}</div></div>`;}).join('')}</div></div>`;}
-function wMessages(){return PMSGS.map(m=>`<div class="d-msg" onclick="toast('Open: ${m[3]}')"><div class="av2" style="background:${m[1]}">${m[0]}</div><div style="min-width:0"><div class="mt">${m[3]}</div><div class="mb">${m[4]}</div><div class="who">${m[2]}</div></div></div>`).join('');}
+function pcommMini(name){return `<span class="pcomm">${[['call','Call'],['email','Email'],['video','Meet']].map(([f,l])=>`<button title="${l} ${name||''}" onclick="event.stopPropagation();openComm('${f}')">${faceIcon(f)}</button>`).join('')}</span>`;}
+function wMessages(){return PMSGS.map(m=>`<div class="d-msg" onclick="toast('Open: ${m[3]}')"><div class="av2" style="background:${m[1]}">${m[0]}</div><div style="min-width:0"><div class="mt">${m[3]}</div><div class="mb">${m[4]}</div><div class="who">${m[2]}${pcommMini(m[2])}</div></div></div>`).join('');}
 function wTodos(){return ['Design','Build'].map(ms=>{const its=tasks.filter(t=>t.ms===ms);const done=its.filter(t=>t.st==='Done').length;return `<div class="d-todo-h"><span class="pie"></span>${ms} <span style="color:var(--faint);font-weight:600">${done}/${its.length}</span></div>`+its.map(t=>`<div class="d-titem ${t.st==='Done'?'done':''}"><button class="ck" onclick="event.stopPropagation();toggleDone('${t.id}')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></button><span class="tx" onclick="openPeek('${t.id}')">${t.t}</span></div>`).join('');}).join('');}
 function wCardTable(){return `<div class="d-mini">${STATUSES.map(s=>`<div class="d-mcol" style="--cc:${s.cc}" onclick="setView('By Status')"><div class="l">${s.k}</div><div class="n">${tasks.filter(t=>t.st===s.k).length}</div></div>`).join('')}</div>`;}
 function wDocs(){return PDOCS.map(d=>`<div class="d-doc" onclick="toast('Open ${d[2]}')"><div class="fi" style="background:${d[1]}">${d[0]}</div><div><div class="dt">${d[2]}</div><div class="dd">${d[3]}</div></div></div>`).join('');}

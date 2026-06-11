@@ -188,7 +188,30 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 .title-wrap{display:flex;align-items:center;gap:12px}
 .picon{width:34px;height:34px;border-radius:10px;background:var(--coral-soft);display:grid;place-items:center;color:var(--coral)}
 .title-wrap{min-width:0}.title-wrap>div{min-width:0}
-.title-wrap h1{font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.title-wrap .sub{font-size:13px;color:var(--faint);margin-top:1px}
+.title-wrap h1{font-size:21px;font-weight:800;letter-spacing:-.02em;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.title-wrap .sub{font-size:13px;color:var(--faint);margin-top:1px}
+/* project header: don't truncate the project name (it's the only place the name lives) */
+#modbox .title-wrap{flex:0 1 auto;min-width:0}
+#modbox .title-wrap h1{white-space:normal;overflow:visible;text-overflow:clip}
+/* comm pill — Ojo-Genie-pill style (dark, rounded), grouped */
+.commpill{display:inline-flex;align-items:center;gap:2px;background:#0E0E10;border-radius:999px;padding:4px;flex:0 0 auto}
+.commpill button{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;color:#fff;font-size:12.5px;font-weight:600;transition:background .14s}
+.commpill button svg{width:15px;height:15px;opacity:.9}
+.commpill button:hover{background:rgba(255,255,255,.13)}
+/* overview: OJO insights + score promoted into the main window */
+.proj-ai{display:flex;flex-wrap:wrap;gap:18px 22px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin:4px 0 24px;max-width:940px}
+.pa-score{display:flex;align-items:center;gap:14px;flex:0 0 auto}
+.pa-ring{position:relative;width:72px;height:72px}.pa-ring svg{width:72px;height:72px}.pa-pct{position:absolute;inset:0;display:grid;place-items:center;font-size:17px;font-weight:800;color:var(--navy)}
+.pa-lbl{font-size:15px;font-weight:700;color:var(--navy)}.pa-sub{font-size:12.5px;color:var(--muted);margin-top:3px}
+.pa-ins{flex:1;min-width:260px;border-left:1px solid var(--line);padding-left:22px}
+.proj-ai .ojo-card{border:none;box-shadow:none;padding:0;background:transparent}
+/* per-person comm icons (next to names) */
+.pcomm{display:inline-flex;gap:3px;margin-left:8px;vertical-align:middle}
+.pcomm button{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;color:var(--muted);background:var(--surface-2);transition:.14s}
+.pcomm button svg{width:13px;height:13px}
+.pcomm button:hover{background:var(--coral-soft);color:var(--coral-ink)}
+.d-msg .who{display:flex;align-items:center}
+.d-msg .pcomm{opacity:0;transition:opacity .14s}.d-msg:hover .pcomm{opacity:1}
+.pd-v .pcomm button{width:22px;height:22px}
 .col-empty{border:1.5px dashed var(--line-2);border-radius:10px;padding:16px;text-align:center;color:var(--ghost);font-size:12px;font-weight:500}
 /* lead detail: meta, description, stage stepper, gate callout, OJO suggestion */
 .rec-meta{display:flex;flex-direction:column;gap:11px;margin:18px 0 16px}
