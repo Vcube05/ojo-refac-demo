@@ -874,7 +874,7 @@ function accountBody(){const W=[['R','#C92F3A','Reliance','13 members · Org Adm
    <div class="wslabel">Connected workspaces</div>${W.map(w=>`<div class="wsrow ${w[4]?'on':''}" onclick="toast('Switch to ${w[2]}')"><div class="wsi" style="background:${w[1]}">${w[0]}</div><div style="flex:1"><div class="wsn">${w[2]}</div><div class="wsm">${w[3]}</div></div>${w[4]?`<span class="wschk">${svg('<path d="M20 6 9 17l-5-5"/>',16)}</span>`:''}</div>`).join('')}
    <div class="wslabel" style="cursor:pointer" onclick="toast('Add profile')">＋ Add profile</div>
    <div class="themerow"><span class="tlab">Appearance</span><span class="seg themeseg"><button data-t="light" class="${curTheme()==='light'?'on':''}" onclick="setTheme('light')">Light</button><button data-t="dark" class="${curTheme()==='dark'?'on':''}" onclick="setTheme('dark')">Dark</button></span></div>
-   <div class="themerow"><span class="tlab">Layout</span><span class="seg shellseg"><button data-s="connected" class="${shellMode==='connected'?'on':''}" onclick="setShell('connected')">Connected</button><button data-s="carded" class="${shellMode==='carded'?'on':''}" onclick="setShell('carded')">Carded</button><button data-s="merged" class="${shellMode==='merged'?'on':''}" onclick="setShell('merged')">Merged</button></span></div>
+   <div class="themerow"><span class="tlab">Layout</span><span class="seg shellseg"><button data-s="connected" class="${shellMode==='connected'?'on':''}" onclick="setShell('connected')">Connected</button><button data-s="carded" class="${shellMode==='carded'?'on':''}" onclick="setShell('carded')">Carded</button><button data-s="hybrid" class="${shellMode==='hybrid'?'on':''}" onclick="setShell('hybrid')">Hybrid</button></span></div>
    <div class="acctfoot"><button onclick="toast('Settings')">${svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H10a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V10a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',15)} Settings</button><button onclick="toast('Signed out')">Sign out</button></div></div>`;}
 
 /* ============ HR MODULE (cell-style database + pages) ============ */
@@ -1674,7 +1674,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&xpShown())xpClose()
 
 try{if(localStorage.getItem('ojo-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}
 try{recVariant=localStorage.getItem('ojo-rec-variant')||'A';}catch(e){}
-let _shell='carded';try{_shell=localStorage.getItem('ojo-shell')||'carded';}catch(e){}
+let _shell='hybrid';try{_shell=localStorage.getItem('ojo-shell')||'hybrid';}catch(e){}
 setShell(_shell);
 go('home');
 /* Ojo Genie is the prominent, persistent anchor of the dock — open by default on
