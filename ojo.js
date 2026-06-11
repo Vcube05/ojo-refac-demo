@@ -843,12 +843,17 @@ function mApp(route){closeApps();mbarActive('apps');go(route);}
 function mCloseAll(){closeApps();closeSection();closeCommSheet();if(typeof closePeek==='function')closePeek();const s=document.getElementById('mscrim');if(s)s.classList.remove('show');}
 
 function homeGenieStats(){if(typeof homeStats!=='function')return '';const st=homeStats();const pct=st.total?Math.round(st.done/st.total*100):0;
+  const todayN=TASKS.filter(t=>t.status!=='Done'&&homeDay(t)===11).length;
+  const qw=TASKS.filter(t=>t.status!=='Done'&&['15m','20m','30m'].includes(t.est)).length;
   return `<div class="g-stats"><div class="g-stat-h">Today at OJO</div><div class="g-stat-row">
     <div class="g-stat"><span class="v">${st.done}</span><span class="l">Done</span></div>
     <div class="g-stat"><span class="v">${st.active}</span><span class="l">To do</span></div>
     <div class="g-stat ${st.over?'over':''}"><span class="v">${st.over}</span><span class="l">Overdue</span></div>
     <div class="g-stat"><span class="v">${svg(HICON.flame,13)} ${typeof streak!=='undefined'?streak:0}</span><span class="l">Streak</span></div></div>
-   <div class="g-stat-bar"><div class="g-stat-fill" style="width:${pct}%"></div></div></div>`;}
+   <div class="g-stat-bar"><div class="g-stat-fill" style="width:${pct}%"></div></div></div>
+   <div class="g-plan"><div class="g-plan-h">${svg(SPARK,12)} OJO planned your day<span class="ojs-live">live</span></div>
+    <div class="g-plan-x"><b>${st.over} overdue, ${todayN} today.</b> Clear the ${qw} quick wins first, then your focus block.</div>
+    <button class="g-plan-cta" onclick="tFocusMode()">${svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',14)} Start focus block</button></div>`;}
 function genieBody(){const ctx=genieContext();const ask=s=>s.replace(/'/g,"\\'");
   return `<div class="gwrap"><div class="gmsgs" id="gmsgs">${curRoute==='home'?homeGenieStats():''}<div class="genie-hi"><img class="genie-logo" src="assets/ojo-logo.png" alt="OJO Genie">Hello, Vinoth<div class="gctx">${ctx.who?`Ask me anything about <b>${ctx.who}</b>`:'How can I help you today?'}</div></div></div>
   <div class="gfoot"><div class="gsugg">
@@ -1590,10 +1595,14 @@ let homeActCollapsed=true;
 function homeToggleAct(){homeActCollapsed=!homeActCollapsed;const b=document.getElementById('homebox');if(b)b.classList.toggle('collapsed',homeActCollapsed);const t=document.getElementById('homActTxt');if(t)t.textContent=homeActCollapsed?'Activity':'Hide activity';const btn=document.getElementById('homActBtn');if(btn)btn.classList.toggle('on',!homeActCollapsed);}
 /* ===== Home outlooks — each is a UI cell: render(timeline|schedule|cards) + bind:collection:Task ===== */
 let homeOutlook='timeline';try{homeOutlook=localStorage.getItem('ojo-home-view')||'timeline';}catch(e){}
+let homeOrient='vertical';try{homeOrient=localStorage.getItem('ojo-home-orient')||'vertical';}catch(e){}
+if(homeOutlook==='schedule'){homeOutlook='timeline';homeOrient='horizontal';} /* migrate old Schedule tab → Timeline (horizontal) */
 const HVIEWS=[['timeline','Timeline','<path d="M5 3v18"/><circle cx="5" cy="7" r="2.3" fill="currentColor" stroke="none"/><circle cx="5" cy="16" r="2.3" fill="currentColor" stroke="none"/><path d="M10 7h9M10 16h6"/>'],
- ['schedule','Schedule','<rect x="3" y="4.5" width="18" height="16.5" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>'],
  ['list','List','<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1.5" fill="currentColor" stroke="none"/>'],
  ['cards','Cards','<rect x="3.5" y="4" width="7" height="16" rx="1.6"/><rect x="13.5" y="4" width="7" height="16" rx="1.6"/>']];
+const ORIENTS=[['vertical','<path d="M12 3v18"/><circle cx="12" cy="7" r="2.1" fill="currentColor" stroke="none"/><circle cx="12" cy="16" r="2.1" fill="currentColor" stroke="none"/>'],
+ ['horizontal','<path d="M3 12h18"/><circle cx="7.5" cy="12" r="2.1" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2.1" fill="currentColor" stroke="none"/>']];
+function homeSetOrient(o){homeOrient=o;try{localStorage.setItem('ojo-home-orient',o);}catch(e){}mountHome();}
 const WARN='<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h16.9a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>';
 const FILTER_IC='<path d="M3 7h12M19 7h2"/><circle cx="17" cy="7" r="2.1"/><path d="M3 17h4M11 17h10"/><circle cx="9" cy="17" r="2.1"/>';
 /* ===== Home filter (single control, applies across every outlook) ===== */
@@ -1623,14 +1632,23 @@ function homeList(){const a=homeActiveTasks();let groups=[];
   const html=groups.filter(g=>g[1].length).map(g=>`<div class="hl-group"><div class="hl-gh ${g[2]||''}">${g[3]?`<span class="hf-dot" style="--c:${g[3]}"></span>`:''}${g[0]}<span class="hl-gn">${g[1].length}</span></div>${g[1].map(listRow).join('')}</div>`).join('');
   return `<div class="hlist">${html||`<div class="tp-empty"><div class="tp-empty-ic">${svg(HICON.check,26)}</div><h3>Nothing here</h3><p>No tasks match this filter.</p></div>`}</div>`;}
 function nowLineHTML(){const h=Math.floor(NOW_MIN/60),m=NOW_MIN%60;return `<div class="tl-now"><span class="nt">Now · ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}</span><span class="nl"></span></div>`;}
-function tlRow(t){const sm=SRC[t.src];const p=PEOPLE[t.asg];const done=t.status==='Done';const over=homeDay(t)<11&&!done;
-  return `<div class="tl-row ${done?'done':''}" id="tl-${t.id}">
-    <span class="tl-time ${over?'over':''}">${t.time||'--:--'}</span>
-    <span class="tl-dot" style="--c:${sm[1]}"></span>
-    <div class="tl-main"><div class="tl-t" onclick="openTaskRec('${t.id}','home')">${t.title}</div>
-      <div class="tl-ctx"><span class="tr-src" style="--c:${sm[1]}"><span class="d"></span>${sm[0]}</span><span class="tl-sep">·</span>${t.link}<span class="tl-sep">·</span>${av(t.asg)}<span class="tl-asg">${p[2]}</span><span class="tl-sep">·</span>${t.est}</div></div>
-    <div class="tl-right"><span class="tr-pri p-${t.pri[0]}">${t.pri}</span><span class="tl-xp">+${t.pts}</span><button class="tl-ck ${done?'on':''}" onclick="homeComplete('${t.id}')" title="${done?'Undo':'Complete'}">${svg(HICON.check,13)}</button></div>
+/* slim row → click to expand a small detail card */
+function tlRow(t){const sm=SRC[t.src];const p=PEOPLE[t.asg];const done=t.status==='Done';const over=homeDay(t)<11&&!done;const op=t._tlopen;
+  return `<div class="tl-item ${done?'done':''} ${op?'open':''}" id="tl-${t.id}">
+    <div class="tl-row" onclick="tlToggle('${t.id}')">
+      <span class="tl-time ${over?'over':''}">${over?'late':(t.time||'')}</span>
+      <span class="tl-dot" style="--c:${sm[1]}"></span>
+      <div class="tl-t">${t.title}</div>
+      <span class="tl-pd p-${t.pri[0]}" title="${t.pri} priority"></span>
+      <button class="tl-ck ${done?'on':''}" onclick="event.stopPropagation();homeComplete('${t.id}')" title="${done?'Undo':'Complete'}">${svg(HICON.check,12)}</button>
+      <span class="tl-chev">${svg('<path d="m6 9 6 6 6-6"/>',14)}</span>
+    </div>
+    ${op?`<div class="tl-exp">
+      <div class="tl-exp-meta"><span class="tr-src" style="--c:${sm[1]}"><span class="d"></span>${sm[0]}</span><span class="tl-sep">·</span>${t.link}<span class="tl-sep">·</span><span class="tl-who">${av(t.asg)} ${p[2]}</span><span class="tl-sep">·</span>${t.est}<span class="tl-sep">·</span><span class="tl-xp">+${t.pts} XP</span></div>
+      <div class="tl-exp-act"><button class="tp-act" onclick="event.stopPropagation();openTaskRec('${t.id}','home')">${svg(ARROW,14)} Open</button><button class="tp-act" onclick="homeSchedule(event,'${t.id}')">${svg(HICON.cal,14)} Schedule</button></div>
+    </div>`:''}
   </div>`;}
+function tlToggle(id){const t=TASKS.find(x=>x.id===id);if(!t)return;t._tlopen=!t._tlopen;const fl=document.getElementById('feedList');if(fl)fl.innerHTML=homeTimeline();}
 function tlGroup(numHTML,wd,cnt,rows,cls){return `<div class="tl-day ${cls||''}"><div class="tl-num ${cls||''}">${numHTML}${wd?`<div class="wd">${wd}</div>`:''}${cnt?`<div class="cnt">${cnt}</div>`:''}</div><div class="tl-rows">${rows}</div></div>`;}
 function homeTimeline(){const active=homeActiveTasks();
   const over=active.filter(t=>homeDay(t)<11).sort((a,b)=>homeDay(a)-homeDay(b)||t2m(a.time)-t2m(b.time));
@@ -1667,20 +1685,18 @@ function mountHome(){setRail('navHome');
   const st=homeStats();const fmin=TASKS.reduce((a,t)=>a+(t.focusMin||0),0);
   const todayN=TASKS.filter(t=>t.status!=='Done'&&homeDay(t)===11).length;
   const qw=TASKS.filter(t=>t.status!=='Done'&&['15m','20m','30m'].includes(t.est)).length;
-  const cellHint={timeline:"render:'timeline' · bind:'collection:Task' · group:'day'",schedule:"render:'schedule' · bind:'collection:Task' · group:'hour'",list:"render:'list' · bind:'collection:Task' · group:'"+homeGroup+"'",cards:"render:'cards' · bind:'collection:Task'"}[homeOutlook];
+  const cellHint={timeline:"render:'timeline' · bind:'collection:Task' · orient:'"+homeOrient+"'",list:"render:'list' · bind:'collection:Task' · group:'"+homeGroup+"'",cards:"render:'cards' · bind:'collection:Task'"}[homeOutlook];
   const dayLabel=homeSelDay===11?'today':WD[wdOf(homeSelDay)]+', Jun '+homeSelDay;
   const fLbl=homeFilterMod?SRC[homeFilterMod][0]:'All';
   let body='';
-  if(homeOutlook==='timeline')body=homeTimeline();
-  else if(homeOutlook==='schedule')body=`<div class="hcal">${homeDayStrip()}</div>`+homeHourRail();
+  if(homeOutlook==='timeline')body=homeOrient==='horizontal'?(`<div class="hcal">${homeDayStrip()}</div>`+homeHourRail()):homeTimeline();
   else if(homeOutlook==='list')body=homeList();
   else{const list=homeDayTasks();body=homeMetrics()+`<div class="hcal">${homeDayStrip()}</div>`+`<div class="feed-controls2"><h2 class="fc-h">${homeSelDay===11?"Today's tasks":WD[wdOf(homeSelDay)]+', Jun '+homeSelDay}</h2></div>`+homeQuickHTML()+(list.length?`<div class="tgrid">${list.map(tcard).join('')}</div>`:`<div class="tp-empty"><div class="tp-empty-ic">${svg(HICON.check,26)}</div><h3>Nothing on ${dayLabel}</h3><p>You're all clear here.</p></div>`);}
   document.getElementById('screen').innerHTML=`<div class="homebox ${homeActCollapsed?'collapsed':''}" id="homebox">
     <div class="dmain hfeed"><div class="hfeed-scroll">
       <header class="hero"><div class="hero-l"><h1>${greet}, Vinoth.</h1><p class="hero-sub">${st.over?`<b class="over">${st.over} overdue</b> · `:''}${st.active} on your plate · ${streak}-day streak · ${fmin}m focused · ${dstr}</p></div>
         <button class="paneltoggle hero-act" id="homActBtn" onclick="homeToggleAct()"><span id="homActTxt">${homeActCollapsed?'Activity':'Hide activity'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></header>
-      ${ojoStrip(`<b>${st.over} overdue, ${todayN} today.</b> OJO laid your day on the timeline — clear the ${qw} quick wins first, then your focus block. ${aiChip('auto-planned')}`,'planned your day')}
-      <div class="home-controls"><span class="seg viewseg big">${HVIEWS.map(([k,l,ic])=>`<button class="${homeOutlook===k?'on':''}" onclick="homeSetOutlook('${k}')">${svg(ic,15)} ${l}</button>`).join('')}</span><span class="tp-sp"></span><button class="hctrl-filter ${homeFilterMod?'on':''}" onclick="openHomeFilter(event)" title="Filter & group">${svg(FILTER_IC,16)}<span>${fLbl}</span></button><span class="cell-tag" title="UI cell — ${cellHint}">${svg(SPARK,10)} ${homeOutlook} cell</span></div>
+      <div class="home-controls"><span class="seg viewseg big">${HVIEWS.map(([k,l,ic])=>`<button class="${homeOutlook===k?'on':''}" onclick="homeSetOutlook('${k}')">${svg(ic,15)} ${l}</button>`).join('')}</span><span class="tp-sp"></span>${homeOutlook==='timeline'?`<span class="seg orientseg" title="Orientation">${ORIENTS.map(([o,ic])=>`<button class="${homeOrient===o?'on':''}" onclick="homeSetOrient('${o}')">${svg(ic,16)}</button>`).join('')}</span>`:''}<button class="hctrl-filter ${homeFilterMod?'on':''}" onclick="openHomeFilter(event)" title="Filter & group">${svg(FILTER_IC,16)}<span>${fLbl}</span></button><span class="cell-tag" title="UI cell — ${cellHint}">${svg(SPARK,10)} ${homeOutlook} cell</span></div>
       <div class="feed-list" id="feedList">${body}</div>
     </div></div>
     <aside class="dpanel hact-panel">
