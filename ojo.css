@@ -496,13 +496,13 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 .g-stat-row{display:flex;justify-content:space-between}
 .g-stat{display:flex;flex-direction:column;gap:3px;align-items:flex-start}.g-stat .v{font-size:19px;font-weight:800;color:var(--navy);display:inline-flex;align-items:center;gap:4px}.g-stat .v svg{color:var(--coral);width:13px;height:13px}.g-stat .l{font-size:11px;color:var(--muted);font-weight:600}.g-stat.over .v{color:var(--coral-ink)}
 .g-stat-bar{height:6px;border-radius:999px;background:var(--line-2);margin-top:14px;overflow:hidden}.g-stat-fill{height:100%;background:var(--ok);border-radius:999px;transition:width .3s var(--ease)}
-/* lives inside the dark genie panel — inherits the --g-* skin tokens */
-.g-plan{margin:0 0 16px;padding:14px 15px;background:var(--g-card,#1A1B1F);border:1px solid var(--g-line,#26282E);border-radius:18px}
-.g-plan-h{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--g-elec,#FF4655)}
-.g-plan-h svg{color:var(--g-elec,#FF4655);width:12px;height:12px}.g-plan-h .ojs-live{margin-left:auto}
-.g-plan-x{font-size:13px;color:var(--g-text,#F4F5F7);line-height:1.5;margin-top:8px}.g-plan-x b{font-weight:700}
-.g-plan-cta{display:inline-flex;align-items:center;gap:7px;margin-top:12px;padding:9px 15px;border-radius:999px;background:var(--g-elec,#FF4655);color:var(--g-elec-ink,#1C0507);font-size:12.5px;font-weight:700;transition:.14s}
-.g-plan-cta:hover{filter:brightness(1.08)}.g-plan-cta svg{width:14px;height:14px}
+/* lives inside the electric genie panel — frosted card, white ink, white CTA */
+.g-plan{margin:0 0 16px;padding:14px 15px;background:var(--g-card,rgba(255,255,255,.16));border:1px solid var(--g-line,rgba(255,255,255,.26));border-radius:18px}
+.g-plan-h{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#fff}
+.g-plan-h svg{color:#fff;width:12px;height:12px}.g-plan-h .ojs-live{margin-left:auto}
+.g-plan-x{font-size:13px;color:var(--g-text,#fff);line-height:1.5;margin-top:8px}.g-plan-x b{font-weight:700}
+.g-plan-cta{display:inline-flex;align-items:center;gap:7px;margin-top:12px;padding:9px 15px;border-radius:999px;background:#fff;color:#C9303C;font-size:12.5px;font-weight:700;transition:.14s}
+.g-plan-cta:hover{filter:brightness(.95)}.g-plan-cta svg{width:14px;height:14px}
 /* ===== Home v2: day navigator · views · quick-add · compact rows · board ===== */
 .daynav{display:flex;align-items:center;gap:8px;padding:12px 22px 8px}
 .dn-arrow{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}.dn-arrow:hover{background:var(--surface-2);color:var(--ink)}
@@ -969,15 +969,20 @@ td .nm,td .tt{font-weight:700;color:var(--navy)}td .co{color:var(--muted)}td.num
 /* ===== Genie = the brand surface. Always-dark card (both themes) in the Stockify language:
    near-black panel, one electric-red hero card with dark text, big radii, pill composer.
    Local tokens so the skin travels with the panel (desktop flyout + mobile drawer). ===== */
-/* Genie follows the APP theme (light panel in light, dark in dark) — the electric hero,
-   notch and indicator carry the identity, not a forced black surface. */
+/* Genie = ONE electric surface, edge to edge — the futuristic AI panel for all
+   communications. Frosted white components float on the red; the notch cuts
+   through to the canvas so the cluster reads as carved into the panel itself. */
 .flyout.genie,#drawer.genie{
-  --g-bg:var(--surface); --g-card:var(--surface-2); --g-line:var(--line-2);
-  --g-text:var(--ink); --g-mut:var(--muted); --g-faint:var(--faint);
+  --g-cut:var(--canvas);
+  /* the elevated selection tab — a touch brighter than the panel so it reads raised */
+  --g-lift:color-mix(in srgb,#fff 16%,var(--elec));
+  /* underlays are BLACK at 90% (user call) — near-solid dark blocks on the electric surface;
+     white is reserved for "your side" + CTAs */
+  --g-card:rgba(0,0,0,.9); --g-line:rgba(255,255,255,.10);
+  --g-text:#fff; --g-mut:rgba(255,255,255,.80); --g-faint:rgba(255,255,255,.55);
   --g-elec:var(--elec); --g-elec-ink:var(--elec-ink);
 }
-.flyout.genie{background:var(--g-bg)}
-#drawer.genie{background:var(--g-bg)}
+.flyout.genie,#drawer.genie{background:linear-gradient(178deg,var(--elec) 0%,#EE414E 46%,#D03A47 100%)}
 #drawer.genie .dw-top,#drawer.genie .dw-pills{display:none}
 /* While Genie is open, the panel RISES into the topbar band so its notch row sits
    adjacent to the notification bell; the topbar yields the panel's width and its
@@ -989,10 +994,10 @@ body:has(#flyout.genie.show) #tbOjo{display:none}
   .shell-connected .rdock:has(.flyout.genie.show){margin-top:-58px;z-index:43}
   .shell-carded .rdock:has(.flyout.genie.show),.shell-hybrid .rdock:has(.flyout.genie.show),.shell-merged .rdock:has(.flyout.genie.show){margin-top:-52px;z-index:43}
 }
-/* the genie card gets its OWN silhouette: rounder than every other panel + an electric ring,
-   so it reads as a different object while still docking like the rest */
-.shell-carded .rdock:has(.flyout.genie.show),.shell-hybrid .rdock:has(.flyout.genie.show),.shell-merged .rdock:has(.flyout.genie.show){border-radius:26px;border-color:color-mix(in srgb,var(--elec) 38%,transparent);box-shadow:var(--sh-lg),0 0 0 3px color-mix(in srgb,var(--elec) 9%,transparent)}
-.shell-connected .flyout.genie{border-left-color:color-mix(in srgb,var(--elec) 40%,transparent)}
+/* the genie card: rounder than every other panel, BORDERLESS — the red meets the canvas
+   clean (a border would trace a pink line across the notch cut) */
+.shell-carded .rdock:has(.flyout.genie.show),.shell-hybrid .rdock:has(.flyout.genie.show),.shell-merged .rdock:has(.flyout.genie.show){border-radius:26px;border-color:transparent;background:transparent;box-shadow:var(--sh-lg)}
+.shell-connected .flyout.genie{border-left-color:transparent}
 /* no standard head row — the hero card's notch controls replace it */
 .flyout.genie .fly-head{display:none}
 .fly-head{display:flex;align-items:center;gap:8px;padding:12px 16px 6px;border-bottom:none}
@@ -1046,47 +1051,93 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .gmsgs{flex:1;overflow-y:auto;padding:10px 16px 6px;position:relative}
 /* notch cluster — circles "cut into" the hero's top-right corner; the active item lives
    as the labeled pill on the hero's top-left. Both survive the greeting being replaced. */
-.gh-acts{position:absolute;top:10px;right:16px;z-index:2;display:flex;gap:8px;background:var(--g-bg);padding:0 0 9px 9px;border-bottom-left-radius:26px}
-.gh-acts::before{content:'';position:absolute;top:0;right:100%;width:22px;height:22px;background:radial-gradient(circle 22px at 0 100%,transparent 21px,var(--g-bg) 21.6px)}
-.gh-acts::after{content:'';position:absolute;top:100%;right:0;width:22px;height:22px;background:radial-gradient(circle 22px at 0 100%,transparent 21px,var(--g-bg) 21.6px)}
-.gha{width:36px;height:36px;border-radius:50%;background:var(--g-card);border:1px solid var(--g-line);color:var(--g-mut);display:grid;place-items:center;flex:0 0 36px;padding:0;overflow:hidden}
-.gha:hover{filter:brightness(1.08);color:var(--g-text)}
+/* fixed control band: a canvas strip across the panel top — the red sheet starts below
+   it with rounded shoulders; controls never move */
+.gh-band{position:absolute;top:0;left:0;right:0;height:64px;background:var(--g-cut);z-index:0}
+.gh-band::before{content:'';position:absolute;top:100%;left:0;width:24px;height:24px;background:radial-gradient(circle 24px at 100% 100%,transparent 23px,var(--g-cut) 23.6px);transition:opacity .25s var(--ease)}
+.gh-band::after{content:'';position:absolute;top:100%;right:0;width:24px;height:24px;background:radial-gradient(circle 24px at 0 100%,transparent 23px,var(--g-cut) 23.6px);transition:opacity .25s var(--ease)}
+/* when the head hugs a corner it replaces the sheet's shoulder — the dark rounder
+   would bite into the head's flow, so it yields */
+.gh-band.noL::before{opacity:0}
+.gh-band.noR::after{opacity:0}
+.gh-acts{position:absolute;top:12px;right:16px;z-index:2;display:flex;gap:18px}
+/* the TRAVELING HEAD: ONE continuous curve — a domed crown (large top radius), clean
+   vertical sides, and S-flares only at the base where it melts into the sheet. No
+   bottom rounding, so nothing fights the flares (that pinch made stray edges). */
+.gh-notch{position:absolute;top:4px;left:0;width:0;height:60px;z-index:1;background:var(--elec);border-radius:34px 34px 0 0;transition:left .32s var(--ease),width .32s var(--ease)}
+.gh-notch::before{content:'';position:absolute;bottom:0;right:100%;width:22px;height:22px;background:radial-gradient(circle 22px at 0 0,transparent 21px,var(--elec) 21.8px)}
+.gh-notch::after{content:'';position:absolute;bottom:0;left:100%;width:22px;height:22px;background:radial-gradient(circle 22px at 100% 0,transparent 21px,var(--elec) 21.8px)}
+.gh-nlab{position:absolute;left:0;right:0;bottom:4px;text-align:center;font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#fff;white-space:nowrap}
+/* no mouse focus rings on the head controls (keyboard focus keeps its ring) */
+.gha:focus:not(:focus-visible),.gpill:focus:not(:focus-visible),.gtab:focus:not(:focus-visible){outline:none}
+.gha{width:36px;height:36px;border-radius:50%;background:var(--ink-bg);border:1px solid transparent;color:rgba(255,255,255,.85);display:grid;place-items:center;flex:0 0 36px;padding:0;overflow:hidden;transition:transform .32s var(--ease)}
+.gha:hover{filter:brightness(1.25);color:#fff}
+.gha.on{color:#fff;border-color:rgba(255,255,255,.25)}
 .gha.glogo{background:var(--ink-bg);border-color:transparent;animation:gswapin .24s var(--ease)}
 .gha.glogo .ojo-logo{width:28px;height:28px;border-radius:50%;object-fit:cover;display:block}
-/* the slot: active item as a labeled dark pill docked on the hero's top-left */
-.gh-pill{position:absolute;top:21px;left:28px;z-index:2;animation:gswapin .24s var(--ease)}
-.gpill{display:inline-flex;align-items:center;gap:8px;height:36px;background:var(--ink-bg);color:#fff;border-radius:999px;padding:0 15px 0 12px;font-size:13px;font-weight:600}
+/* the anchor pill — placed so its head's left flare flows off the panel edge */
+.gh-pill{position:absolute;top:12px;left:34px;z-index:2;animation:gswapin .24s var(--ease)}
+.gpill{display:inline-flex;align-items:center;gap:8px;height:36px;background:rgba(24,12,14,.62);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fff;border-radius:999px;padding:0 15px 0 12px;font-size:13px;font-weight:600}
 .gpill .ojo-logo{width:28px;height:28px;border-radius:50%;flex:0 0 28px;object-fit:cover;display:block;margin-left:-8px}
 .gpill:hover{filter:brightness(1.15)}
 /* face content slides up as it arrives */
 .gswap{animation:gswapin .26s var(--ease)}
 @keyframes gswapin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-/* once the hero is gone (chat underway), the first bubble clears the floating cluster */
-.gmsgs>.gq:first-of-type{margin-top:54px}
-.gcomm{background:var(--surface);border-radius:18px;padding:4px 14px 14px;margin-bottom:14px;box-shadow:var(--sh)}
-/* the notch + title already say where you are — drop the card's own back row / "with …" line */
+/* once the hero is gone (chat underway), the first bubble clears the control band */
+.gswap+.gq{margin-top:68px}
+/* comm content sits straight on the electric surface — no surface box; blocks are
+   frosted highlight tints, your side is white (mirrors the chat bubbles) */
+.gcomm{background:transparent;border-radius:0;padding:0;margin-bottom:14px;box-shadow:none}
 .gcomm .cpback,.gcomm .cpwith{display:none}
-.gcomm .cpanel{padding-top:10px}
+.gcomm .cpanel{padding:4px 2px 10px}
+.gcomm .ccell{background:#17181C;border-color:rgba(255,255,255,.08)}
+.gcomm .ccell.mail:hover{background:#1F2127;border-color:rgba(255,255,255,.2)}
+.gcomm .cnt,.gcomm .cmh,.gcomm .cmt{color:#fff}
+.gcomm .cmh svg{color:rgba(255,255,255,.75)}
+.gcomm .csb,.gcomm .cms{color:rgba(255,255,255,.68)}
+.gcomm .cmr,.gcomm .cmd{color:rgba(255,255,255,.75)}
+.gcomm .cmaillab{color:rgba(255,255,255,.65)}
+.gcomm .cic{background:rgba(255,255,255,.09);color:rgba(255,255,255,.85)}
+.gcomm .cstat.up{color:#fff;background:rgba(255,255,255,.14)}
+.gcomm .cstat.done{color:#fff;background:rgba(20,90,60,.5)}
+.gcomm .cact,.gcomm .cact.dark{background:#fff;border-color:#fff;color:#C9303C}
+.gcomm .cmsg .cb{background:#17181C;border-color:transparent;color:#fff}
+.gcomm .cmsg.out .cb{background:#fff;border-color:#fff;color:var(--elec-ink)}
+.gcomm .cmsg .ct{color:rgba(255,255,255,.6)}
+.gcomm .cbar{background:#17181C;border-color:rgba(255,255,255,.10);border-radius:999px}
+.gcomm .cbin{color:#fff}.gcomm .cbin::placeholder{color:rgba(255,255,255,.6)}
+.gcomm .cbsend{background:#fff;color:var(--elec);border-radius:50%}
+/* messages inbox (chat face outside a record) */
+.gcomm .msrch{background:#17181C;color:rgba(255,255,255,.7)}
+.gcomm .mfilters{border-bottom-color:rgba(0,0,0,.16)}
+.gcomm .mchip{background:#17181C;color:rgba(255,255,255,.88)}
+.gcomm .mchip.on{background:#fff;color:#C9303C}
+.gcomm .mrow{border-bottom-color:rgba(0,0,0,.14)}
+.gcomm .mrow:hover{background:rgba(0,0,0,.08)}
+.gcomm .mrow .mname{color:#fff}
+.gcomm .msnip{color:rgba(255,255,255,.62)}
+.gcomm .mtime{color:rgba(255,255,255,.55)}
 /* hero greeting = the one electric-filled card (Stockify hero), dark text on accent,
    decorative hatch + dot "pills" tucked into the corner */
-.genie-hi{position:relative;overflow:hidden;background:var(--g-elec);color:var(--g-elec-ink);border-radius:26px;padding:58px 20px 22px;margin:0 0 4px;font-size:24px;font-weight:800;line-height:1.16}
+/* the greeting sits straight on the electric surface, below the control band */
+.genie-hi{position:relative;overflow:hidden;background:transparent;color:var(--g-elec-ink);border-radius:26px;padding:74px 6px 22px;margin:0 0 4px;font-size:24px;font-weight:800;line-height:1.16}
 /* the persistent electric band in comm faces — same object, same position, new words */
-.genie-hi.mini{font-size:20px;padding:58px 20px 18px;margin-bottom:14px}
+.genie-hi.mini{font-size:20px;padding:74px 6px 14px;margin-bottom:6px}
 .genie-hi::before{content:'';position:absolute;right:18px;bottom:-26px;width:54px;height:96px;border-radius:26px;background:repeating-linear-gradient(45deg,rgba(28,5,7,.30) 0 2.5px,transparent 2.5px 8px)}
 .genie-hi::after{content:'';position:absolute;right:80px;bottom:-40px;width:50px;height:96px;border-radius:26px;background-image:radial-gradient(rgba(28,5,7,.30) 1.7px,transparent 1.8px);background-size:11px 11px}
 .gctx{position:relative;z-index:1;font-size:14px;font-weight:600;color:rgba(28,5,7,.66);line-height:1.45;margin-top:8px;max-width:85%}.gctx b{color:var(--g-elec-ink);font-weight:800}
-.gq{margin:10px 0 4px;background:var(--g-elec);color:var(--g-elec-ink);font-weight:600;border-radius:18px 18px 5px 18px;padding:9px 13px;font-size:13.5px;max-width:85%;margin-left:auto}
+.gq{margin:10px 0 4px;background:#fff;color:var(--elec-ink);font-weight:600;border-radius:18px 18px 5px 18px;padding:9px 13px;font-size:13.5px;max-width:85%;margin-left:auto}
 .ga{background:var(--g-card);border:1px solid var(--g-line);border-radius:18px 18px 18px 5px;padding:10px 14px;font-size:13.5px;color:var(--g-text);max-width:90%;margin-bottom:6px}
 .gfoot{padding:12px 16px 16px}
 .gsugg{display:flex;flex-direction:column;align-items:flex-end;gap:8px;margin-bottom:12px}
 .gsugg button{background:var(--g-card);border:1px solid var(--g-line);border-radius:999px;padding:8px 15px;font-size:13px;font-weight:600;color:var(--g-text)}
-.gsugg button:hover{border-color:var(--g-elec);color:var(--g-elec)}
+.gsugg button:hover{border-color:rgba(255,255,255,.85);color:#fff}
 .gask{display:flex;align-items:center;gap:8px;background:var(--g-card);border:1px solid var(--g-line);border-radius:999px;padding:7px 8px 7px 15px}
 .gask input{flex:1;border:none;outline:none;background:transparent;font-size:14px;color:var(--g-text)}
 .gask input::placeholder{color:var(--g-faint)}
 .gask .gic{color:var(--g-faint);display:grid;place-items:center}
-.gask .ggo{width:34px;height:34px;border-radius:50%;background:var(--g-elec);color:var(--g-elec-ink);display:grid;place-items:center;flex:0 0 34px}
-.gask .ggo:hover{filter:brightness(1.08)}
+.gask .ggo{width:34px;height:34px;border-radius:50%;background:#fff;color:var(--elec);display:grid;place-items:center;flex:0 0 34px}
+.gask .ggo:hover{filter:brightness(.94)}
 .gnote{font-size:11px;color:var(--g-faint);text-align:center;margin-top:10px;line-height:1.4}
 .nrow{display:flex;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line);cursor:pointer}.nrow:hover{background:var(--surface-2)}.nrow.unread{background:#F6F9FE}
 .nrow .nic{width:34px;height:34px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;color:var(--muted);flex:0 0 34px}

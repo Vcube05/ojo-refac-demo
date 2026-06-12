@@ -255,6 +255,8 @@ const DOCK_ICONS={
 let genieFace=null;
 const GFACES=['chat','call','video','email'];
 const GFACE_LBL={chat:'Messages',call:'Calls',video:'Meetings',email:'Email'};
+/* short labels for the traveling tab — they ride beside the icon, room is tight */
+const GFACE_TAB={chat:'Chat',call:'Calls',video:'Meet',email:'Mail'};
 /* Single-sheet tabs: comm channels + Genie. (Search lives on Home, Notifications in the rail.) */
 const DOCK_CELLS=[
   {id:'ui-dock-genie',  type:'UICell', owner:'ui-dock', group:'assist', values:{name:'Ojo Genie', render:'anchor', bind:'capability:genie',    click:'open', icon:'genie'}, links:{target:'genie'}},
@@ -294,17 +296,37 @@ function renderPanelTabs(){
   const el=document.getElementById('panelTabs'); if(!el)return;
   el.innerHTML=`<button class="gtab on genie" onclick="genieToggle()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span>Ojo Genie</span></button>`;
 }
-/* In-panel notch cluster with SWAP: the slot pill (on the hero, top-left) is always the
-   active item with its name; the others wait as circles in the top-right cut. Selecting
-   a face moves it into the slot and sends Ojo Genie out to the circle row. */
+/* FIXED-POSITION cluster: the pill and the four circles never move (one mental model —
+   the same control always lives in the same place). The NOTCH travels: the dark cut
+   slides along the top edge to wrap whichever item is active. */
 function ghActs(){
-  const pill=genieFace
-    ?`<span class="gh-pill"><button class="gpill" onclick="genieToggle()" title="${GFACE_LBL[genieFace]}">${svg(DOCK_ICONS[genieFace],16)}<span>${GFACE_LBL[genieFace]}</span></button></span>`
-    :`<span class="gh-pill"><button class="gpill" onclick="genieToggle()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span>Ojo Genie</span></button></span>`;
-  const circles=(genieFace?['genie',...GFACES.filter(f=>f!==genieFace)]:GFACES).map(k=>
-    k==='genie'?`<button class="gha glogo" onclick="genieHome()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"></button>`
-      :`<button class="gha" onclick="genieSel('${k}')" title="${GFACE_LBL[k]}">${svg(DOCK_ICONS[k],16)}</button>`).join('');
-  return pill+`<span class="gh-acts">${circles}</span>`;
+  return `<span class="gh-band"></span><span class="gh-notch"></span>`+
+    `<span class="gh-pill"><button class="gpill" onclick="geniePill()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span>Ojo Genie</span></button></span>`+
+    `<span class="gh-acts">`+GFACES.map(f=>`<button class="gha ${genieFace===f?'on':''}" onclick="genieSel('${f}')" title="${GFACE_LBL[f]}">${svg(DOCK_ICONS[f],16)}</button>`).join('')+`</span>`;
+}
+/* pill = home base: from a face it returns to the Genie chat; from the chat it puts the panel away */
+function geniePill(){if(genieFace)genieHome();else genieToggle();}
+/* place the traveling tab under the active item (with its label); slides from its previous spot */
+let gnPrev=null;
+function gnotchSync(){
+  const b=document.getElementById('flyBody');if(!b)return;
+  const n=b.querySelector('.gh-notch'),host=b.querySelector('.gmsgs');if(!n||!host)return;
+  const target=genieFace?b.querySelector('.gha.on'):b.querySelector('.gh-pill');if(!target)return;
+  const hr=host.getBoundingClientRect(),tr=target.getBoundingClientRect();
+  /* label rides INSIDE the tab, to the LEFT of the fixed icon — the tab gets its breadth there */
+  /* label sits at the head's base, centered under the icon; end flares are free to
+     flow off the panel edges — no clamping, the silhouette merges with the sides */
+  n.innerHTML=genieFace?`<span class="gh-nlab">${GFACE_TAB[genieFace]}</span>`:'';
+  b.querySelectorAll('.gha').forEach(x=>{x.style.transform='';});
+  let left=tr.left-hr.left-14,width=tr.width+28;
+  /* the sheet's corner shoulder yields when the head hugs that corner */
+  const band=b.querySelector('.gh-band'),hwc=host.clientWidth;
+  if(band){band.classList.toggle('noL',left<26);band.classList.toggle('noR',left+width>hwc-26);}
+  const apply=()=>{n.style.left=left+'px';n.style.width=width+'px';};
+  if(gnPrev){n.style.left=gnPrev.left+'px';n.style.width=gnPrev.width+'px';
+    requestAnimationFrame(()=>requestAnimationFrame(apply));}
+  else apply();
+  gnPrev={left,width};
 }
 /* Contextual awareness: Genie + the comms group read whatever record/module is open. */
 function ctxName(){
@@ -335,7 +357,7 @@ function genieContext(){
   return {who:'', suggestions:['Prioritize tasks for first half','Show My Leads',"Today's calls"]};
 }
 /* keep the Genie panel's contextual content in sync as the user navigates */
-function syncGenie(){if(section==='genie'){const b=document.getElementById('flyBody');if(b)b.innerHTML=genieBody();}}
+function syncGenie(){if(section==='genie'){const b=document.getElementById('flyBody');if(b){b.innerHTML=genieBody();if(typeof gnotchSync==='function')gnotchSync();}}}
 
 const CDATA={
   chat:[['in','Hi, following up on the proposal — any update?','Mon · 10:32 AM'],['out','Hi! Finalising the numbers, sending today.','Mon · 10:41 AM'],['in','Great, looking forward to it.','Mon · 10:43 AM'],['out','Shared the deck — let me know your thoughts.','Tue · 9:15 AM'],['in','Looks solid. Can we tweak the timeline?','Tue · 9:30 AM']],
@@ -793,7 +815,7 @@ function docAddOpen(e,pos){e.stopPropagation();docAddPos=pos;const m=document.ge
 function docPick(t){const nb=t==='list'?{t:'list',items:['New item']}:t==='metric'?{t:'metric',label:'Amount',value:'₹0'}:t==='divider'?{t:'divider'}:{t,x:t==='text'?'Type something…':'New heading'};curDoc().blocks[curDoc().cur].splice(docAddPos,0,nb);closePops();renderRec();}
 
 /* ============ GLOBAL RIGHT UTILITY RAIL (Genie / Notifications / Messages / Search / Account) ============ */
-let section=null, flyW=400;
+let section=null, flyW=430;
 const TAB_WIDE=540; /* panel width past which the comm tabs reveal their labels (Claude-desktop style) */
 /* the top comm/Genie pill (#tbOjo) glides with the panel so they stay one aligned family,
    and the tabs open their names once the panel is dragged wide enough */
@@ -828,7 +850,9 @@ function openSection(s){section=s; /* persistent context window — re-clicking 
   const body=document.getElementById('flyBody');body.className='fly-body'+(s==='genie'?' genie':'');
   body.innerHTML=c.body();
   document.body.classList.remove('panel-collapsed');
-  flySize(flyW);document.getElementById('rdock')?.classList.add('open');fly.classList.add('show');closeApps();mScrim(true);mbarActive(s);renderPanelTabs();}
+  flySize(flyW);document.getElementById('rdock')?.classList.add('open');fly.classList.add('show');closeApps();mScrim(true);mbarActive(s);renderPanelTabs();
+  /* the panel width animates open (.26s) — place the head now AND once settled */
+  if(s==='genie'){gnotchSync();setTimeout(()=>{gnPrev=null;gnotchSync();},340);}}
 /* contextual communication (call / video / email) — a tab in the single panel; shows the active record's content or a generic empty state */
 function commBody(f){return commHost?commHost.content(f):commChannel(f,'');}
 function openComm(f){const sid='comm-'+f;section=sid; /* persistent — re-clicking a comm tab never collapses */
@@ -873,15 +897,26 @@ function homeGeniePlan(){if(typeof homeStats!=='function')return '';const st=hom
 function genieSel(f){
   genieFace=f;
   const fly=document.getElementById('flyout');
-  if(section==='genie'&&fly&&fly.classList.contains('show')){const b=document.getElementById('flyBody');if(b)b.innerHTML=genieBody();}
-  else openSection('genie');
-  renderPanelTabs();
+  const b=document.getElementById('flyBody');
+  /* keep the cluster DOM stable so the tab + circles TRANSITION instead of re-mounting */
+  if(section==='genie'&&fly&&fly.classList.contains('show')&&b&&b.querySelector('.gh-band')){
+    b.querySelectorAll('.gha').forEach((x,i)=>x.classList.toggle('on',GFACES[i]===f));
+    const sw=b.querySelector('.gswap');if(sw)sw.outerHTML=genieSwapHTML();
+    b.querySelector('.gfoot')?.remove();
+  }else openSection('genie');
+  gnotchSync();renderPanelTabs();
 }
 function genieHome(){genieFace=null;openSection('genie');}
-function genieBody(){const ctx=genieContext();const ask=s=>s.replace(/'/g,"\\'");
+function genieSwapHTML(){
   if(genieFace){const cn=commContextName();
-    return `<div class="gwrap"><div class="gmsgs" id="gmsgs">${ghActs()}<div class="gswap"><div class="genie-hi mini">${cn||'Workspace'}<div class="gctx">${GFACE_LBL[genieFace]}${cn?' with this record':' across OJO'}</div></div><div class="gcomm">${genieFace==='chat'&&!commHost?msgBody():commBody(genieFace)}</div></div></div></div>`;}
-  return `<div class="gwrap"><div class="gmsgs" id="gmsgs">${ghActs()}<div class="gswap"><div class="genie-hi">Hello, Vinoth<div class="gctx">${ctx.who?`Ask me anything about <b>${ctx.who}</b>`:'How can I help you today?'}</div></div></div></div>
+    return `<div class="gswap"><div class="genie-hi mini">${cn||'Workspace'}<div class="gctx">${GFACE_LBL[genieFace]}${cn?' with this record':' across OJO'}</div></div><div class="gcomm">${genieFace==='chat'&&!commHost?msgBody():commBody(genieFace)}</div></div>`;}
+  const ctx=genieContext();
+  return `<div class="gswap"><div class="genie-hi">Hello, Vinoth<div class="gctx">${ctx.who?`Ask me anything about <b>${ctx.who}</b>`:'How can I help you today?'}</div></div></div>`;
+}
+function genieBody(){const ctx=genieContext();const ask=s=>s.replace(/'/g,"\\'");
+  if(genieFace)
+    return `<div class="gwrap"><div class="gmsgs" id="gmsgs">${ghActs()}${genieSwapHTML()}</div></div>`;
+  return `<div class="gwrap"><div class="gmsgs" id="gmsgs">${ghActs()}${genieSwapHTML()}</div>
   <div class="gfoot">${curRoute==='home'?homeGeniePlan():''}<div class="gsugg">
     ${ctx.suggestions.map(s=>`<button onclick="genieAsk('${ask(s)}')">${s}</button>`).join('')}</div>
    <div class="gask"><input id="gIn" placeholder="Ask Ojo anything..." onkeydown="if(event.key==='Enter')genieAsk(this.value)">
