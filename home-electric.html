@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OJO — Home (Electric option · design mock)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ===== OJO "Electric" home — DESIGN OPTION (static mock, not wired) =====
+   Stockify card grammar mapped onto the REAL OJO shell: left nav rail, OJO topbar
+   (workspace · search · quick-add · comm), Genie as a true right panel.
+   Near-black canvas, ONE electric-red hero per region, 28px radii, pill controls. */
+:root{
+  --bg:#0A0A0C; --card:#161619; --card2:#1E1F24; --line:#26272C; --line2:#32343B;
+  --text:#F4F5F7; --mut:#9DA3AE; --faint:#62666E;
+  --elec:#FF4655; --elec-soft:#FF6B77; --elec-ink:#1C0507;
+  --ok:#33C083;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+svg{display:block}
+
+/* ===== left rail — the real OJO nav, electric skin ===== */
+.rail{flex:0 0 84px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:18px 0 16px;border-right:1px solid var(--line)}
+.rail .logo{width:40px;height:40px;border-radius:13px;background:var(--card);display:grid;place-items:center;margin-bottom:18px}
+.rail .logo span{width:14px;height:14px;border-radius:50%;background:var(--elec);box-shadow:0 0 0 4px rgba(255,70,85,.22)}
+.rnav{display:flex;flex-direction:column;align-items:center;gap:3px;width:64px;padding:9px 0;border-radius:14px;color:var(--faint);font-size:10px;font-weight:600}
+.rnav svg{width:19px;height:19px}
+.rnav:hover{color:var(--mut);background:var(--card)}
+.rnav.on{color:var(--elec);background:rgba(255,70,85,.10)}
+.rail .rsp{flex:1}
+.rail .rava{width:38px;height:38px;border-radius:50%;background:#7C53E6;color:#fff;display:grid;place-items:center;font-size:12px;font-weight:700}
+
+/* ===== main column ===== */
+.main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+.mscroll{flex:1;overflow-y:auto;padding:22px 26px 46px}
+
+/* topbar — real OJO pieces: workspace · search · quick-add · comm icons */
+.topbar{display:flex;align-items:center;gap:12px}
+.ws{display:inline-flex;align-items:center;gap:10px;height:46px;padding:0 18px 0 8px;border-radius:999px;background:var(--card);font-size:14.5px;font-weight:600}
+.ws .wlogo{width:32px;height:32px;border-radius:50%;background:var(--card2);display:grid;place-items:center}
+.ws .wlogo span{width:11px;height:11px;border-radius:50%;background:var(--elec)}
+.ws svg{width:13px;height:13px;color:var(--faint)}
+.search{flex:1;max-width:560px;display:flex;align-items:center;gap:11px;height:46px;padding:0 20px;border-radius:999px;background:var(--card);color:var(--faint);font-size:14px}
+.search svg{width:16px;height:16px}
+.search .kbd{margin-left:auto;font-size:11px;border:1px solid var(--line2);border-radius:6px;padding:2px 7px;color:var(--faint)}
+.topbar .sp{flex:1}
+.addbtn{width:46px;height:46px;border-radius:50%;background:var(--elec);color:#fff;display:grid;place-items:center;flex:0 0 46px}
+.circ{width:46px;height:46px;border-radius:50%;background:var(--card);display:grid;place-items:center;color:var(--mut);position:relative;flex:0 0 46px}
+.circ:hover{color:var(--text)}
+.circ .dot{position:absolute;top:11px;right:12px;width:7px;height:7px;border-radius:50%;background:var(--elec)}
+
+/* greeting strip — the real home hero line, kept as text over the canvas */
+.greet{margin:26px 4px 0;display:flex;align-items:baseline;gap:14px}
+.greet h1{font-size:25px;font-weight:700;letter-spacing:-.01em}
+.greet .gsub{font-size:13.5px;color:var(--mut)}
+.greet .gsub b{color:var(--elec-soft);font-weight:600}
+
+/* second row: text tabs + filter chips */
+.sub{display:flex;align-items:center;gap:28px;margin:18px 4px 22px}
+.ttab{font-size:15px;color:var(--mut);padding-bottom:9px;border-bottom:2px solid transparent}
+.ttab.on{color:var(--text);font-weight:600;border-bottom-color:var(--text)}
+.sub .sp{flex:1}
+.fchip{display:inline-flex;align-items:center;gap:9px;height:40px;padding:0 17px;border-radius:999px;background:var(--card);font-size:13px;font-weight:500;color:var(--text)}
+.fchip svg{width:12px;height:12px;color:var(--mut)}
+.fcirc{width:40px;height:40px;border-radius:50%;background:#fff;color:#111;display:grid;place-items:center;flex:0 0 40px}
+
+/* ===== card grid ===== */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.card{position:relative;background:var(--card);border-radius:28px;padding:24px;min-height:225px}
+.card h3{font-size:18px;font-weight:500;letter-spacing:.01em}
+.card .csub{font-size:12.5px;color:var(--mut);margin-top:5px}
+.acts{position:absolute;top:14px;right:14px;display:flex;gap:8px}
+.act{width:40px;height:40px;border-radius:50%;background:var(--card2);display:grid;place-items:center;color:var(--mut)}
+.act svg{width:15px;height:15px}
+
+/* hero: the ONE electric card */
+.hero{grid-column:span 4;background:var(--elec);color:var(--elec-ink);overflow:hidden}
+.hero h2{font-size:24px;font-weight:600;line-height:1.18;letter-spacing:-.01em;max-width:75%}
+.hero .acts .act{background:rgba(20,5,7,.85);color:#fff}
+.hero .acts .act.lift{background:#fff;color:#111}
+.hero .big{font-size:58px;font-weight:300;line-height:1;margin-top:34px}
+.hero .blab{font-size:14px;font-weight:500;color:rgba(28,5,7,.68);margin-top:6px;max-width:55%}
+.hero .decor{position:absolute;right:20px;bottom:0;display:flex;align-items:flex-end;gap:9px;height:140px}
+.hero .dp{width:56px;border-radius:22px}
+.hero .dp.hatch{height:140px;background:repeating-linear-gradient(45deg,rgba(28,5,7,.30) 0 3px,transparent 3px 10px);transform:translateY(32px)}
+.hero .dp.solid{height:88px;background:#1B0608;color:#fff;display:grid;place-items:center;font-size:13.5px;font-weight:600}
+.hero .dp.dots{height:110px;background-image:radial-gradient(rgba(28,5,7,.32) 2px,transparent 2.1px);background-size:13px 13px;transform:translateY(44px)}
+.hero .dp.tint{height:66px;background:rgba(255,255,255,.34);display:grid;place-items:center;font-size:13.5px;font-weight:600;align-self:flex-start;margin-top:-4px}
+
+/* focus donut */
+.focus{grid-column:span 4}
+.focus .fwrap{display:flex;align-items:center;gap:6px;margin-top:22px}
+.legend{flex:1;display:flex;flex-direction:column;gap:12px;font-size:14px;color:var(--mut)}
+.legend .li{display:flex;align-items:center;gap:10px}
+.legend .sw{width:9px;height:9px;border-radius:50%}
+.dnum{font-size:12.5px;fill:var(--text);font-weight:500}
+
+/* pipeline tall card */
+.pipe{grid-column:span 4;grid-row:span 2;display:flex;flex-direction:column}
+.pipe .inner{background:var(--card2);border-radius:22px;padding:18px;margin-top:20px}
+.pipe .inner h4{font-size:17px;font-weight:500;color:var(--text);display:flex;align-items:center}
+.pipe .inner h4 .chev{margin-left:auto;width:32px;height:32px;border-radius:50%;background:var(--card);display:grid;place-items:center;color:var(--mut)}
+.stagecol{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.stagepill{align-self:flex-start;font-size:12px;color:var(--mut);background:var(--card);border-radius:10px;padding:5px 11px}
+.pipe .chart{position:relative;margin:-108px 0 4px 80px}
+.tipbig{position:absolute;top:-8px;right:6px;background:#fff;color:#111;border-radius:13px;padding:6px 12px;font-size:17px;font-weight:600}
+.tipbig small{font-size:11px;font-weight:500;color:#777;margin-left:5px}
+.pipe .rowlead{display:flex;align-items:center;margin-top:18px;padding:0 6px}
+.pipe .rowlead .nm{font-size:17px;font-weight:500;color:var(--mut)}
+.pipe .rowlead .chev{margin-left:auto;width:36px;height:36px;border-radius:50%;background:var(--card2);display:grid;place-items:center;color:var(--mut)}
+
+/* revenue bars */
+.rev{grid-column:span 8;padding-bottom:16px}
+.rev .acts .act:first-child{background:#fff;color:#111}
+.rev .bignum{position:absolute;right:36px;bottom:84px;font-size:56px;font-weight:300;letter-spacing:-.01em}
+.rev .bigsub{position:absolute;right:38px;bottom:60px;font-size:13px;color:var(--mut)}
+.tip{position:absolute;left:90px;top:50px;background:var(--elec);color:#fff;border-radius:999px;padding:5px 13px;font-size:13px;font-weight:600}
+.tip::after{content:'';position:absolute;left:50%;top:100%;width:1px;height:24px;background:var(--elec)}
+.bars{display:flex;align-items:flex-end;gap:13px;height:140px;margin-top:60px;padding:0 4px;max-width:62%}
+.bar{flex:1;border-radius:13px 13px 9px 9px;background:repeating-linear-gradient(45deg,#3A3C44 0 2.5px,transparent 2.5px 9px);border:1px solid var(--line2);position:relative}
+.bar.hot{background:var(--elec);border-color:var(--elec)}
+.bar .bl{position:absolute;top:100%;left:0;right:0;text-align:center;font-size:11.5px;color:var(--faint);padding-top:8px}
+
+/* timeline */
+.tl{grid-column:span 8}
+.tlrows{margin-top:18px;display:flex;flex-direction:column}
+.tlr{display:flex;align-items:center;gap:15px;padding:12px 6px;border-top:1px solid var(--line)}
+.tlr:first-child{border-top:none}
+.tlr .tm{font-size:12.5px;color:var(--faint);width:48px;font-variant-numeric:tabular-nums}
+.tlr .nd{width:9px;height:9px;border-radius:50%;background:var(--line2);flex:0 0 9px}
+.tlr.now .nd{background:var(--elec);box-shadow:0 0 0 5px rgba(255,70,85,.18)}
+.tlr .tt{font-size:14px;font-weight:500}
+.tlr .src{font-size:12px;color:var(--faint);margin-top:1px}
+.tlr.done{opacity:.45}.tlr.done .tt{text-decoration:line-through}
+.tlr .est{margin-left:auto;font-size:11.5px;color:var(--mut);background:var(--card2);border-radius:999px;padding:5px 11px}
+.tlr.now .est{background:var(--elec);color:#fff}
+
+/* momentum — real OJO gamification (level ring · XP · streak) */
+.momo{grid-column:span 4;display:flex;flex-direction:column}
+.momo .mwrap{display:flex;align-items:center;gap:18px;margin-top:20px}
+.momo .ring{position:relative;width:92px;height:92px;flex:0 0 92px}
+.momo .ring .lv{position:absolute;inset:0;display:grid;place-items:center;font-size:19px;font-weight:700}
+.momo .xp{font-size:26px;font-weight:600}
+.momo .xn{font-size:12.5px;color:var(--mut);margin-top:3px}
+.momo .mbar{margin-top:10px;height:7px;border-radius:999px;background:var(--card2);overflow:hidden;width:150px}
+.momo .mbar i{display:block;height:100%;width:64%;border-radius:999px;background:var(--elec)}
+.momo .mrow{display:flex;gap:8px;margin-top:auto;padding-top:16px}
+.momo .mpill{flex:1;text-align:center;background:var(--card2);border-radius:16px;padding:10px 6px;font-size:15px;font-weight:600}
+.momo .mpill small{display:block;font-size:10.5px;font-weight:500;color:var(--faint);margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
+
+/* ===== GENIE — true right panel, same skin as the live app ===== */
+.gpanel{flex:0 0 350px;display:flex;flex-direction:column;background:#0C0C0E;border-left:1px solid rgba(255,70,85,.30);box-shadow:-20px 0 70px rgba(255,70,85,.07)}
+.gp-head{display:flex;align-items:center;padding:16px 18px 8px}
+.gp-head .ft{font-size:15px;font-weight:700}
+.gp-head .ib{margin-left:auto;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--mut)}
+.gp-head .ib:hover{background:#1F2025;color:#fff}
+.gmsgs{flex:1;overflow-y:auto;padding:6px 18px}
+.ghero{position:relative;overflow:hidden;background:var(--elec);color:var(--elec-ink);border-radius:24px;padding:20px 20px 24px;margin-top:10px;font-size:23px;font-weight:800;line-height:1.16}
+.ghero::before{content:'';position:absolute;right:18px;bottom:-26px;width:52px;height:94px;border-radius:26px;background:repeating-linear-gradient(45deg,rgba(28,5,7,.30) 0 2.5px,transparent 2.5px 8px)}
+.ghero::after{content:'';position:absolute;right:78px;bottom:-40px;width:48px;height:94px;border-radius:26px;background-image:radial-gradient(rgba(28,5,7,.30) 1.7px,transparent 1.8px);background-size:11px 11px}
+.ghero .glogo{width:44px;height:44px;border-radius:50%;background:#1B0608;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:800;margin-bottom:14px;box-shadow:0 0 0 2px rgba(28,5,7,.25)}
+.ghero .gctx{position:relative;z-index:1;font-size:13.5px;font-weight:600;color:rgba(28,5,7,.66);line-height:1.45;margin-top:8px;max-width:85%}
+.gfoot{padding:12px 16px 16px}
+.gplan{margin:0 0 14px;padding:14px 15px;background:#1A1B1F;border:1px solid #26282E;border-radius:18px}
+.gplan .ph{display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--elec)}
+.gplan .ph .live{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-size:9.5px;color:var(--ok)}
+.gplan .ph .live::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(51,192,131,.22)}
+.gplan .px{font-size:13px;color:var(--text);line-height:1.5;margin-top:8px}
+.gplan .px b{font-weight:700}
+.gplan .cta{display:inline-flex;align-items:center;gap:7px;margin-top:12px;padding:9px 15px;border-radius:999px;background:var(--elec);color:var(--elec-ink);font-size:12.5px;font-weight:700}
+.gplan .cta svg{width:13px;height:13px}
+.gsugg{display:flex;flex-direction:column;align-items:flex-end;gap:8px;margin-bottom:12px}
+.gsugg button{background:#1A1B1F;border:1px solid #26282E;border-radius:999px;padding:8px 15px;font-size:13px;font-weight:600;color:var(--text)}
+.gsugg button:hover{border-color:var(--elec);color:var(--elec)}
+.gask{display:flex;align-items:center;gap:9px;background:#1A1B1F;border:1px solid #26282E;border-radius:999px;padding:7px 8px 7px 16px;color:var(--faint);font-size:14px}
+.gask .gic{display:grid;place-items:center}
+.gask .gic svg{width:16px;height:16px}
+.gask .ggo{margin-left:auto;width:34px;height:34px;border-radius:50%;background:var(--elec);color:var(--elec-ink);display:grid;place-items:center;flex:0 0 34px}
+.gnote{font-size:10.5px;color:var(--faint);text-align:center;margin-top:10px;line-height:1.4}
+
+.note{margin-top:24px;text-align:center;font-size:12px;color:var(--faint)}
+.note b{color:var(--mut)}
+@media(max-width:1180px){.gpanel{display:none}.hero,.focus,.pipe,.rev,.tl,.momo{grid-column:span 12}.pipe{grid-row:auto}}
+</style>
+</head>
+<body>
+
+<!-- ===== left rail (real OJO nav) ===== -->
+<nav class="rail">
+  <div class="logo"><span></span></div>
+  <a class="rnav on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg>Home</a>
+  <a class="rnav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Contacts</a>
+  <a class="rnav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>Leads</a>
+  <a class="rnav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 20V9"/></svg>Projects</a>
+  <a class="rnav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M17 14a6 6 0 0 1 4 6"/></svg>HR</a>
+  <a class="rnav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>Accounts</a>
+  <a class="rnav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg>Vendors</a>
+  <span class="rsp"></span>
+  <a class="rnav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/></svg>Admin</a>
+  <span class="rava">VV</span>
+</nav>
+
+<!-- ===== main ===== -->
+<div class="main"><div class="mscroll">
+
+  <!-- topbar: workspace · search · quick-add · comm -->
+  <div class="topbar">
+    <button class="ws"><span class="wlogo"><span></span></span>Reliance<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></button>
+    <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Search leads, projects, tasks, people…<span class="kbd">⌘K</span></div>
+    <span class="sp"></span>
+    <button class="addbtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+    <button class="circ"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a8.5 8.5 0 0 1-8.5 8.5c-1.5 0-3-.4-4.2-1.1L3 21l1.6-5.3A8.5 8.5 0 1 1 21 12z"/></svg></button>
+    <button class="circ"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot"></span></button>
+  </div>
+
+  <!-- greeting (real home hero line) -->
+  <div class="greet">
+    <h1>Good morning, Vinoth.</h1>
+    <span class="gsub"><b>2 overdue</b> · 4 on your plate · 6-day streak · Thursday, June 12</span>
+  </div>
+
+  <!-- text tabs + filters -->
+  <div class="sub">
+    <button class="ttab on">All</button>
+    <button class="ttab">Sales</button>
+    <button class="ttab">Projects</button>
+    <button class="ttab">Finance</button>
+    <span class="sp"></span>
+    <button class="fchip">Today <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    <button class="fchip">All modules <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    <button class="fcirc"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M7 12h10M10 17h4"/></svg></button>
+  </div>
+
+  <div class="grid">
+
+    <!-- HERO: the one electric card -->
+    <section class="card hero">
+      <div class="acts">
+        <button class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>
+        <button class="act lift"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17 17 7M9 7h8v8"/></svg></button>
+      </div>
+      <h2>Today,<br>at a glance</h2>
+      <div class="big">4</div>
+      <div class="blab">tasks on your plate today</div>
+      <div class="decor">
+        <div class="dp hatch"></div>
+        <div class="dp tint">6d</div>
+        <div class="dp solid">2 due</div>
+        <div class="dp dots"></div>
+      </div>
+    </section>
+
+    <!-- FOCUS donut -->
+    <section class="card focus">
+      <div class="acts">
+        <button class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></button>
+        <button class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17 17 7M9 7h8v8"/></svg></button>
+      </div>
+      <h3>Today's focus</h3>
+      <div class="csub">85 min focused · target 2 h</div>
+      <div class="fwrap">
+        <div class="legend">
+          <span class="li"><span class="sw" style="background:var(--elec)"></span>Deep work</span>
+          <span class="li"><span class="sw" style="background:var(--ok)"></span>Meetings</span>
+        </div>
+        <svg width="160" height="142" viewBox="0 0 160 142">
+          <g transform="translate(80,74)">
+            <circle r="45" fill="none" stroke="var(--card2)" stroke-width="16"/>
+            <circle r="45" fill="none" stroke="var(--elec)" stroke-width="16" stroke-linecap="round"
+              stroke-dasharray="198 283" transform="rotate(-90)"/>
+            <circle r="45" fill="none" stroke="var(--ok)" stroke-width="16" stroke-linecap="round"
+              stroke-dasharray="70 283" stroke-dashoffset="-212" transform="rotate(-90)"/>
+          </g>
+          <text class="dnum" x="80" y="14" text-anchor="middle">70</text>
+          <text class="dnum" x="139" y="114" text-anchor="middle">30</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- PIPELINE tall card -->
+    <section class="card pipe">
+      <div class="acts">
+        <button class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17 17 7M9 7h8v8"/></svg></button>
+      </div>
+      <h3>Active deals</h3>
+      <div class="csub">11 leads · ₹9.8L weighted pipeline</div>
+      <div class="inner">
+        <h4>Hexathalon Apparel <span class="chev"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m18 15-6-6-6 6"/></svg></span></h4>
+        <div class="stagecol">
+          <span class="stagepill">New</span>
+          <span class="stagepill">Contacted</span>
+          <span class="stagepill">Qualified</span>
+          <span class="stagepill" style="color:var(--text);background:#2A2B31">Proposal</span>
+          <span class="stagepill">Won</span>
+        </div>
+        <div class="chart">
+          <span class="tipbig">₹4.2L<small>weighted</small></span>
+          <svg width="186" height="112" viewBox="0 0 186 112">
+            <path d="M0 90 C 37 86, 52 56, 86 48 S 149 60, 186 35" fill="none" stroke="var(--elec)" stroke-width="2.5"/>
+            <path d="M0 97 C 45 93, 74 78, 110 74 S 156 80, 186 67" fill="none" stroke="#3A3C44" stroke-width="2"/>
+            <circle cx="86" cy="48" r="5" fill="var(--elec)"/>
+            <line x1="86" y1="48" x2="86" y2="8" stroke="#3A3C44"/>
+          </svg>
+        </div>
+      </div>
+      <div class="rowlead"><span class="nm">Sunrise Pharma</span><span class="chev"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></span></div>
+      <div class="rowlead"><span class="nm">Life Designer</span><span class="chev"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></span></div>
+    </section>
+
+    <!-- REVENUE bars -->
+    <section class="card rev">
+      <div class="acts">
+        <button class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M7 12h10M10 17h4"/></svg></button>
+        <button class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></button>
+        <button class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17 17 7M9 7h8v8"/></svg></button>
+      </div>
+      <h3>Collected this week</h3>
+      <span class="tip">₹84,000 · Apollo</span>
+      <div class="bars">
+        <div class="bar" style="height:42%"><span class="bl">Mon</span></div>
+        <div class="bar" style="height:64%"><span class="bl">Tue</span></div>
+        <div class="bar hot" style="height:88%"><span class="bl">Wed</span></div>
+        <div class="bar" style="height:55%"><span class="bl">Thu</span></div>
+        <div class="bar" style="height:71%"><span class="bl">Fri</span></div>
+        <div class="bar" style="height:24%"><span class="bl">Sat</span></div>
+        <div class="bar" style="height:12%"><span class="bl">Sun</span></div>
+      </div>
+      <div class="bignum">₹12.4L</div>
+      <div class="bigsub">+32% vs last week</div>
+    </section>
+
+    <!-- TIMELINE -->
+    <section class="card tl">
+      <div class="acts">
+        <button class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17 17 7M9 7h8v8"/></svg></button>
+      </div>
+      <h3>Today's timeline</h3>
+      <div class="csub">Thursday, June 12</div>
+      <div class="tlrows">
+        <div class="tlr done"><span class="tm">09:00</span><span class="nd"></span><span><div class="tt">Review supplier quotes</div><div class="src">Procurement · Inbox</div></span><span class="est">30m</span></div>
+        <div class="tlr now"><span class="tm">10:00</span><span class="nd"></span><span><div class="tt">Design home page hero</div><div class="src">Apollo · Design</div></span><span class="est">6h · now</span></div>
+        <div class="tlr"><span class="tm">14:00</span><span class="nd"></span><span><div class="tt">Follow up — Hexathalon proposal</div><div class="src">Leads · Proposal</div></span><span class="est">20m</span></div>
+        <div class="tlr"><span class="tm">16:30</span><span class="nd"></span><span><div class="tt">Approve Reliance invoice PROF/0006</div><div class="src">Finance · Bills</div></span><span class="est">15m</span></div>
+      </div>
+    </section>
+
+    <!-- MOMENTUM: real OJO gamification -->
+    <section class="card momo">
+      <div class="acts">
+        <button class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17 17 7M9 7h8v8"/></svg></button>
+      </div>
+      <h3>Momentum</h3>
+      <div class="csub">64 XP to Level 5</div>
+      <div class="mwrap">
+        <div class="ring">
+          <svg width="92" height="92" viewBox="0 0 92 92">
+            <circle cx="46" cy="46" r="40" fill="none" stroke="var(--card2)" stroke-width="8"/>
+            <circle cx="46" cy="46" r="40" fill="none" stroke="var(--elec)" stroke-width="8" stroke-linecap="round"
+              stroke-dasharray="161 251" transform="rotate(-90 46 46)"/>
+          </svg>
+          <span class="lv">L4</span>
+        </div>
+        <div>
+          <div class="xp">436 XP</div>
+          <div class="xn">+55 earned today</div>
+          <div class="mbar"><i></i></div>
+        </div>
+      </div>
+      <div class="mrow">
+        <span class="mpill">6<small>day streak</small></span>
+        <span class="mpill">85m<small>focused</small></span>
+        <span class="mpill">3<small>done today</small></span>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="note"><b>Design option B — “Electric”.</b> Static mock only; the live home page is untouched. Open the real app at <b>localhost:5173</b> to compare.</div>
+
+</div></div>
+
+<!-- ===== GENIE right panel (same details as the live panel) ===== -->
+<aside class="gpanel">
+  <div class="gp-head"><span class="ft">Ask Ojo Genie</span><button class="ib"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m13 17 5-5-5-5M6 17l5-5-5-5"/></svg></button></div>
+  <div class="gmsgs">
+    <div class="ghero">
+      <span class="glogo">OJO</span>
+      Hello, Vinoth
+      <div class="gctx">How can I help you today?</div>
+    </div>
+  </div>
+  <div class="gfoot">
+    <div class="gplan">
+      <div class="ph"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg> OJO suggests <span class="live">LIVE</span></div>
+      <div class="px"><b>2 overdue, 4 today.</b> Clear the two quick wins first (35 min total), then a focus block on the Apollo hero. Hexathalon hasn't heard from you in 5 days — a nudge keeps the proposal warm.</div>
+      <button class="cta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Start focus block</button>
+    </div>
+    <div class="gsugg">
+      <button>What needs my attention today?</button>
+      <button>Show My Leads</button>
+      <button>Today's calls</button>
+    </div>
+    <div class="gask">Ask Ojo anything…
+      <span class="gic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21.4 11.05 12.05 20.4a5 5 0 0 1-7.07-7.07l9.19-9.19a3 3 0 0 1 4.24 4.24l-9.2 9.19a1 1 0 0 1-1.41-1.41l8.49-8.49"/></svg></span>
+      <span class="gic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
+      <button class="ggo"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+    </div>
+    <div class="gnote">Ojo Genie can make mistakes. Verify important information before acting on it.</div>
+  </div>
+</aside>
+
+</body>
+</html>

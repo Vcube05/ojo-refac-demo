@@ -93,8 +93,6 @@ const M={
 let curMod='leads';function cm(){return M[curMod];}
 let curRoute='home';
 /* lead-record layout for A/B testing: 'A' = Inspector (right panel), 'B' = AI Briefing (top) */
-let recVariant='A';
-function setRecVariant(v){recVariant=v;try{localStorage.setItem('ojo-rec-variant',v);}catch(e){}if(rec&&recMode==='detail')mountDetail();}
 let modCollapsed=true, modFace='info';
 function curType(){return cm().views.find(v=>v.name===cm().active).type;}
 
@@ -233,7 +231,7 @@ function commTap(f){const h=commHost;if(!h)return;
 function closeCommSheet(){document.getElementById('commSheet')?.classList.remove('show');mScrim(false);}
 /* per-page content renderers: info reuses the side-panel body; the comm channels show that record's own history */
 function commProjectContent(f){return f==='info'?projInfoBody():commChannel(f,'Rajeeshlal');}
-function commDetailContent(f){return f==='info'?(rec&&rec.type==='lead'?leadInfo():taskInfo()):commChannel(f,rec&&rec.ent?(rec.type==='lead'?rec.ent.nm:rec.ent.title):'this contact');}
+function commDetailContent(f){return f==='info'?(rec&&rec.type==='lead'?leadInfo():taskInfo()):commChannel(f,rec&&rec.ent?(rec.type==='lead'?rec.ent.nm:(PEOPLE[rec.ent.asg]?PEOPLE[rec.ent.asg][2]:rec.ent.t)):'this contact');}
 function commEmpContent(f){return f==='info'?empInfoBody():commChannel(f,hrEmp?hrEmp.name:'this contact');}
 function commTaskContent(f){return f==='info'?tInfoBody():commChannel(f,tRec?tRec.title:'this task');}
 let collFace='info';function collSetFace(f){collFace=f;}
@@ -253,6 +251,10 @@ const DOCK_ICONS={
   bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>',
   search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>'
 };
+/* Genie's comm faces — selected via the topbar cluster; null = the Genie chat itself */
+let genieFace=null;
+const GFACES=['chat','call','video','email'];
+const GFACE_LBL={chat:'Messages',call:'Calls',video:'Meetings',email:'Email'};
 /* Single-sheet tabs: comm channels + Genie. (Search lives on Home, Notifications in the rail.) */
 const DOCK_CELLS=[
   {id:'ui-dock-genie',  type:'UICell', owner:'ui-dock', group:'assist', values:{name:'Ojo Genie', render:'anchor', bind:'capability:genie',    click:'open', icon:'genie'}, links:{target:'genie'}},
@@ -263,7 +265,7 @@ const DOCK_CELLS=[
 ];
 function dockBtn(c){
   const v=c.values, id=c.links.target;
-  const handler=v.click==='comm'?`openComm('${id}')`:`openSection('${id}')`;
+  const handler=v.click==='comm'?`openComm('${id}')`:id==='genie'?'genieToggle()':`openSection('${id}')`;
   if(v.render==='anchor')
     return `<button class="di genie" id="d-${id}" onclick="${handler}" title="${v.name}"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO Genie"></button>`;
   return `<button class="di" id="d-${id}" onclick="${handler}" title="${v.name}">${svg(DOCK_ICONS[v.icon],19)}</button>`;
@@ -271,27 +273,38 @@ function dockBtn(c){
 /* Claude-style tab: icon only, with the label revealed for the selected tab. */
 function panelTabBtn(c){
   const v=c.values, id=c.links.target;
-  const handler=v.click==='comm'?`openComm('${id}')`:`openSection('${id}')`;
+  const handler=v.click==='comm'?`openComm('${id}')`:id==='genie'?'genieToggle()':`openSection('${id}')`;
   if(v.render==='anchor')
     return `<button class="di genie ptab" id="d-${id}" onclick="${handler}" title="${v.name}"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span class="ptlbl">${v.name}</span></button>`;
   return `<button class="di ptab" id="d-${id}" onclick="${handler}" title="${v.name}">${svg(DOCK_ICONS[v.icon],19)}<span class="ptlbl">${v.name}</span></button>`;
 }
+/* Comm channels live INSIDE the Genie panel's notch now (one connected surface) —
+   the dock & topbar carry only the Genie anchor. */
 function renderDock(){
   const el=document.getElementById('dock'); if(!el)return;
   const g=k=>DOCK_CELLS.filter(c=>c.group===k);
   el.innerHTML =
     g('assist').map(dockBtn).join('') +
-    `<div class="dgroup" title="Communication">`+g('comm').map(dockBtn).join('')+`</div>` +
     `<div class="dock-spacer"></div>` +
     g('util').map(dockBtn).join('');
 }
-/* Single-sheet panel: one horizontal tab bar at the top (comm pill · tools · Genie),
-   the body switches with the active tab. Genie is the default open tab. */
+/* Topbar slot (adjacent to the bell) holds ONLY the opener pill — it hides while the
+   panel is open, because the live cluster sits in the panel's notch at the same height. */
 function renderPanelTabs(){
   const el=document.getElementById('panelTabs'); if(!el)return;
-  const g=k=>DOCK_CELLS.filter(c=>c.group===k);
-  const genie=g('assist').map(panelTabBtn).join(''), comm=g('comm').map(panelTabBtn).join(''), sp=`<div class="dock-spacer"></div>`;
-  el.innerHTML = shellMode==='connected' ? (genie+sp+comm) : (comm+sp+genie);
+  el.innerHTML=`<button class="gtab on genie" onclick="genieToggle()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span>Ojo Genie</span></button>`;
+}
+/* In-panel notch cluster with SWAP: the slot pill (on the hero, top-left) is always the
+   active item with its name; the others wait as circles in the top-right cut. Selecting
+   a face moves it into the slot and sends Ojo Genie out to the circle row. */
+function ghActs(){
+  const pill=genieFace
+    ?`<span class="gh-pill"><button class="gpill" onclick="genieToggle()" title="${GFACE_LBL[genieFace]}">${svg(DOCK_ICONS[genieFace],16)}<span>${GFACE_LBL[genieFace]}</span></button></span>`
+    :`<span class="gh-pill"><button class="gpill" onclick="genieToggle()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span>Ojo Genie</span></button></span>`;
+  const circles=(genieFace?['genie',...GFACES.filter(f=>f!==genieFace)]:GFACES).map(k=>
+    k==='genie'?`<button class="gha glogo" onclick="genieHome()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"></button>`
+      :`<button class="gha" onclick="genieSel('${k}')" title="${GFACE_LBL[k]}">${svg(DOCK_ICONS[k],16)}</button>`).join('');
+  return pill+`<span class="gh-acts">${circles}</span>`;
 }
 /* Contextual awareness: Genie + the comms group read whatever record/module is open. */
 function ctxName(){
@@ -411,17 +424,19 @@ let WUID=0;
 let pjWidgets=['timeline','messages','todos','cardtable','docs','chat','schedule'].map(t=>({id:'w'+(++WUID),type:t}));
 
 function actGlyph(t){return t==='done'?svg('<path d="M20 6 9 17l-5-5"/>',11):svg('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',11);}
+/* shared activity feed — rows are [color, glyph, date, who, action, target]; used by project, task & module-task panels */
+function actRowsHTML(items,more){return `<div class="bact">${items.map(i=>`<div class="arow"><span class="ic" style="background:${i[0]}">${actGlyph(i[1])}</span><span><span class="dt">${i[2]}</span><span class="mut">${i[3]} ${i[4]} </span><a onclick="toast('Open: ${i[5]}')">${i[5]}</a></span></div>`).join('')}${more||''}</div>`;}
 function bActivity(){const items=[['#E0A21E','msg','Jun 5','Priya Nair','commented on','Wireframes'],['#15A06A','done','Jun 4','Mei Lin','completed a to-do:','Competitive audit'],['#2F6FED','msg','Jun 3','Victor Cooper','commented on','Project Kickoff']];
-  return `<div class="bact">${items.map(i=>`<div class="arow"><span class="ic" style="background:${i[0]}">${actGlyph(i[1])}</span><span><span class="dt">${i[2]}</span><span class="mut">${i[3]} ${i[4]} </span><a onclick="toast('Open: ${i[5]}')">${i[5]}</a></span></div>`).join('')}
-   <div class="more"><span class="av">VK</span>1 person active in the last 7 days · <a onclick="setView('All Tasks')">View all activity…</a></div></div>`;}
+  return actRowsHTML(items,`<div class="more"><span class="av">VK</span>1 person active in the last 7 days · <a onclick="setView('All Tasks')">View all activity…</a></div>`);}
 function projTopInsights(){const a=projScore();const done=tasks.filter(t=>t.st==='Done').length;const total=tasks.length||1;
   return `<div class="proj-ai">
     <div class="pa-score"><div class="pa-ring">${ring(a[0],a[0]>=70?'var(--ok)':a[0]>=40?'var(--warn)':'var(--coral)',72)}<span class="pa-pct">${a[0]}%</span></div><div class="pa-meta"><div class="pa-lbl">${a[1]}</div><div class="pa-sub">${done}/${total} tasks done · 4 milestones</div></div></div>
     <div class="pa-ins">${ojoInsightsCard(projInsights(),'project')}</div></div>`;}
 function projOverview(){return `<div class="bhome">
   ${projTopInsights()}
-  <div class="bgrid">${pjWidgets.map(widgetCard).join('')}</div>
-  <div class="baddtile" onclick="pjAddOpen(event)" title="Add a box">${svg('<path d="M12 5v14M5 12h14"/>',20)}</div>
+  <div class="bgrid">${pjWidgets.map(widgetCard).join('')}
+    <div class="bsec add"><div class="bsec-h">&nbsp;</div><div class="baddtile" onclick="pjAddOpen(event)" title="Add a box">${svg('<path d="M12 5v14M5 12h14"/>',20)}<span>Add a box</span></div></div>
+  </div>
 </div>`;}
 function widgetCard(w){const d=WIDGETS[w.type];if(!d)return '';
   return `<div class="bsec" draggable="true" data-id="${w.id}" ondragstart="pjDragStart(event,'${w.id}')" ondragover="pjDragOver(event)" ondrop="pjDrop(event,'${w.id}')" ondragend="pjDragEnd(event)">
@@ -485,49 +500,41 @@ function cardDrop(e,stage){e.preventDefault();e.currentTarget.classList.remove('
 function expandRecord(){if(!rec)return;const type=rec.type,id=rec.ent.id;closePeek();openDetail(type,id);}
 
 /* ---- full detail page (with collapsible info/comm panel) ---- */
-function openDetail(type,id){const r=newRec(type,id);if(!r)return;rec=r;recMode='detail';detailFace='info';detailTab='Overview';detailCollapsed=isMobile();trkReset();mountDetail();syncGenie();}
+let detailFrom=null; /* set when a task record is cross-launched (Tasks module / Home) so close returns there */
+function openDetail(type,id,from){const r=newRec(type,id);if(!r)return;rec=r;recMode='detail';detailFace='info';detailTab='Overview';detailCollapsed=true;detailFrom=from||null;trkReset();mountDetail();syncGenie();}
 function faceIcon(f){const m={info:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',chat:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',call:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',video:'<rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4z"/>',email:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>'};return svg(m[f],17);}
 function mountDetail(){const r=rec,isLead=r.type==='lead',e=r.ent;
-  const crumb=isLead?`<a onclick="go('leads')">Leads</a> <span class="sep">‹</span> <b>${e.co}</b> <span class="sep">‹</span> ${detailTab}`
+  const crumb=isLead?`<a onclick="go('leads')">Leads</a> <span class="sep">‹</span> ${detailTab}`
     :`<a onclick="go('projectsDash')">Projects</a> <span class="sep">‹</span> <a onclick="go('project')">Apollo</a> <span class="sep">‹</span> ${e.ms} <span class="sep">‹</span> ${detailTab}`;
   const dside=`<div class="dside">
-      <button class="dctl x" onclick="detailClose()" title="Close (Esc)">${svg('<path d="M18 6 6 18M6 6l12 12"/>',19)}</button>
       <div class="dnav"><button class="dctl" onclick="detailNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="detailNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div>
     </div>`;
-  const viewbar=`<div class="viewbar">${['Overview','Details','Notes','Activity'].map(x=>`<button class="vtab ${x===detailTab?'on':''}" onclick="detailSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[TABICON[x]],14)}</span>${x}</button>`).join('')}</div>`;
-  const ptitle=isLead?e.co:e.t;
-  const abtoggle=isLead?`<span class="seg abseg" title="Layout (A/B/C)"><button class="${recVariant==='A'?'on':''}" onclick="setRecVariant('A')">A · Inspector</button><button class="${recVariant==='B'?'on':''}" onclick="setRecVariant('B')">B · Briefing</button><button class="${recVariant==='C'?'on':''}" onclick="setRecVariant('C')">C · Board</button></span>`:'';
-  if(isLead&&recVariant==='C'){
-    /* Variant C — Briefing, full board, NO side panel: all the panel data folded into one column */
-    document.getElementById('screen').innerHTML=`<div class="dwrap solo">${dside}
-      <div class="dbox solo" id="dbox">
-        <div class="dmain">
-          <div class="dtop"><div class="crumbs">${crumb}</div><div class="sp"></div>${abtoggle}</div>
-          ${viewbar}
-          <div class="dcenter"><div class="inner" id="dinner"></div></div>
-        </div>
-      </div></div>`;
-    renderRec();
-    commSetHost({getFace:()=>detailFace,setFace:detailSetFace,content:commDetailContent});
-    syncCommActive();
-    return;
-  }
+  /* activity lives in the hideable panel (project pattern), so no Activity tab */
+  const viewbar=`<div class="viewbar">${['Overview','Details','Notes'].map(x=>`<button class="vtab ${x===detailTab?'on':''}" onclick="detailSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[TABICON[x]],14)}</span>${x}</button>`).join('')}</div>`;
+  /* one header cluster for every record: comm pill · history toggle · close — comm faces fit the record */
+  const who=isLead?(e.nm||'contact'):(e.asg&&PEOPLE[e.asg]?PEOPLE[e.asg][2]:'assignee');
+  const faces=isLead?[['call','Call'],['email','Email'],['chat','Message']]:[['call','Call'],['email','Email'],['video','Meet']];
+  const cluster=`<div class="commpill">${faces.map(([f,l])=>`<button title="${l} ${who}" onclick="openComm('${f}')">${faceIcon(f)}</button>`).join('')}</div>
+      <button class="ptog-ic ${detailCollapsed?'':'on'}" id="dPtogBtn" onclick="detailToggle()" title="${detailCollapsed?'Show activity':'Hide activity'}">${svg('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',17)}</button>
+      <button class="mtool hdr-x" onclick="detailClose()" title="Close (Esc)">${svg(SVS.x,18)}</button>`;
   document.getElementById('screen').innerHTML=`<div class="dwrap">${dside}
     <div class="dbox ${detailCollapsed?'collapsed':''}" id="dbox">
       <div class="dmain">
-        <div class="dtop"><div class="crumbs">${crumb}</div><div class="sp"></div>${abtoggle}
-          <button class="paneltoggle" onclick="detailToggle()"><span id="ptogTxt">${detailCollapsed?'Show info':'Hide info'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
+        <div class="dtop"><div class="crumbs">${crumb}</div><div class="sp"></div>${cluster}</div>
         ${viewbar}
         <div class="dcenter"><div class="inner" id="dinner"></div></div>
       </div>
       <aside class="dpanel" id="dpanel">
-        <div class="dpanel-head"><span class="nm">${ptitle}</span><button class="ed" onclick="xpOpenFrom(this)" title="Expand">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button><button class="ed" style="margin-left:6px">${svg('<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',15)}</button></div>
+        <div class="dpanel-head"><span class="nm">Recent activity</span></div>
         <div class="dpanel-body" id="dpanelbody"></div>
       </aside></div></div>`;
   renderRec();renderDetailInfo();
   commSetHost({getFace:()=>detailFace,setFace:detailSetFace,content:commDetailContent});syncCommActive();}
-function detailToggle(){detailCollapsed=!detailCollapsed;document.getElementById('dbox').classList.toggle('collapsed',detailCollapsed);document.getElementById('ptogTxt').textContent=detailCollapsed?'Show info':'Hide info';}
-function detailClose(){const t=rec&&rec.type==='lead'?'leads':'project';trkReset();rec=null;recMode='';go(t);}
+function detailToggle(){detailCollapsed=!detailCollapsed;document.getElementById('dbox').classList.toggle('collapsed',detailCollapsed);
+  const b=document.getElementById('dPtogBtn');if(b){b.classList.toggle('on',!detailCollapsed);b.title=detailCollapsed?'Show activity':'Hide activity';}}
+function detailClose(){const isLead=rec&&rec.type==='lead';trkReset();rec=null;recMode='';
+  if(!isLead&&detailFrom){const f=detailFrom;detailFrom=null;if(f==='home'){go('home');}else{openTasks('project');}return;}
+  go(isLead?'leads':'project');}
 function detailNav(dir){if(!rec)return;const arr=rec.type==='lead'?leads:tasks;const i=arr.findIndex(x=>x.id===rec.ent.id);if(i<0)return;const n=(i+dir+arr.length)%arr.length;const nr=newRec(rec.type,arr[n].id);if(!nr)return;rec=nr;detailFace='info';trkReset();xpClose();mountDetail();}
 document.addEventListener('keydown',e=>{if(recMode!=='detail'||!document.getElementById('dbox'))return;const t=e.target;if(t&&(t.tagName==='TEXTAREA'||t.tagName==='INPUT'||t.isContentEditable))return;if(e.key==='Escape'){if(xpShown()){xpClose();}else{detailClose();}}else if(e.key==='ArrowDown'){e.preventDefault();detailNav(1);}else if(e.key==='ArrowUp'){e.preventDefault();detailNav(-1);}});
 function detailSetTab(t){detailTab=t;mountDetail();}
@@ -559,7 +566,7 @@ function ipMoreToggle(b){b.closest('.ip-more').classList.toggle('open');}
 /* The lead inspector as a declarative cell spec (render + bind + props) — top-to-bottom by
    importance; low-value fields collapse. Add a section by pushing a cell, no markup edits. */
 /* OJO's recommendations — derived honestly from the lead's own cell values (stage, value, source) */
-const OI_ICONS={flame:'<path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-1 .5-2 1-3 .5 2 2 2 2 0 0-2-1-3 1-5z"/>',target:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/>',cash:'<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'};
+const OI_ICONS={flame:'<path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-1 .5-2 1-3 .5 2 2 2 2 0 0-2-1-3 1-5z"/>',target:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/>',cash:'<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',next:'<path d="M5 12h14M13 6l6 6-6 6"/>'};
 function leadInsights(l){const sc=(SCORE[l.st]||[40])[0];const out=[];
   out.push(['flame',sc<45?`<b>Going cold.</b> No activity logged in 14 days — a quick call could re-warm it.`:`<b>Engaged.</b> Activity is recent — keep momentum with a timely follow-up.`]);
   out.push(['target',`<b>${l.src} leads close ~2× more often</b> than average. Worth prioritising this one.`]);
@@ -575,24 +582,21 @@ function contactsListHTML(list,addLabel){const add=addLabel===null?'':`<button c
   return `<div class="contacts-list">${list.map(c2=>`<div class="contact-row"><span class="av" style="background:${c2[3]}">${(c2[0]||'?').split(' ').map(w=>w[0]).slice(0,2).join('')}</span>
   <div class="cr-id"><div class="nm">${c2[0]}${c2[4]?' <span class="primary-chip">Primary</span>':''}</div><div class="sub">${c2[1]}</div></div>
   <div class="cr-actions"><button onclick="openComm('call')" title="Call">${faceIcon('call')}</button><button onclick="openComm('email')" title="Email">${faceIcon('email')}</button><button onclick="openComm('chat')" title="Message">${faceIcon('chat')}</button></div></div>`).join('')}${add}</div>`;}
-function leadPanelCells(l){
-  const sc=SCORE[l.st]||[40,'Average'];const ai=leadAI(l);
-  const own=l.asg?PEOPLE[l.asg]:null;const first=(l.nm||'contact').split(' ')[0].toLowerCase();
-  const org=l.co.toLowerCase().replace(/[^a-z]/g,'')||'co';
-  const stageDot=`<span class="ip-stage"><span class="dot" style="background:${lcc(l.st)}"></span>${l.st}</span>`;
-  const owner=own?`<span class="ip-owner"><span class="av" style="background:${own[1]}">${own[0]}</span>${own[2]}</span>`
-    :`<button class="ip-assign" onclick="toast('Assign owner')">${svg('<path d="M12 5v14M5 12h14"/>',12)} Assign</button>`;
-  const cells=[];
-  /* Variant B puts score + facts in the top briefing, so the panel leads with AI */
-  if(recVariant!=='B'){
-    cells.push({render:'score',bind:'derive:leadScore',props:{pct:sc[0],label:sc[1],reason:ai.reason}});
-    cells.push({render:'facts',bind:'self',props:{rows:[['Stage',stageDot],['Budget',`<span class="money">${fmt(l.val)}</span>`],['Source',l.src],['Owner',owner],['Created','07 May 2026']]}});
-  }
-  cells.push({render:'insights',bind:'derive:ojoInsights',props:{items:leadInsights(l)}});
-  cells.push({render:'contacts',bind:'relation:contacts',props:{list:leadContacts(l)}});
-  cells.push({render:'more',bind:'self',props:{rows:[['Organisation',l.co],['Role','—'],['Department','—'],['Address','Bengaluru'],['Contact address','—'],['Added by','Vinoth V V']]}});
-  return cells;
-}
+/* lead header card — score + OJO Insights promoted into the main body (same .proj-ai pattern as project & task).
+   The next-best-action lives INSIDE the insights; acting on it happens in the Genie panel (Ask OJO). */
+function leadTopInsights(l){const sc=SCORE[l.st]||[40,'Average'];const t=scoreColors(sc[0]);const ai=leadAI(l);
+  const items=[['next',`<b>Next best action.</b> ${ai.label}`],...leadInsights(l)];
+  return `<div class="proj-ai">
+    <div class="pa-score"><div class="pa-ring">${ring(sc[0],t[0],72)}<span class="pa-pct" style="color:${t[1]}">${sc[0]}%</span></div><div class="pa-meta"><div class="pa-lbl" style="color:${t[1]}">${sc[1]}</div><div class="pa-sub">${ai.reason}</div></div></div>
+    <div class="pa-ins">${ojoInsightsCard(items,'lead')}</div></div>`;}
+/* the lead's recent history — lives in the hideable panel, derived from the lead cell */
+function leadActivity(l){const items=[];
+  if(leadClosed(l.st))items.push([l.st==='Won'?'#15A06A':'#8B93A1','done','Jun 8','Priya Nair','closed this lead as',l.st]);
+  else if(l.st!=='New')items.push(['#E0A21E','msg','Jun 8','Priya Nair','moved this lead to',l.st]);
+  rec.comments.slice(-2).forEach(()=>items.push(['#2F6FED','msg','today','Vinoth K','commented on',l.co]));
+  items.push(['#7C53E6','msg','12 May','Priya Nair','logged a call with',l.nm||'the contact']);
+  items.push(['#F04D56','msg','7 May','Priya Nair','created this lead from',l.src]);
+  return actRowsHTML(items,`<div class="more"><span class="av">PN</span>Priya Nair active on this lead</div>`);}
 function renderPanelCell(c){const p=c.props;
   if(c.render==='score'){const t=p.pct>=70?['var(--ok)','#0C6B47']:p.pct>=45?['var(--warn)','#8A5A14']:['var(--coral)','var(--coral-ink)'];
     return `<div class="ip-score"><div class="ip-gauge">${ring(p.pct,t[0],84)}<div class="pct" style="color:${t[1]}">${p.pct}%</div></div>
@@ -603,29 +607,39 @@ function renderPanelCell(c){const p=c.props;
   if(c.render==='more')return `<div class="ip-more"><button class="ip-more-h" onclick="ipMoreToggle(this)">More details ${svg('<path d="m6 9 6 6 6-6"/>',15)}</button><div class="ip-more-b">${ipRows(p.rows)}</div></div>`;
   return '';
 }
-function leadInfo(){return `<div class="ip">${leadPanelCells(rec.ent).map(renderPanelCell).join('')}</div>`;}
+function leadInfo(){return `<div class="ip"><div class="ip-actonly">${leadActivity(rec.ent)}</div></div>`;}
 /* OJO read of a task — derived from status, priority, due, milestone */
 function taskInsights(t){const out=[];
   out.push(['clock',t.st==='Done'?`<b>Completed.</b> This task is done — nice work.`:`<b>${t.pri} priority${t.due?` · due ${t.due}`:''}.</b> ${t.pri==='High'?'Tackle this next to avoid slipping the milestone.':'On track if picked up this week.'}`]);
   out.push(['target',`<b>Part of ${t.ms}.</b> Closing it moves the milestone forward.`]);
   out.push(['flame',`<b>Estimated ${t.est}.</b> ${t.pri==='High'?'Downstream tasks depend on this one.':'No blockers logged.'}`]);
   return out;}
-function taskPanelCells(t){const its=tasks.filter(x=>x.ms===t.ms);const done=its.filter(x=>x.st==='Done').length;const pct=its.length?Math.round(done/its.length*100):0;const p=PEOPLE[t.asg];
-  const assignee=p?`<span class="ip-owner"><span class="av" style="background:${p[1]}">${p[0]}</span>${p[2]}</span>`:'—';
-  return [
-    {render:'score',props:{pct,label:t.st,reason:`${t.ms} milestone · ${done}/${its.length} tasks done`,tag:'OJO read'}},
-    {render:'facts',props:{rows:[['Status',t.st],['Assignee',assignee],['Due',t.due||'—'],['Priority',t.pri],['Estimate',t.est]]}},
-    {render:'insights',props:{items:taskInsights(t),askNoun:'task'}},
-    {render:'contacts',props:{title:'People',add:null,list:[[p?p[2]:'Unassigned','Assignee','',p?p[1]:'#8B93A1',true],['Priya Nair','Created by','','#F04D56',false]]}},
-    {render:'more',props:{rows:[['Project',PROJECT],['Milestone',t.ms],['Blocked by','None']]}}
-  ];}
-function taskInfo(){return `<div class="ip">${taskPanelCells(rec.ent).map(renderPanelCell).join('')}</div>`;}
+/* task header card — score + OJO Insights promoted into the main body (same .proj-ai pattern as the project Overview) */
+function taskTopInsights(t){const its=tasks.filter(x=>x.ms===t.ms);const done=its.filter(x=>x.st==='Done').length;const pct=its.length?Math.round(done/its.length*100):0;
+  return `<div class="proj-ai">
+    <div class="pa-score"><div class="pa-ring">${ring(pct,pct>=70?'var(--ok)':pct>=40?'var(--warn)':'var(--coral)',72)}<span class="pa-pct">${pct}%</span></div><div class="pa-meta"><div class="pa-lbl">${t.st}</div><div class="pa-sub">${t.ms} milestone · ${done}/${its.length} tasks done</div></div></div>
+    <div class="pa-ins">${ojoInsightsCard(taskInsights(t),'task')}</div></div>`;}
+/* the task's recent history — lives in the hideable panel (project pattern), derived from the task cell */
+function taskActivity(t){const p=PEOPLE[t.asg];const items=[];
+  if(t.st==='Done')items.push(['#15A06A','done',t.due||'',p?p[2]:'Someone','completed',t.t]);
+  else if(t.st!=='Todo')items.push(['#E0A21E','msg','Jun 9',p?p[2]:'Someone','moved to '+t.st+':',t.t]);
+  rec.comments.slice(-2).forEach(()=>items.push(['#2F6FED','msg','today','Vinoth K','commented on',t.t]));
+  items.push(['#F04D56','msg','7 May','Priya Nair','created this task in',t.ms]);
+  return actRowsHTML(items,`<div class="more"><span class="av">${p?p[0]:'PN'}</span>${p?p[2]:'Priya Nair'} active on this task</div>`);}
+function taskInfo(){return `<div class="ip"><div class="ip-actonly">${taskActivity(rec.ent)}</div></div>`;}
+/* static task data — Details tab, same .pd-grid pattern as the project Details */
+function taskDetailsTab(){const t=rec.ent;const p=PEOPLE[t.asg];
+  const about=[['Status',t.st],['Priority',t.pri],['Due',t.due||'—'],['Estimate',t.est],['Milestone',t.ms],['Created','7 May 2026']];
+  const people=[['Assignee',(p?p[2]:'Unassigned')+pcommMini(p?p[2]:'')],['Created by','Priya Nair'+pcommMini('Priya Nair')]];
+  const ctx=[['Project',PROJECT],['Blocked by','None'],['Attachments',String((t.attach||[]).length)]];
+  const block=(h,rows)=>`<div class="pd-block"><div class="pd-h">${h}</div><div class="pd-grid">${rows.map(([k,v])=>`<div class="pd-cell"><div class="pd-k">${k}</div><div class="pd-v">${v}</div></div>`).join('')}</div></div>`;
+  return `<div class="pdetails" style="padding:6px 0 30px">${block('About this task',about)}${block('People',people)}${block('Context',ctx)}</div>`;}
 
 /* ---- shared record body (rows + subtasks + comments) ---- */
 function renderRec(){const inner=document.getElementById('dinner');if(!inner)return;
   if(detailTab==='Overview')inner.innerHTML=(rec.type==='lead'?leadRecHTML():taskRecHTML());
-  else if(detailTab==='Details'&&rec.type==='lead')inner.innerHTML=renderDocs(rec.ent);
-  else if(detailTab==='Notes')inner.innerHTML=`<div class="rec-block" style="margin-top:6px"><div class="rec-block-h">Notes</div><div class="free notes-free" contenteditable="true" data-ph="Write a note about this lead…"></div></div>`;
+  else if(detailTab==='Details')inner.innerHTML=rec.type==='lead'?renderDocs(rec.ent):taskDetailsTab();
+  else if(detailTab==='Notes')inner.innerHTML=`<div class="rec-block" style="margin-top:6px"><div class="rec-block-h">Notes</div><div class="free notes-free" contenteditable="true" data-ph="Write a note about this ${rec.type}…"></div></div>`;
   else inner.innerHTML=`<div class="placeholder" style="margin-top:30px"><div class="pic">${svg(ICONS.List,28)}</div><h2>${detailTab}</h2><p>This view renders the same cell's data, arranged as ${detailTab}.</p></div>`;
   const ta=document.getElementById('cmt');if(ta){ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();recComment();}});}}
 function subsHTML(){return `<div class="subs">${rec.subs.map((s,i)=>`<div class="sub ${s.done?'done':''}"><button class="scheck" onclick="recSub(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></button><span class="txt">${s.t}</span></div>`).join('')}<div class="subadd"><span class="scheck"></span><input placeholder="Add a new subtask" onkeydown="if(event.key==='Enter')recAddSub(this)"></div></div>`;}
@@ -651,57 +665,46 @@ function scoreColors(pct){return pct>=70?['var(--ok)','#0C6B47']:pct>=45?['var(-
 /* keep the body's Call/Email/Message buttons in sync with the open comm channel */
 function syncCommActive(){const ch=(section&&section.indexOf('comm-')===0)?section.slice(5):null;document.querySelectorAll('.commbtn').forEach(b=>b.classList.toggle('on',b.dataset.f===ch));}
 function stageAiCard(ai){return `<div class="stage-ai"><div class="sa-h">${svg(SPARK,13)} OJO · how to move this lead</div><div class="sa-b">${ai.label}</div><button class="sa-cta" onclick="toast('${ai.cta.replace(/'/g,"\\'")}')">${ai.cta} ${svg('<path d="M5 12h14M13 6l6 6-6 6"/>',14)}</button></div>`;}
-function leadBriefing(l){const sc=SCORE[l.st]||[40,'Average'];const t=scoreColors(sc[0]);const ai=leadAI(l);const own=l.asg?PEOPLE[l.asg]:null;
-  const facts=[['Stage',l.st],['Budget',fmt(l.val)],['Source',l.src],['Owner',own?own[2]:'Unassigned']];
-  return `<div class="brief">
-    <div class="brief-top">
-      <div class="ip-gauge sm">${ring(sc[0],t[0],72)}<div class="pct" style="color:${t[1]}">${sc[0]}%</div></div>
-      <div class="brief-id"><div class="brief-grade"><span class="grade" style="color:${t[1]}">${sc[1]}</span> <span class="ip-tag">${svg(SPARK,12)} OJO score</span></div>
-        <div class="brief-facts">${facts.map(f=>`<span class="bf"><span class="k">${f[0]}</span><span class="v">${f[1]}</span></span>`).join('')}</div></div>
-    </div>
-    <div class="brief-rec"><span class="br-h">${svg(SPARK,13)} OJO recommends</span><span class="br-b">${ai.label}</span><button class="br-cta" onclick="toast('${ai.cta.replace(/'/g,"\\'")}')">${ai.cta} ${svg('<path d="M5 12h14M13 6l6 6-6 6"/>',14)}</button></div>
-  </div>`;}
-function leadRecHTML(){const l=rec.ent;const ai=leadAI(l);const own=l.asg?PEOPLE[l.asg]:null;const B=recVariant==='B';const C=recVariant==='C';
+function leadRecHTML(){const l=rec.ent;const own=l.asg?PEOPLE[l.asg]:null;
+  const owner=own?`<span class="ip-owner"><span class="av" style="background:${own[1]}">${own[0]}</span>${own[2]}</span>`
+    :`<button class="ip-assign" onclick="toast('Assign owner')">${svg('<path d="M12 5v14M5 12h14"/>',12)} Assign</button>`;
   return `
   <div class="lead-head">
     <div class="lh-id"><h1>${l.co}</h1>
       <div class="byline"><span class="av" style="background:${own?own[1]:'#F04D56'}">${own?own[0]:'PN'}</span> <b>${l.nm}</b> <span class="dotsep">·</span> contact <span class="dotsep">·</span> added by Priya Nair</div></div>
   </div>
-  ${(B||C)?leadBriefing(l):''}
-  <div class="rec-actions">
-    <button class="commbtn" data-f="call" onclick="openComm('call')">${faceIcon('call')} Call</button>
-    <button class="commbtn" data-f="email" onclick="openComm('email')">${faceIcon('email')} Email</button>
-    <button class="commbtn" data-f="chat" onclick="openComm('chat')">${faceIcon('chat')} Message</button>
-  </div>
-  ${C?`<div class="board-grid">
-    <div class="sec" style="margin-top:0"><div class="sec-h">OJO Insights</div>${ojoInsightsCard(leadInsights(l))}</div>
-    <div class="sec" style="margin-top:0"><div class="sec-h">Contacts</div>${contactsListHTML(leadContacts(l))}</div>
-  </div>`:''}
+  ${leadTopInsights(l)}
   <div class="sec"><div class="sec-h">Pipeline</div>
     ${leadStepper(l)}${leadGate(l)}
-    ${(B||C)?'':stageAiCard(ai)}
   </div>
-  <div class="sec"><div class="sec-h">About</div>
-    <div class="rec-meta">
-      <div class="mrow"><span class="mk">Service Type</span><span class="svc-chip2">Meta Ad Campaigns</span><span class="svc-chip2">Ad Creative</span></div>
-      <div class="mrow"><span class="mk">Tags</span><button class="tag-add2" onclick="toast('Add tag')">${svg('<path d="M12 5v14M5 12h14"/>',12)} Add tag</button></div>
+  <div class="rec-desc">${l.co} is undertaking the ${l.nm} engagement to address a clear business need. The solution leverages OJO's delivery workflow to take this from brief to launch, with the deliverables, timeline and budget tracked as cells. Source: ${l.src}.</div>
+  <div class="board-grid">
+    <div class="sec"><div class="sec-h">About this deal</div>
+      <div class="rec-meta">
+        <div class="mrow"><span class="mk">Budget</span><span class="money">${fmt(l.val)}</span></div>
+        <div class="mrow"><span class="mk">Source</span>${l.src}</div>
+        <div class="mrow"><span class="mk">Owner</span>${owner}</div>
+        <div class="mrow"><span class="mk">Service Type</span><span class="svc-chip2">Meta Ad Campaigns</span><span class="svc-chip2">Ad Creative</span></div>
+        <div class="mrow"><span class="mk">Tags</span><button class="tag-add2" onclick="toast('Add tag')">${svg('<path d="M12 5v14M5 12h14"/>',12)} Add tag</button></div>
+      </div>
     </div>
-    <div class="rec-desc">${l.co} is undertaking the ${l.nm} engagement to address a clear business need. The solution leverages OJO's delivery workflow to take this from brief to launch, with the deliverables, timeline and budget tracked as cells. Source: ${l.src}.</div>
+    <div class="sec">${contactsListHTML(leadContacts(l),null)}</div>
   </div>
-  <div class="sec"><div class="sec-h">Subtasks</div>${subsHTML()}</div>
+  <div class="ip-more"><button class="ip-more-h" onclick="ipMoreToggle(this)">More information ${svg('<path d="m6 9 6 6 6-6"/>',15)}</button><div class="ip-more-b">${ipRows([['Organisation',l.co],['Role','—'],['Department','—'],['Address','Bengaluru'],['Added by','Vinoth V V'],['Created','07 May 2026']])}</div></div>
   ${commentsHTML('lead')}`;}
 function taskRecHTML(){const t=rec.ent;if(!t.accept)t.accept=[];if(!t.proof)t.proof=[];
   const done=t.st==='Done',pct=trkPct();
   const I={plus:'<path d="M12 5v14M5 12h14"/>',clip:'<path d="m21 8-9.5 9.5a4 4 0 0 1-5.7-5.7L14 4a2.6 2.6 0 0 1 3.7 3.7L9.2 16.2"/>',up:'<path d="M12 15V3M7 8l5-5 5 5M5 21h14"/>',link:'<path d="M10 13a4 4 0 0 0 6 0l3-3a4 4 0 1 0-6-6l-1 1M14 11a4 4 0 0 0-6 0l-3 3a4 4 0 1 0 6 6l1-1"/>',file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',star:'<path d="M12 3l2 5.5L20 9l-4.5 3.7L17 19l-5-3.2L7 19l1.5-6.3L4 9l6-.5z"/>',reload:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',play:'<path d="M6 4l14 8-14 8z"/>',check:'<path d="M20 6 9 17l-5-5"/>',chev:'<path d="m6 9 6 6 6-6"/>'};
+  const PCH={person:'<path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M4 21a8 8 0 0 1 16 0"/>',playc:'<circle cx="12" cy="12" r="9"/><path d="M10 9l5 3-5 3z"/>',bars:'<path d="M3 21h18M7 21V11M12 21V5M17 21v-8"/>',clk:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'};
   return `<h1>${t.t}</h1><div class="byline"><span class="av" style="background:${PEOPLE[t.asg][1]}">${PEOPLE[t.asg][0]}</span> in <b>${PROJECT}</b> · ${t.ms}</div>
-  <div class="rec-actions">
-    <button class="commbtn" data-f="chat" onclick="openComm('chat')">${faceIcon('chat')} Message</button>
-    <button class="commbtn" data-f="call" onclick="openComm('call')">${faceIcon('call')} Call</button>
-    <button class="commbtn" data-f="email" onclick="openComm('email')">${faceIcon('email')} Email</button>
+  <div class="propchips">
+    <span class="pchip">${svg(PCH.person,14)} ${PEOPLE[t.asg][2]}</span>
+    <label class="pchip sel" title="Move along to…">${svg(PCH.playc,14)}<select onchange="recMove(this.value)">${STATUSES.map(s=>`<option ${s.k===t.st?'selected':''}>${s.k}</option>`).join('')}</select>${svg(SVS.caret,11)}</label>
+    <span class="pchip">${svg(PCH.bars,14)} ${t.pri}</span>
+    <span class="pchip">${svg(PCH.clk,14)} ${t.due?'Due '+t.due:'No due date'}</span>
+    <span class="pchip">${svg(PCH.clk,14)} ${t.est} planned</span>
   </div>
-  <div class="rows">
-    <div class="row"><div class="k">Status</div><div class="v"><span class="stage-val">${t.st}</span><select class="select" onchange="recMove(this.value)"><option value="" selected disabled>Move along to…</option>${STATUSES.map(s=>`<option>${s.k}</option>`).join('')}</select></div></div>
-  </div>
+  ${taskTopInsights(t)}
   <div class="trk ${trkRunning?'on':''}" id="trkCard">
     <div><div class="spent" id="trkSpent">${fmtHMS(trkSec)}</div><div class="lbl">Time spent</div></div>
     <div class="mid"><div class="plan">${t.est} <span class="lbl" style="display:inline;font-weight:600">planned</span></div><div class="track"><div id="trkBar" style="width:${pct}%"></div></div><div class="lbl" id="trkPct">${pct}% planned time elapsed</div></div>
@@ -795,6 +798,7 @@ const TAB_WIDE=540; /* panel width past which the comm tabs reveal their labels 
 /* the top comm/Genie pill (#tbOjo) glides with the panel so they stay one aligned family,
    and the tabs open their names once the panel is dragged wide enough */
 function flySize(px){const f=document.getElementById('flyout');if(!f)return;f.style.flexBasis=px+'px';f.style.width=px+'px';
+  document.documentElement.style.setProperty('--flyw',px+'px');
   const o=document.getElementById('tbOjo');
   if(o&&shellMode!=='merged'){if(px>0){o.style.width=px+'px';o.style.flexBasis=px+'px';}else{o.style.width='';o.style.flexBasis='';}}
   const t=document.getElementById('panelTabs');if(t)t.classList.toggle('wide',px>=TAB_WIDE);}
@@ -824,7 +828,7 @@ function openSection(s){section=s; /* persistent context window — re-clicking 
   const body=document.getElementById('flyBody');body.className='fly-body'+(s==='genie'?' genie':'');
   body.innerHTML=c.body();
   document.body.classList.remove('panel-collapsed');
-  flySize(flyW);document.getElementById('rdock')?.classList.add('open');fly.classList.add('show');closeApps();mScrim(true);mbarActive(s);}
+  flySize(flyW);document.getElementById('rdock')?.classList.add('open');fly.classList.add('show');closeApps();mScrim(true);mbarActive(s);renderPanelTabs();}
 /* contextual communication (call / video / email) — a tab in the single panel; shows the active record's content or a generic empty state */
 function commBody(f){return commHost?commHost.content(f):commChannel(f,'');}
 function openComm(f){const sid='comm-'+f;section=sid; /* persistent — re-clicking a comm tab never collapses */
@@ -842,6 +846,10 @@ function closeDrawer(){closeSection();}
 /* collapse the whole single sheet to reclaim the workspace; reopen via the floating Genie button */
 function collapsePanel(){closeSection();}
 function reopenPanel(){openSection('genie');}
+/* the active topbar pill is the open/close anchor: tap to open, tap again to put it away */
+function genieToggle(){const f=document.getElementById('flyout');
+  if(section==='genie'&&f&&f.classList.contains('show'))collapsePanel();else openSection('genie');
+  renderPanelTabs();}
 
 /* ===== MOBILE shell: bottom tab bar + bottom sheets (Apps launcher, Ask Ojo, comms) ===== */
 function mScrim(on){const s=document.getElementById('mscrim');if(!s)return;
@@ -861,8 +869,19 @@ function homeGeniePlan(){if(typeof homeStats!=='function')return '';const st=hom
   return `<div class="g-plan"><div class="g-plan-h">${svg(SPARK,12)} OJO suggests<span class="ojs-live">live</span></div>
     <div class="g-plan-x"><b>${st.over} overdue, ${todayN} today.</b> Clear the ${qw} quick wins first, then a focus block.</div>
     <button class="g-plan-cta" onclick="tFocusMode()">${svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',14)} Start focus block</button></div>`;}
+/* Comm faces inside the Genie surface: the topbar cluster is the switcher. genieFace=null → chat. */
+function genieSel(f){
+  genieFace=f;
+  const fly=document.getElementById('flyout');
+  if(section==='genie'&&fly&&fly.classList.contains('show')){const b=document.getElementById('flyBody');if(b)b.innerHTML=genieBody();}
+  else openSection('genie');
+  renderPanelTabs();
+}
+function genieHome(){genieFace=null;openSection('genie');}
 function genieBody(){const ctx=genieContext();const ask=s=>s.replace(/'/g,"\\'");
-  return `<div class="gwrap"><div class="gmsgs" id="gmsgs"><div class="genie-hi"><img class="genie-logo" src="assets/ojo-logo.png" alt="OJO Genie">Hello, Vinoth<div class="gctx">${ctx.who?`Ask me anything about <b>${ctx.who}</b>`:'How can I help you today?'}</div></div></div>
+  if(genieFace){const cn=commContextName();
+    return `<div class="gwrap"><div class="gmsgs" id="gmsgs">${ghActs()}<div class="gswap"><div class="genie-hi mini">${cn||'Workspace'}<div class="gctx">${GFACE_LBL[genieFace]}${cn?' with this record':' across OJO'}</div></div><div class="gcomm">${genieFace==='chat'&&!commHost?msgBody():commBody(genieFace)}</div></div></div></div>`;}
+  return `<div class="gwrap"><div class="gmsgs" id="gmsgs">${ghActs()}<div class="gswap"><div class="genie-hi">Hello, Vinoth<div class="gctx">${ctx.who?`Ask me anything about <b>${ctx.who}</b>`:'How can I help you today?'}</div></div></div></div>
   <div class="gfoot">${curRoute==='home'?homeGeniePlan():''}<div class="gsugg">
     ${ctx.suggestions.map(s=>`<button onclick="genieAsk('${ask(s)}')">${s}</button>`).join('')}</div>
    <div class="gask"><input id="gIn" placeholder="Ask Ojo anything..." onkeydown="if(event.key==='Enter')genieAsk(this.value)">
@@ -1151,9 +1170,9 @@ const ACCOUNTS=[
  {id:'AC03',name:'GreenLeaf Organics',type:'Customer',owner:'Ravi Kapoor',balance:0,status:'Closed',email:'fin@greenleaf.co',phone:'—',terms:'Prepaid',limit:200000,av:'GO',color:'#15A06A'},
  {id:'AC04',name:'Horizon Realty',type:'Customer',owner:'Mei Lin',balance:260000,status:'Active',email:'accounts@horizon.co',phone:'—',terms:'Net 45',limit:800000,av:'HZ',color:'#E08A1E'}];
 const VENDORS=[
- {id:'VN01',name:'PixelCraft Studio',type:'Design',owner:'Mei Lin',balance:60000,status:'Active',email:'hello@pixelcraft.co',phone:'—',terms:'Net 30',limit:0,av:'PC',color:'#7C53E6'},
- {id:'VN02',name:'CloudNine Hosting',type:'Infrastructure',owner:'Sam Verma',balance:24000,status:'Active',email:'billing@cloudnine.io',phone:'—',terms:'Monthly',limit:0,av:'CN',color:'#2F6FED'},
- {id:'VN03',name:'AdReach Media',type:'Marketing',owner:'Priya Nair',balance:90000,status:'Overdue',email:'ar@adreach.co',phone:'—',terms:'Net 15',limit:0,av:'AR',color:'#E08A1E'}];
+ {id:'VN01',name:'PixelCraft Studio',type:'Design',owner:'Mei Lin',balance:60000,status:'Active',email:'hello@pixelcraft.co',phone:'+91 98220 14501',terms:'Net 30',limit:0,av:'PC',color:'#7C53E6',poc:'Aarav Shah',since:'04 Mar 2026',loc:'Bengaluru',gst:'29ABCDE1234F1Z5'},
+ {id:'VN02',name:'CloudNine Hosting',type:'Infrastructure',owner:'Sam Verma',balance:24000,status:'Active',email:'billing@cloudnine.io',phone:'+91 99300 22817',terms:'Monthly',limit:0,av:'CN',color:'#2F6FED',poc:'Nikhil Rao',since:'18 Jan 2026',loc:'Mumbai',gst:'27FGHIJ5678K2Z3'},
+ {id:'VN03',name:'AdReach Media',type:'Marketing',owner:'Priya Nair',balance:90000,status:'Overdue',email:'ar@adreach.co',phone:'+91 98110 90342',terms:'Net 15',limit:0,av:'AR',color:'#E08A1E',poc:'Divya Menon',since:'22 Apr 2026',loc:'Gurugram',gst:'06LMNOP9012Q3Z1'}];
 const COLL={
  account:{name:'Accounts',sing:'Account',sub:'Customer & finance accounts',icon:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16"/>',data:()=>ACCOUNTS,metricCtx:'accounts',balLabel:'Balance',
    cols:[['Account','name','b'],['Type','type'],['Owner','owner'],['Balance','balance','money'],['Status','status','badge']],
@@ -1183,7 +1202,7 @@ function collCell(r,col){const v=r[col[1]];if(col[2]==='money')return fmt(v);if(
 function collTable(c,rows){return `<div class="tablewrap"><table><thead><tr>${c.cols.map(col=>`<th class="${col[2]==='money'?'num':''}">${col[0]}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr onclick="collOpen('${r.id}')">${c.cols.map(col=>`<td class="${col[2]==='money'?'num':''}">${collCell(r,col)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;}
 function collBoard(c,rows){return `<div class="board color">`+c.statuses.map(s=>{const items=rows.filter(r=>r.status===s[0]);return `<div class="col"><div class="col-head" style="--cc:${s[1]}"><span class="pill"><span class="dot"></span>${s[0]}</span><span class="ct">${items.length}</span></div><div class="col-body">${items.map(r=>`<div class="card" onclick="collOpen('${r.id}')"><div class="nm">${r.name}</div><div class="by">${r.type} · ${r.owner}</div><div class="foot"><span class="val">${fmt(r.balance)}</span><span class="eav" style="background:${r.color};width:23px;height:23px;font-size:9px;margin-left:auto">${r.av}</span></div></div>`).join('')||'<div class="col-empty">None</div>'}</div></div>`;}).join('')+`</div>`;}
 function collList(c,rows){const gs=[...new Set(rows.map(r=>r.type))];return gs.map(g=>{const items=rows.filter(r=>r.type===g);return `<div class="lg"><div class="lg-head"><span class="pill">${g}</span><span class="ct">${items.length}</span></div>${items.map(r=>`<div class="lrow" onclick="collOpen('${r.id}')"><span class="eav" style="background:${r.color};width:26px;height:26px;font-size:10px">${r.av}</span><span class="nm">${r.name}</span><span class="co">${r.owner} · ${r.terms}</span><span class="val">${fmt(r.balance)}</span></div>`).join('')}</div>`;}).join('');}
-function collOpen(id){collRec=id;collTab='Overview';collColl=true;mountCollRecord();}
+function collOpen(id){if(coll==='vendor'){vnOpen(id);return;}collRec=id;collTab='Overview';collColl=true;mountCollRecord();}
 function mountCollRecord(){const c=curColl(),r=curRec();collFace='info';
   document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dside"><button class="dctl x" onclick="collClose()" title="Close">${svg(SVS.x,19)}</button><div class="dnav"><button class="dctl" onclick="collNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="collNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div><div class="dbox ${collColl?'collapsed':''}" id="cbox"><div class="dmain">
      <div class="crumbbar"><a onclick="go('${coll}')">${c.name}</a> <span class="sep">‹</span> <b>${r.name}</b></div>
@@ -1201,6 +1220,92 @@ function collBody(c,r){if(collTab!=='Overview')return `<div class="emp-sec"><div
 function collPanel(c,r){return `<div class="xipanel"><div class="xirow"><span class="k">Type</span><span class="v">${r.type}</span></div><div class="xirow"><span class="k">Status</span><span class="v" style="color:${stColor(r.status)}">${r.status}</span></div><div class="xirow"><span class="k">Owner</span><span class="v">${r.owner}</span></div></div>
    <div class="xipanel"><div class="xirow"><span class="k">${c.balLabel}</span><span class="v">${fmt(r.balance)}</span></div><div class="xirow"><span class="k">Terms</span><span class="v">${r.terms}</span></div></div>
    <div class="xigroup"><div class="gh">Contact ${chev2()}</div><div class="xipanel"><div class="xirow"><span class="k">Email</span><span class="v" style="font-size:13px">${r.email}</span></div><div class="xirow"><span class="k">Phone</span><span class="v">${r.phone}</span></div></div></div>`;}
+
+/* ============ VENDOR RECORD — the locked record system (header cluster · activity panel · flexible chart grid) ============ */
+let vnRec=null,vnTab='Overview',vnColl=true,vnFace='info';
+function curVn(){return VENDORS.find(x=>x.id===vnRec);}
+function vnSeed(v){return parseInt(v.id.replace(/\D/g,''))||1;}
+/* OJO vendor score — derived from the vendor cell (status drives delivery/quality in the demo) */
+function vnScore(v){const s=vnSeed(v);const onTime=Math.min(98,v.status==='Overdue'?56+s*2:84+s*3);const qual=Math.min(98,v.status==='Overdue'?64+s:86+s*2);
+  const pct=Math.round((onTime+qual)/2);return {pct,onTime,qual,label:pct>=80?'Reliable':pct>=60?'Average':'Needs improvement'};}
+function vnRfqList(v){const s=vnSeed(v);const t=[['Brand site revamp','Design retainer'],['Hosting renewal FY27','CDN migration'],['Always-on ad creatives','Festive campaign']][s-1]||['Service request','Retainer'];
+  return [{id:`#RFQ_000${s}`,title:t[0],svc:v.type,bud:fmt(40000+s*10000),date:`0${s} Mar 2026`,status:'Accepted'},
+          {id:`#RFQ_00${s+10}`,title:t[1],svc:v.type,bud:fmt(25000+s*5000),date:`1${s} May 2026`,status:s===3?'Sent':'Accepted'}];}
+function vnBillList(v){const s=vnSeed(v);
+  return [{id:`BILL-2026-0${s}1`,ref:`PO-10${s}`,amount:v.balance,due:v.status==='Overdue'?'05 Jun 2026':'28 Jun 2026',status:v.status==='Overdue'?'Overdue':'Pending'},
+          {id:`BILL-2026-0${s}0`,ref:`PO-09${s}`,amount:18000+s*4000,due:`0${s} May 2026`,status:'Paid'}];}
+function vnWinRate(v){const r=vnRfqList(v);const won=r.filter(x=>x.status==='Accepted').length;return [won,r.length,Math.round(won/r.length*100)];}
+function vnInsights(v){const sc=vnScore(v);const wr=vnWinRate(v);const out=[];
+  out.push(['next',v.status==='Overdue'?`<b>Next best action.</b> ${fmt(v.balance)} payable is past due — <a onclick="toast('Record payment (demo)')">record a payment</a> to protect the relationship.`:`<b>Next best action.</b> Engagement is healthy — send the next RFQ while pricing is competitive.`]);
+  out.push(['cash',`<b>${fmt(v.balance)} outstanding</b> on ${v.terms} terms${v.status==='Overdue'?' — past due':''}.`]);
+  out.push(['target',`<b>${wr[0]} of ${wr[1]} RFQs won (${wr[2]}%).</b> ${v.type} pricing has been competitive.`]);
+  out.push(['clock',`<b>${sc.onTime}% on-time delivery.</b> ${sc.onTime>=80?'No client escalations in the last 12 months.':'1 client escalation in 12 months — monitor closely.'}`]);
+  return out;}
+function vnTopInsights(v){const sc=vnScore(v);const t=scoreColors(sc.pct);
+  return `<div class="proj-ai">
+    <div class="pa-score"><div class="pa-ring">${ring(sc.pct,t[0],72)}<span class="pa-pct" style="color:${t[1]}">${sc.pct}%</span></div><div class="pa-meta"><div class="pa-lbl" style="color:${t[1]}">${sc.label}</div><div class="pa-sub">${sc.onTime}% on-time · ${sc.qual}% quality · OJO vendor score</div></div></div>
+    <div class="pa-ins">${ojoInsightsCard(vnInsights(v),'vendor')}</div></div>`;}
+/* tiny bar chart for widget cells */
+function vnBars(vals,color,w,h){const max=Math.max(...vals,1);const n=vals.length,bw=Math.floor(w/n)-6;
+  return `<svg width="${w}" height="${h}" style="display:block">${vals.map((x,i)=>{const bh=Math.max(3,Math.round(x/max*(h-6)));return `<rect x="${i*(bw+6)}" y="${h-bh}" width="${bw}" height="${bh}" rx="3" fill="${color}" opacity="${(0.35+0.65*(x/max)).toFixed(2)}"/>`;}).join('')}</svg>`;}
+/* chart/metric widgets — each a UI cell (render + bind:self); users add/remove per vendor */
+const VNW={
+ kpis:{title:'Engagement',body:v=>{const wr=vnWinRate(v);return `<div class="wkv"><span class="k">RFQs</span><span class="v">${wr[1]} · ${wr[0]} won</span></div><div class="wkv"><span class="k">Win rate</span><span class="v">${wr[2]}%</span></div><div class="wkv"><span class="k">Engagement value</span><span class="v">${fmt(v.balance+60000)}</span></div><div class="wkv"><span class="k">Escalations · 12m</span><span class="v">${v.status==='Overdue'?1:0}</span></div>`;}},
+ spend:{title:'Spend · last 6 months',body:v=>{const s=vnSeed(v);const vals=[8,14,11,18,13,21].map(x=>x*(s+2));return `${vnBars(vals,'var(--info)',252,96)}<div class="wkv" style="margin-top:10px"><span class="k">Jan – Jun</span><span class="v">${fmt(vals.reduce((a,b)=>a+b,0)*1000)}</span></div>`;}},
+ delivery:{title:'On-time delivery',body:v=>{const sc=vnScore(v);const vals=[sc.onTime-8,sc.onTime-3,sc.onTime-5,sc.onTime+1,sc.onTime-2,sc.onTime].map(x=>Math.max(20,x));return `${vnBars(vals,sc.onTime>=80?'var(--ok)':'var(--warn)',252,96)}<div class="wkv" style="margin-top:10px"><span class="k">6-month average</span><span class="v">${sc.onTime}%</span></div>`;}},
+ outstanding:{title:'Outstanding',body:v=>`<div class="wkv"><span class="k">Payable</span><span class="v" style="color:${v.status==='Overdue'?'var(--coral-ink)':'var(--navy)'}">${fmt(v.balance)}</span></div><div class="wkv"><span class="k">Terms</span><span class="v">${v.terms}</span></div><div class="wkv"><span class="k">Status</span><span class="v" style="color:${stColor(v.status)}">● ${v.status}</span></div><div class="wkv"><span class="k">Next due</span><span class="v">${vnBillList(v)[0].due}</span></div>`},
+ bills:{title:'Recent bills',body:v=>vnBillList(v).map(b=>`<div class="wkv"><span class="k">${b.id}</span><span class="v" style="color:${b.status==='Overdue'?'var(--coral-ink)':b.status==='Paid'?'var(--ok)':'var(--navy)'}">${fmt(b.amount)} · ${b.status}</span></div>`).join('')+`<div class="wkv"><span class="k"></span><span class="v"><a style="color:var(--info);font-weight:600;cursor:pointer" onclick="vnSetTab('Bills')">View all →</a></span></div>`},
+ quality:{title:'Deliverable quality',body:v=>{const sc=vnScore(v);return `<div style="display:flex;justify-content:center;padding:6px 0;position:relative">${ring(sc.qual,sc.qual>=80?'var(--ok)':'var(--warn)',104)}<div style="position:absolute;inset:0;display:grid;place-items:center;font-weight:800;font-size:19px;color:var(--navy)">${sc.qual}%</div></div><div class="wkv"><span class="k">Rework requests</span><span class="v">${sc.qual>=80?'0':'2'} in 12m</span></div>`;}},
+ team:{title:'Point of contact',body:v=>`<div class="wkv"><span class="k">POC</span><span class="v">${v.poc}${pcommMini(v.poc)}</span></div><div class="wkv"><span class="k">Email</span><span class="v" style="font-weight:500;font-size:13px">${v.email}</span></div><div class="wkv"><span class="k">Phone</span><span class="v">${v.phone}</span></div>`}};
+let vnWsets={};
+function vnWset(v){if(!vnWsets[v.id])vnWsets[v.id]=['kpis','spend','delivery','outstanding','bills'].map(t=>({id:'vw'+(++WUID),type:t}));return vnWsets[v.id];}
+function vnGrid(v){return `<div class="bgrid">${vnWset(v).map(w=>{const d=VNW[w.type];if(!d)return '';
+   return `<div class="bsec"><div class="bsec-h">${d.title}<span class="bx" onclick="vnWRemove('${w.id}')">${svg(SVS.x,12)}</span></div><div class="bcard">${d.body(v)}</div></div>`;}).join('')}
+  <div class="bsec add"><div class="bsec-h">&nbsp;</div><div class="baddtile" onclick="vnAddOpen(event)" title="Add a chart">${svg(SVS.plus,20)}<span>Add a chart</span></div></div></div>`;}
+function vnWRemove(id){const v=curVn();vnWsets[v.id]=vnWsets[v.id].filter(w=>w.id!==id);vnRender();toast('Chart removed');}
+function vnAddOpen(e){e.stopPropagation();const m=document.getElementById('wpal');m.innerHTML='<div class="h">Add a chart</div><div class="wpalgrid">'+Object.keys(VNW).map(t=>`<button class="pli" onclick="vnWAdd('${t}')"><span class="ic">${svg(ICONS.Chart,16)}</span><span class="nm">${VNW[t].title}</span></button>`).join('')+'</div>';
+  const r=e.currentTarget.getBoundingClientRect();m.style.top=Math.min(r.top,window.innerHeight-380)+'px';m.style.left=Math.max(12,Math.min(r.left,window.innerWidth-352))+'px';openPop('wpal');}
+function vnWAdd(t){const v=curVn();vnWset(v).push({id:'vw'+(++WUID),type:t});closePops();vnRender();toast(VNW[t].title+' added');}
+/* the vendor's recent history — hideable panel */
+function vnActivity(v){const items=[];
+  if(v.status==='Overdue')items.push(['#E08A1E','msg','Jun 8','OJO','flagged an overdue bill from',v.name]);
+  else items.push(['#15A06A','done','Jun 8',v.owner,'approved a bill from',v.name]);
+  items.push(['#2F6FED','msg','12 May',v.poc,'accepted',vnRfqList(v)[1].id]);
+  items.push(['#7C53E6','msg',v.since.split(' ').slice(0,2).join(' '),v.owner,'onboarded',v.name]);
+  return actRowsHTML(items,`<div class="more"><span class="av">${v.av}</span>${v.poc} active for this vendor</div>`);}
+function vnInfo(){const v=curVn();return `<div class="ip"><div class="ip-actonly">${vnActivity(v)}</div></div>`;}
+function commVendorContent(f){const v=curVn();return f==='info'?vnInfo():commChannel(f,v?v.poc:'this vendor');}
+const VNTABICON={Overview:'star',RFQs:'List',Bills:'Table',Details:'Details',Notes:'notes'};
+function vnStatusPill(s){const c={Accepted:'var(--ok)',Paid:'var(--ok)',Sent:'var(--info)',Pending:'#9A6B12',Overdue:'var(--coral-ink)'}[s]||'var(--muted)';return `<span style="color:${c};font-weight:600">${s}</span>`;}
+function vnBody(){const v=curVn();
+  const head=`<div class="lead-head"><div class="lh-id"><h1>${v.name}</h1>
+    <div class="byline"><span class="av" style="background:${v.color}">${v.av}</span> <b>${v.type}</b> <span class="dotsep">·</span> <span style="color:${stColor(v.status)};font-weight:700">${v.status}</span> <span class="dotsep">·</span> owner ${v.owner}</div></div></div>`;
+  if(vnTab==='RFQs')return head+`<div class="tablewrap" style="margin-top:6px"><table><thead><tr><th>RFQ ID</th><th>Title</th><th>Service</th><th class="num">Est. budget</th><th>Date</th><th>Status</th></tr></thead><tbody>${vnRfqList(v).map(r=>`<tr onclick="toast('Open ${r.id} (demo)')"><td><b style="color:var(--navy)">${r.id}</b></td><td>${r.title}</td><td class="co">${r.svc}</td><td class="num">${r.bud}</td><td class="co">${r.date}</td><td>${vnStatusPill(r.status)}</td></tr>`).join('')}</tbody></table></div>`;
+  if(vnTab==='Bills')return head+`<div class="tablewrap" style="margin-top:6px"><table><thead><tr><th>Bill ID</th><th>Reference</th><th class="num">Amount</th><th>Due</th><th>Status</th></tr></thead><tbody>${vnBillList(v).map(b=>`<tr onclick="toast('Open ${b.id} (demo)')"><td><b style="color:var(--navy)">${b.id}</b></td><td class="co">${b.ref}</td><td class="num">${fmt(b.amount)}</td><td class="co">${b.due}</td><td>${vnStatusPill(b.status)}</td></tr>`).join('')}</tbody></table></div>`;
+  if(vnTab==='Details'){const about=[['Category',v.type],['Status',v.status],['Owner',v.owner],['Terms',v.terms],['Onboarded',v.since],['Location',v.loc]];
+    const contact=[['POC',v.poc+pcommMini(v.poc)],['Email',v.email],['Phone',v.phone]];
+    const fin=[['Payable',fmt(v.balance)],['GST',v.gst],['PAN','—'],['Bank A/C','—']];
+    const block=(h,rows)=>`<div class="pd-block"><div class="pd-h">${h}</div><div class="pd-grid">${rows.map(([k,x])=>`<div class="pd-cell"><div class="pd-k">${k}</div><div class="pd-v">${x}</div></div>`).join('')}</div></div>`;
+    return head+`<div class="pdetails" style="padding:6px 0 30px">${block('About this vendor',about)}${block('Contact',contact)}${block('Finance & tax',fin)}</div>`;}
+  if(vnTab==='Notes')return head+`<div class="rec-block" style="margin-top:6px"><div class="rec-block-h">Notes</div><div class="free notes-free" contenteditable="true" data-ph="Write a note about this vendor…"></div></div>`;
+  return head+vnTopInsights(v)+vnGrid(v);}
+function vnRender(){const el=document.getElementById('vninner');if(el)el.innerHTML=vnBody();}
+function vnSetTab(t){vnTab=t;vnRender();document.querySelectorAll('#vnbox .viewbar .vtab').forEach(b=>b.classList.toggle('on',b.textContent.trim()===t));}
+function vnToggle(){vnColl=!vnColl;document.getElementById('vnbox').classList.toggle('collapsed',vnColl);
+  const b=document.getElementById('vnPtogBtn');if(b){b.classList.toggle('on',!vnColl);b.title=vnColl?'Show activity':'Hide activity';}}
+function vnNav(dir){const i=VENDORS.findIndex(x=>x.id===vnRec);if(i<0)return;vnRec=VENDORS[(i+dir+VENDORS.length)%VENDORS.length].id;xpClose();mountVendor();}
+function vnOpen(id){vnRec=id;vnTab='Overview';vnColl=true;vnFace='info';mountVendor();}
+function mountVendor(){const v=curVn();
+  document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dside"><div class="dnav"><button class="dctl" onclick="vnNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="vnNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div>
+   <div class="dbox ${vnColl?'collapsed':''}" id="vnbox"><div class="dmain">
+    <div class="dtop"><div class="crumbs"><a onclick="go('vendor')">Vendors</a> <span class="sep">‹</span> ${vnTab}</div><div class="sp"></div>
+      <div class="commpill">${[['call','Call'],['email','Email'],['chat','Message']].map(([f,l])=>`<button title="${l} ${v.poc}" onclick="openComm('${f}')">${faceIcon(f)}</button>`).join('')}</div>
+      <button class="ptog-ic ${vnColl?'':'on'}" id="vnPtogBtn" onclick="vnToggle()" title="${vnColl?'Show activity':'Hide activity'}">${svg('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',17)}</button>
+      <button class="mtool hdr-x" onclick="go('vendor')" title="Close">${svg(SVS.x,18)}</button></div>
+    <div class="viewbar">${['Overview','RFQs','Bills','Details','Notes'].map(x=>`<button class="vtab ${x===vnTab?'on':''}" onclick="vnSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[VNTABICON[x]],14)}</span>${x}</button>`).join('')}</div>
+    <div class="dcenter"><div class="inner" id="vninner">${vnBody()}</div></div></div>
+   <aside class="dpanel"><div class="dpanel-head"><span class="nm">Recent activity</span></div><div class="dpanel-body" id="vnpanelbody">${vnInfo()}</div></aside></div></div>`;
+  commSetHost({getFace:()=>vnFace,setFace:f=>{vnFace=f;},content:commVendorContent});}
 
 /* ============ START ============ */
 /* ============ ACCOUNTS MODULE (cell-style, sub-nav like HR) ============ */
@@ -1381,7 +1486,8 @@ const TASKS=[
  {id:'TK12',title:'Stakeholder interviews',src:'project',link:'Apollo · Discovery',asg:'priya',status:'Done',pri:'High',due:'05 May',time:'09:00',est:'8h',pts:40,focusMin:75}];
 function t2m(t){if(!t)return 0;const a=t.split(':');return (+a[0])*60+(+a[1]);}
 const NOW_MIN=13*60+20; /* demo "now" for the timeline/now-line */
-TASKS.forEach((t,i)=>{t.subs=[{t:'Gather context',done:i%2===0||t.status==='Done'},{t:'Do the focused work',done:t.status==='Done'},{t:'Review & close',done:t.status==='Done'}];t.comments=[];});
+/* subtasks start EMPTY — they're the user's breakdown, not boilerplate (add via the record's input) */
+TASKS.forEach(t=>{t.subs=[];t.comments=[];});
 let bonusXP=0,streak=5,focusToday=45;
 let taskModule='leads',taskScope='leads',taskContainer='modcontent';
 let tView='Cards';const tViews=['Cards','Board','List'];
@@ -1400,7 +1506,7 @@ function openTasks(scope){hideCommDock();taskModule=scope;taskScope=scope;tView=
   renderShell(scope,'tasks');taskContainer='modcontent';document.getElementById('modcontent').innerHTML=tasksListHTML(scope);}
 function setTaskScope(mode){taskScope=mode==='all'?'all':taskModule;document.getElementById(taskContainer).innerHTML=tasksListHTML(taskScope);}
 function tV(v){tView=v;document.getElementById(taskContainer).innerHTML=tasksListHTML(taskScope);}
-function tasksListHTML(scope){taskScope=scope;const rows=scoped();
+function tasksListHTML(scope){taskScope=scope;const rows=[...scoped()].sort((a,b)=>(a.status==='Done')-(b.status==='Done')); /* completed sink to the bottom */
   const modName=(SRC[taskModule]&&SRC[taskModule][0])||'your modules';
   const done=rows.filter(t=>t.status==='Done').length,over=rows.filter(t=>t.status!=='Done'&&(parseInt(t.due)||0)<11).length,active=rows.length-done;
   const quick=rows.filter(t=>t.status!=='Done'&&['15m','20m','30m'].includes(t.est)).length;
@@ -1428,48 +1534,56 @@ function tCardLeave(e){e.currentTarget.classList.remove('dragover');}
 function tCardDrop(e,s){e.preventDefault();e.currentTarget.classList.remove('dragover');const t=TASKS.find(x=>x.id===tDragId);if(t&&t.status!==s){const was=t.status;t.status=s;if(s==='Done'&&was!=='Done')toast('🎉 Task done · +'+t.pts+' XP');else toast('Moved to '+s);}tDragId=null;document.getElementById(taskContainer).innerHTML=tasksListHTML(taskScope);}
 /* ---- detail (lead-overview style) ---- */
 let taskFrom='module';
-function openTaskRec(id,from){focusPause();focusLeft=FOCUS_TOTAL;tRec=TASKS.find(t=>t.id===id);if(!tRec)return;taskFrom=from||'module';tTab='Overview';tFace='info';tCollapsed=true;mountTaskDetail();}
+function openTaskRec(id,from){focusPause();focusLeft=FOCUS_TOTAL;tRec=TASKS.find(t=>t.id===id);if(!tRec)return;taskFrom=from||'module';
+  /* project tasks are project cells — cross-launch the project's own task record instead of a copy */
+  if(tRec.src==='project'){const m=tasks.find(x=>x.t===tRec.title);if(m){openDetail('task',m.id,taskFrom);return;}}
+  tTab='Overview';tFace='info';tCollapsed=true;mountTaskDetail();}
 function taskBack(){focusPause();if(taskFrom==='home'){go('home');}else{openTasks(taskModule);}}
-function tFocusMode(){const list=scoped().filter(t=>t.status!=='Done');if(!list.length){toast('All caught up! 🎉');return;}const ord={High:0,Medium:1,Low:2};list.sort((a,b)=>ord[a.pri]-ord[b.pri]);openTaskRec(list[0].id);setTimeout(focusStart,80);toast('Focus mode · '+list[0].title);}
-function mountTaskDetail(){const t=tRec;
-  document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dside"><button class="dctl x" onclick="taskBack()" title="Close">${svg(SVS.x,19)}</button><div class="dnav"><button class="dctl" onclick="tNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="tNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div><div class="dbox ${tCollapsed?'collapsed':''}" id="tbox"><div class="dmain">
-    <div class="dtop"><div class="crumbs"><a onclick="taskBack()">Tasks</a> <span class="sep">‹</span> <b>${t.title}</b> <span class="sep">‹</span> ${tTab}</div><div class="sp"></div><button class="paneltoggle" onclick="tToggle()"><span id="tPtog">${tCollapsed?'Show info':'Hide info'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
-    <div class="viewbar">${['Overview','Activity'].map(x=>`<button class="vtab ${x===tTab?'on':''}" onclick="tSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[x==='Overview'?'star':'Feed']||ICONS.List,14)}</span>${x}</button>`).join('')}</div>
+function tFocusMode(){const list=scoped().filter(t=>t.status!=='Done');if(!list.length){toast('All caught up! 🎉');return;}const ord={High:0,Medium:1,Low:2};list.sort((a,b)=>ord[a.pri]-ord[b.pri]);openTaskRec(list[0].id);
+  /* only start the timer when the module-task record (with the focus panel) actually mounted — project tasks cross-launch */
+  setTimeout(()=>{if(!document.getElementById('tbox'))return;if(tCollapsed)tToggle();focusStart();},80);toast('Focus mode · '+list[0].title);}
+function mountTaskDetail(){const t=tRec,p=PEOPLE[t.asg],sm=SRC[t.src];
+  /* comm only when there's a real counterpart to reach — a self-created Inbox task has nobody to call */
+  const selfTask=!t.link||/^(inbox|from notification)$/i.test(t.link);
+  const comm=selfTask?'':`<div class="commpill">${[['call','Call'],['email','Email'],['video','Meet']].map(([f,l])=>`<button title="${l} ${p?p[2]:'assignee'}" onclick="openComm('${f}')">${faceIcon(f)}</button>`).join('')}</div>`;
+  document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dside"><div class="dnav"><button class="dctl" onclick="tNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="tNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div><div class="dbox ${tCollapsed?'collapsed':''}" id="tbox"><div class="dmain">
+    <div class="dtop"><div class="crumbs"><a onclick="taskBack()">Tasks</a> <span class="sep">‹</span> ${sm[0]} <span class="sep">‹</span> ${t.link}</div><div class="sp"></div>
+      ${comm}
+      <button class="ptog-ic ${tCollapsed?'':'on'}" id="tPtogBtn" onclick="tToggle()" title="${tCollapsed?'Show focus & activity':'Hide focus & activity'}">${svg('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',17)}</button>
+      <button class="mtool hdr-x" onclick="taskBack()" title="Close">${svg(SVS.x,18)}</button></div>
     <div class="dcenter"><div class="inner" id="tinner">${tBody()}</div></div></div>
-   <aside class="dpanel" id="tpanel"><div class="dpanel-head"><span class="nm">${t.title}</span><button class="ed" onclick="xpOpenFrom(this)" title="Expand">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button><button class="ed" style="margin-left:6px">${svg(SVS.pencil,15)}</button></div>
+   <aside class="dpanel" id="tpanel"><div class="dpanel-head"><span class="nm">Focus &amp; activity</span></div>
     <div class="dpanel-body" id="tpanelbody"></div></aside></div></div>`;
   renderTaskInfo();bindTComment();
   commSetHost({getFace:()=>tFace,setFace:tSetFace,content:commTaskContent});}
 function tNav(dir){const list=scoped();const i=list.findIndex(x=>x.id===tRec.id);if(i<0)return;const n=(i+dir+list.length)%list.length;xpClose();openTaskRec(list[n].id);}
 function bindTComment(){const ta=document.getElementById('tcmt');if(ta){ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();tComment();}});}}
-function tToggle(){tCollapsed=!tCollapsed;document.getElementById('tbox').classList.toggle('collapsed',tCollapsed);document.getElementById('tPtog').textContent=tCollapsed?'Show info':'Hide info';}
-function tSetTab(x){tTab=x;document.getElementById('tinner').innerHTML=tBody();document.querySelectorAll('#tbox .viewbar .vtab').forEach(b=>b.classList.toggle('on',b.textContent.trim()===x));bindTComment();}
+function tToggle(){tCollapsed=!tCollapsed;document.getElementById('tbox').classList.toggle('collapsed',tCollapsed);
+  const b=document.getElementById('tPtogBtn');if(b){b.classList.toggle('on',!tCollapsed);b.title=tCollapsed?'Show focus & activity':'Hide focus & activity';}}
 function tSetFace(f){tFace=f;document.querySelectorAll('#tpanel .xcface').forEach(b=>b.classList.toggle('on',b.dataset.face===f));renderTaskInfo();}
 function tStepper(t){const order=TSTAGES,idx=order.findIndex(s=>s===t.status),pct=idx<=0?0:(idx/(order.length-1))*100;
   return `<div class="lstep-wrap" style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><button class="lstep-nav">${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button><div class="lstep"><div class="track"></div><div class="fill" style="width:${pct}%"></div>${order.map((s,i)=>`<div class="lstp ${i<idx?'done':(i===idx?'cur':'')}" onclick="tMove('${s}')"><div class="nd"></div><div class="nm">${s}</div><div class="due">${s==='Done'?'+'+t.pts+' XP':'No due'}</div></div>`).join('')}</div><button class="lstep-nav">${svg('<path d="M9 6l6 6-6 6"/>',14)}</button></div>`;}
-function tGate(t){if(t.status==='Done')return `<div class="lgate win">${svg('<path d="M20 6 9 17l-5-5"/>',18)}<div><div class="t">Completed — earned ${t.pts} XP 🎉</div><div class="s">${t.focusMin}m of focus logged on this task.</div></div></div>`;
-  return `<div class="lgate">${svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',18)}<div><div class="t">Close this task to earn <b>${t.pts} XP</b>.</div><div class="s"><a onclick="tFocusJump()" style="color:var(--coral-ink);font-weight:700;text-decoration:underline;cursor:pointer">Start a 25-min focus session</a> for a +5 bonus, or <a onclick="tMove('Done')" style="color:var(--coral-ink);font-weight:700;text-decoration:underline;cursor:pointer">mark it done</a>.</div></div></div>`;}
-function tSugg(t){return `<div class="lsugg"><div class="h">OJO Focus Coach</div><h3>${t.status}</h3><ul>
-   <li>This task is worth <b>${t.pts} XP</b> — ${t.pri==='High'?'high priority, knock it out first.':'a solid win for your streak.'}</li>
-   <li>Estimated ${t.est}. ${t.focusMin>0?`You've logged ${t.focusMin}m already — one more block may close it.`:'A single 25-min focus block builds momentum.'}</li>
-   <li>Closing today keeps your 🔥 ${streak}-day streak alive and adds to Level ${level()}.</li></ul>
-   <div class="lpri">${svg('<path d="M3 3v18h18M7 14l3-3 3 2 4-5"/>',14)} ${t.pri} priority</div></div>`;}
 function tMove(v){if(!tRec)return;const was=tRec.status;tRec.status=v;if(v==='Done'&&was!=='Done'){if(tRec.subs)tRec.subs.forEach(s=>s.done=true);toast('🎉 Task done · +'+tRec.pts+' XP');}else toast('Moved to '+v);document.getElementById('tinner').innerHTML=tBody();renderTaskInfo();bindTComment();}
-function tBody(){if(tTab!=='Overview')return `<div class="placeholder" style="margin-top:30px"><div class="pic">${svg(ICONS.Feed||ICONS.List,28)}</div><h2>Activity</h2><p>Status changes, focus sessions and comments for this task appear here.</p></div>`;
-  const t=tRec,p=PEOPLE[t.asg],sm=SRC[t.src];
-  return `<span class="type-chip">Task · ${sm[0]}</span><h1>${t.title}</h1>
+/* module-task header card — same .proj-ai pattern as project & project-task records.
+   The close-for-XP nudge lives INSIDE the insights; a focus block is offered only when no duration is set. */
+function tTopInsights(t){const idx=TSTAGES.indexOf(t.status);const done=t.status==='Done';const pct=done?100:Math.round(Math.max(0,idx)/(TSTAGES.length-1)*100);const sm=SRC[t.src];
+  const items=[['clock',done?`<b>Done.</b> ${t.pts} XP earned — nice focus.`:`<b>${t.pri} priority${t.due?` · due ${t.due}`:''}.</b> ${t.pri==='High'?'Best tackled next.':'On track if started soon.'}`],
+    ['target',`<b>Linked to ${t.link}.</b> Completing it updates that ${sm[0]} record.`]];
+  if(!done)items.push(['next',`<b>Close it to earn ${t.pts} XP.</b> <a onclick="tMove('Done')">Mark it done</a>${t.est?'':` or <a onclick="tFocusJump()">create an OJO focus block</a> — 25 min, +5 XP bonus`}.`]);
+  items.push(['flame',t.est?`<b>Estimated ${t.est}.</b> ${t.focusMin?`${t.focusMin}m focused so far.`:'No focus logged yet.'}`:`<b>No duration set.</b> An OJO focus block (25 min) is a good default.`]);
+  return `<div class="proj-ai">
+    <div class="pa-score"><div class="pa-ring">${ring(pct,done?'var(--ok)':pct>=40?'var(--warn)':'var(--coral)',72)}<span class="pa-pct">${pct}%</span></div><div class="pa-meta"><div class="pa-lbl">${t.status}</div><div class="pa-sub">★ ${t.pts} XP on completion · ${sm[0]}</div></div></div>
+    <div class="pa-ins">${ojoInsightsCard(items,'task')}</div></div>`;}
+function tBody(){const t=tRec,p=PEOPLE[t.asg];
+  return `<h1>${t.title}</h1>
    <div class="byline"><span class="av" style="background:${p[1]}">${p[0]}</span> ${p[2]} · linked to <b>${t.link}</b></div>
-   <div class="rec-desc">${t.title} is tracked as a cell that came out of the ${sm[0]} module. Close it to earn ${t.pts} XP — use a focus block on the right to stay on it.</div>
-   ${tStepper(t)}${tGate(t)}${tSugg(t)}
+   ${tTopInsights(t)}
+   ${tStepper(t)}
    <div class="rows">
-    <div class="row"><div class="k">Status</div><div class="v"><span class="stage-val">${t.status}</span></div></div>
-    <div class="row"><div class="k">Source</div><div class="v"><span class="tsrc" style="color:${sm[1]};background:${sm[1]}1f">${sm[0]}</span></div></div>
-    <div class="row"><div class="k">Linked to</div><div class="v"><span class="chip link">${t.link}</span></div></div>
     <div class="row"><div class="k">Assigned to</div><div class="v"><span class="av-chip">${av(t.asg)}${p[2]}</span></div></div>
     <div class="row"><div class="k">Priority</div><div class="v"><span class="chip pr" style="background:${PR[t.pri]}">${t.pri}</span></div></div>
     <div class="row"><div class="k">Due on</div><div class="v">${t.due||'—'}</div></div>
-    <div class="row"><div class="k">Estimate</div><div class="v"><span class="est">${t.est}</span></div></div>
-    <div class="row"><div class="k">Reward</div><div class="v"><span class="tpts">★ ${t.pts} XP</span></div></div>
+    <div class="row"><div class="k">Estimate</div><div class="v"><span class="est">${t.est||'—'}</span></div></div>
     <div class="row"><div class="k">Subtasks</div><div class="v">${tSubs()}</div></div>
    </div>${tComments()}`;}
 function tSubs(){return `<div class="subs">${tRec.subs.map((s,i)=>`<div class="sub ${s.done?'done':''}"><button class="scheck" onclick="tSub(${i})">${svg('<path d="M20 6 9 17l-5-5"/>',12)}</button><span class="txt">${s.t}</span></div>`).join('')}<div class="subadd"><span class="scheck"></span><input placeholder="Add a new subtask" onkeydown="if(event.key==='Enter')tAddSub(this)"></div></div>`;}
@@ -1478,13 +1592,17 @@ function tAddSub(inp){if(!inp.value.trim())return;tRec.subs.push({t:inp.value.tr
 function tComments(){return `<div class="commentbar"><div id="tcomments">${tRec.comments.map(c=>`<div class="comment"><span class="av">VK</span><div><div><b>Vinoth K</b><span class="tm">just now</span></div><div style="margin-top:3px">${c}</div></div></div>`).join('')}</div>
    <div class="cinput"><span class="av">VK</span><textarea id="tcmt" placeholder="Add your comment…" rows="1"></textarea></div></div>`;}
 function tComment(){const ta=document.getElementById('tcmt');const v=ta.value.trim();if(!v)return;tRec.comments.push(v);document.getElementById('tinner').innerHTML=tBody();bindTComment();toast('Comment added');}
-function tInfoBody(){const t=tRec,p=PEOPLE[t.asg],sm=SRC[t.src];const prog=t.status==='Done'?100:Math.round(TSTAGES.indexOf(t.status)/(TSTAGES.length-1)*100);
-  return `<div class="xscore" style="background:var(--coral-soft);border:1px solid var(--coral-line)"><div class="xgauge">${ring(prog,'var(--coral)',122)}<div class="pct" style="color:var(--coral-ink);font-size:20px">${t.pts}<span style="font-size:10px"> XP</span></div></div><div class="r2"><span class="l">Reward <span class="xderive">derive</span></span><span class="vv">${t.status==='Done'?'Earned 🎉':'On completion'}</span></div></div>
-   <div class="focuscard" id="focuscard">${focusCardHTML()}</div>
-   <div class="xipanel"><div class="xirow"><span class="k">Source</span><span class="v"><span class="tsrc" style="color:${sm[1]};background:${sm[1]}1f">${sm[0]}</span></span></div><div class="xirow"><span class="k">Status</span><span class="v" style="color:${TSTC[t.status]}">${t.status}</span></div><div class="xirow"><span class="k">Priority</span><span class="v">${t.pri}</span></div><div class="xirow"><span class="k">Due</span><span class="v">${t.due||'—'}</span></div></div>
-   <div style="margin:4px 0">${ojoInsightsCard([['clock',t.status==='Done'?`<b>Done.</b> XP earned — nice focus.`:`<b>${t.pri} priority${t.due?` · due ${t.due}`:''}.</b> ${t.pri==='High'?'Best tackled in your next focus block.':'On track if started soon.'}`],['target',`<b>Linked to ${t.link}.</b> Completing it updates that record.`],['flame',`<b>${t.focusMin}m focused so far.</b> Finish a block for <b>+5 XP</b>.`]],'task')}</div>
-   <div class="xigroup"><div class="gh">Linked ${chev2()}</div><div class="xipanel"><div class="xirow"><span class="k">Record</span><span class="v">${t.link}</span></div><div class="xirow"><span class="k">Owner</span><span class="v">${p[2]}</span></div></div></div>
-   <div class="xigroup"><div class="gh">Effort ${chev2()}</div><div class="xipanel"><div class="xirow"><span class="k">Estimate</span><span class="v">${t.est}</span></div><div class="xirow"><span class="k">Focus logged</span><span class="v">${t.focusMin}m</span></div></div></div>`;}
+/* panel = focus timer + this task's recent history (insights & facts live in the main body now) */
+function tActivity(t){const p=PEOPLE[t.asg];const items=[];
+  if(t.status==='Done')items.push(['#15A06A','done',t.due||'today',p[2],'completed',t.title]);
+  else if(t.status!=='Todo')items.push(['#E0A21E','msg','today',p[2],'moved to '+t.status+':',t.title]);
+  if(t.focusMin)items.push(['#7C53E6','done','today',p[2],'logged '+t.focusMin+'m of focus on',t.title]);
+  t.comments.slice(-2).forEach(()=>items.push(['#2F6FED','msg','today','Vinoth K','commented on',t.title]));
+  items.push(['#F04D56','msg','this week','OJO','created this task from',t.link]);
+  return actRowsHTML(items,`<div class="more"><span class="av">${p[0]}</span>${p[2]} active on this task</div>`);}
+function tInfoBody(){const t=tRec;
+  return `<div class="ip"><div class="focuscard" id="focuscard">${focusCardHTML()}</div>
+   <div class="ip-act"><div class="ip-act-h">Recent activity</div>${tActivity(t)}</div></div>`;}
 function renderTaskInfo(){const el=document.getElementById('tpanelbody');if(!el)return;el.innerHTML=tInfoBody();}
 /* ---- focus timer ---- */
 function focusCardHTML(){const t=tRec;const pct=focusLeft/FOCUS_TOTAL*100;const mm=String(Math.floor(focusLeft/60)).padStart(2,'0'),ss=String(focusLeft%60).padStart(2,'0');
@@ -1498,7 +1616,7 @@ function focusPause(){focusRunning=false;if(focusInt)clearInterval(focusInt);foc
 function focusReset(){focusPause();focusLeft=FOCUS_TOTAL;updateFocusCard();}
 function focusTick(){focusLeft--;if(focusLeft<=0){focusDone();return;}updateFocusCard();}
 function focusDone(){focusRunning=false;if(focusInt)clearInterval(focusInt);focusInt=null;focusLeft=FOCUS_TOTAL;if(tRec)tRec.focusMin+=25;bonusXP+=5;focusToday+=25;toast('✅ Focus block complete · +5 bonus XP');renderTaskInfo();}
-function tFocusJump(){focusStart();toast('Focus started — stay on it!');}
+function tFocusJump(){if(tCollapsed&&document.getElementById('tbox'))tToggle();focusStart();toast('Focus started — stay on it!');}
 
 /* ============ HOME (org overview + get-it-done) ============ */
 const ACTS=[
@@ -1578,14 +1696,14 @@ function schedRefresh(){if(curRoute==='home')mountHome();else if(document.getEle
 function doSched(label){closePops();toast('Scheduled · '+label);schedRefresh();}
 function doSchedDay(d){closePops();const t=TASKS.find(x=>x.id===schedTarget);if(t)t.due=d+' Jun';toast('Scheduled · Jun '+d);schedRefresh();}
 /* ---- Capability cell: Convert notification → task ---- */
-function notifTask(e,title){if(e)e.stopPropagation();const id='TKN'+(TASKS.length+1);TASKS.unshift({id,title:title,src:'project',link:'From notification',asg:'priya',status:'Todo',pri:'Medium',due:'11 Jun',est:'30m',pts:15,focusMin:0,subs:[{t:'Review the update',done:false},{t:'Take action',done:false}],comments:[]});toast('Added as task — OJO scheduling…');openSched(e,id);}
+function notifTask(e,title){if(e)e.stopPropagation();const id='TKN'+(TASKS.length+1);TASKS.unshift({id,title:title,src:'project',link:'From notification',asg:'priya',status:'Todo',pri:'Medium',due:'11 Jun',est:'30m',pts:15,focusMin:0,subs:[],comments:[]});toast('Added as task — OJO scheduling…');openSched(e,id);}
 function homeSetView(v){homeView=v;mountHome();}
 function homeSelectDay(d){homeSelDay=d;if(homeView==='activity')homeView='list';mountHome();}
 function homeWeek(delta){homeWeekStart+=delta;mountHome();}
 function homeToday(){homeWeekStart=8;homeSelDay=11;mountHome();}
 function homeQuickOpen(e){if(e&&e.stopPropagation)e.stopPropagation();const m=document.getElementById('qaddPop');if(!m)return;m.innerHTML=homeQuickHTML();if(e&&e.currentTarget){const r=e.currentTarget.getBoundingClientRect();m.style.top=(r.bottom+8)+'px';m.style.left=Math.max(12,Math.min(r.left,window.innerWidth-352))+'px';}openPop('qaddPop');setTimeout(()=>{const i=document.getElementById('qaddInput');if(i)i.focus();},30);}
 function homeQuickClose(){closePops();}
-function homeAddTask(title){if(!title||!title.trim())return;const id='TKX'+(TASKS.length+1);TASKS.unshift({id,title:title.trim(),src:'project',link:'Inbox',asg:'priya',status:'Todo',pri:'Medium',due:homeSelDay+' Jun',time:'12:00',est:'30m',pts:15,focusMin:0,subs:[{t:'Define the work',done:false},{t:'Do it',done:false}],comments:[]});homeQuickClose();mountHome();toast('Task added to '+(homeSelDay===11?'Today':homeSelDay+' Jun'));}
+function homeAddTask(title){if(!title||!title.trim())return;const id='TKX'+(TASKS.length+1);TASKS.unshift({id,title:title.trim(),src:'project',link:'Inbox',asg:'priya',status:'Todo',pri:'Medium',due:homeSelDay+' Jun',time:'12:00',est:'',pts:15,focusMin:0,subs:[],comments:[]});homeQuickClose();mountHome();toast('Task added to '+(homeSelDay===11?'Today':homeSelDay+' Jun'));}
 function homeMetrics(){const st=homeStats();const pct=st.total?Math.round(st.done/st.total*100):0;const fmin=TASKS.reduce((a,t)=>a+(t.focusMin||0),0);
   const tiles=[['over',st.over,'Overdue','need attention'],['',st.active,'To do','on your plate'],['ok',st.done,'Done today','+'+bonusXP+' XP'],['',fmin+'m','Focused','today']];
   return `<div class="hmetrics">${tiles.map(t=>`<div class="mtile ${t[0]}"><div class="mt-v">${t[1]}</div><div class="mt-l">${t[2]}</div><div class="mt-s">${t[3]}</div></div>`).join('')}
@@ -1637,6 +1755,9 @@ function homeList(){const a=homeActiveTasks();let groups=[];
   if(homeGroup==='module'){groups=HMODS.slice(1).map(([k,l])=>[l,a.filter(t=>t.src===k).sort((x,y)=>t2m(x.time)-t2m(y.time)),'',SRC[k][1]]);}
   else if(homeGroup==='level'){const ord={High:0,Medium:1,Low:2};groups=[['High',a.filter(t=>t.pri==='High'),'over'],['Medium',a.filter(t=>t.pri==='Medium'),''],['Low',a.filter(t=>t.pri==='Low'),'']].map(g=>{g[1].sort((x,y)=>homeDay(x)-homeDay(y)||t2m(x.time)-t2m(y.time));return g;});}
   else{const by=d=>a.filter(t=>d(homeDay(t))).sort((x,y)=>homeDay(x)-homeDay(y)||t2m(x.time)-t2m(y.time));groups=[['Overdue',by(d=>d<11),'over'],['Today',by(d=>d===11),''],['Upcoming',by(d=>d>11),'']];}
+  /* completed tasks always sit in one dimmed group at the very bottom */
+  const doneAll=(homeFilterMod?TASKS.filter(t=>t.src===homeFilterMod):TASKS).filter(t=>t.status==='Done').sort((x,y)=>homeDay(x)-homeDay(y)||t2m(x.time)-t2m(y.time));
+  groups.push(['Done',doneAll,'donegrp']);
   const html=groups.filter(g=>g[1].length).map(g=>`<div class="hl-group"><div class="hl-gh ${g[2]||''}">${g[3]?`<span class="hf-dot" style="--c:${g[3]}"></span>`:''}${g[0]}<span class="hl-gn">${g[1].length}</span></div>${g[1].map(listRow).join('')}</div>`).join('');
   return `<div class="hlist">${html||`<div class="tp-empty"><div class="tp-empty-ic">${svg(HICON.check,26)}</div><h3>Nothing here</h3><p>No tasks match this filter.</p></div>`}</div>`;}
 function nowLineHTML(){const h=Math.floor(NOW_MIN/60),m=NOW_MIN%60;return `<div class="tl-now"><span class="nt">Now · ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}</span><span class="nl"></span></div>`;}
@@ -1658,15 +1779,20 @@ function tlRow(t){const sm=SRC[t.src];const p=PEOPLE[t.asg];const done=t.status=
   </div>`;}
 function tlToggle(id){const t=TASKS.find(x=>x.id===id);if(!t)return;t._tlopen=!t._tlopen;const fl=document.getElementById('feedList');if(fl)fl.innerHTML=homeTimeline();}
 function tlGroup(numHTML,wd,cnt,rows,cls){return `<div class="tl-day ${cls||''}"><div class="tl-num ${cls||''}">${numHTML}${wd?`<div class="wd">${wd}</div>`:''}${cnt?`<div class="cnt">${cnt}</div>`:''}</div><div class="tl-rows">${rows}</div></div>`;}
-function homeTimeline(){const active=homeActiveTasks();
-  const over=active.filter(t=>homeDay(t)<11).sort((a,b)=>homeDay(a)-homeDay(b)||t2m(a.time)-t2m(b.time));
-  const today=active.filter(t=>homeDay(t)===11).sort((a,b)=>t2m(a.time)-t2m(b.time));
-  const fdays=[...new Set(active.filter(t=>homeDay(t)>11).map(homeDay))].sort((a,b)=>a-b);
+function homeTimeline(){const all=homeFilterMod?TASKS.filter(t=>t.src===homeFilterMod):TASKS;
+  const active=all.filter(t=>t.status!=='Done');
+  const byTime=(a,b)=>t2m(a.time)-t2m(b.time);
+  /* completed tasks stay visible but sink to the bottom of their day, dimmed */
+  const doneOf=d=>all.filter(t=>t.status==='Done'&&homeDay(t)===d).sort(byTime);
+  const over=active.filter(t=>homeDay(t)<11).sort((a,b)=>homeDay(a)-homeDay(b)||byTime(a,b));
+  const today=active.filter(t=>homeDay(t)===11).sort(byTime);
+  const fdays=[...new Set(all.filter(t=>homeDay(t)>11).map(homeDay))].sort((a,b)=>a-b);
   let html='';
   if(over.length)html+=tlGroup(`<div class="lbl">${svg(WARN,13)} Overdue</div>`,'',over.length+' slipped',over.map(tlRow).join(''),'over');
   let trows='',np=false;today.forEach(t=>{if(!np&&t2m(t.time)>NOW_MIN){trows+=nowLineHTML();np=true;}trows+=tlRow(t);});if(!np)trows+=nowLineHTML();
+  trows+=doneOf(11).map(tlRow).join('');
   html+=tlGroup(`<div class="d">11</div>`,WD[wdOf(11)]+' · Today',today.length+' scheduled',trows,'today');
-  fdays.forEach(d=>{const rows=active.filter(t=>homeDay(t)===d).sort((a,b)=>t2m(a.time)-t2m(b.time));
+  fdays.forEach(d=>{const rows=[...active.filter(t=>homeDay(t)===d).sort(byTime),...doneOf(d)];
     html+=tlGroup(`<div class="d">${d}</div>`,WD[wdOf(d)],rows.length+(d===12?' planned':' '),rows.map(tlRow).join(''));});
   return `<div class="timeline">${html}</div>`;}
 function estMin(e){if(!e)return 60;let v=0;const h=e.match(/(\d+)\s*h/),m=e.match(/(\d+)\s*m/);if(h)v+=(+h[1])*60;if(m)v+=(+m[1]);return v||60;}
@@ -1782,7 +1908,6 @@ document.addEventListener('mousedown',e=>{if(isMobile())return;const dp=e.target
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&xpShown())xpClose();});
 
 try{if(localStorage.getItem('ojo-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}
-try{recVariant=localStorage.getItem('ojo-rec-variant')||'A';}catch(e){}
 let _shell='hybrid';try{_shell=localStorage.getItem('ojo-shell')||'hybrid';}catch(e){}
 setShell(_shell);
 go('home');
