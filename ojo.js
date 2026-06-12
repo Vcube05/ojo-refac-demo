@@ -59,7 +59,8 @@ let leads=[lk('Meridian Cafe','Anjali Rao',85000,'Referral','New',null,'0/2'),lk
   lk('Acme Interiors','Ravi Sharma',200000,'Website','Contacted','priya','1/3'),lk('Patel Logistics','Neha Patel',340000,'LinkedIn','Contacted','sam','2/4'),
   lk('Nova Dental','Dr. Iyer',175000,'Referral','Qualified','priya','3/4'),lk('GreenLeaf Organics','Sunita M',260000,'Event','Qualified','ravi','2/3'),
   lk('Life Designer','Jyotinath',46000,'Referral','Proposal','priya','1/4'),lk('Horizon Realty','Faisal K',510000,'Website','Proposal','mei','3/5'),
-  lk('Sunrise Pharma','Deepak N',420000,'Referral','Won','sam','4/4'),lk('TechBridge','Arjun S',95000,'Cold email','Lost','priya','1/3'),lk('Orbit Media','Lakshmi V',150000,'Website','New',null,'0/2')];
+  lk('Sunrise Pharma','Deepak N',420000,'Referral','Won','sam','4/4'),lk('TechBridge','Arjun S',95000,'Cold email','Lost','priya','1/3'),lk('Orbit Media','Lakshmi V',150000,'Website','New',null,'0/2'),
+  lk('Hexathalon','Aman bhai',90000,'Direct','Proposal','mei','2/4')];
 function lk(co,nm,val,src,st,asg,chk){return {id:'lead-'+(++LID),co,nm,val,src,st,asg,chk};}
 
 const STATUSES=[{k:'Todo',cc:'var(--st-todo)'},{k:'Doing',cc:'var(--st-doing)'},{k:'Done',cc:'var(--st-done)'}];
@@ -100,7 +101,10 @@ function curType(){return cm().views.find(v=>v.name===cm().active).type;}
 function setRail(id){['navHome','navLeads','navProjects','navHR','navAccounts','navVendors','navOrgAdmin'].forEach(n=>{const e=document.getElementById(n);if(e)e.classList.remove('active');});document.getElementById('r-profile')?.classList.toggle('on',id==='r-profile');if(id&&id!=='r-profile'){const e=document.getElementById(id);if(e)e.classList.add('active');}}
 let subCollapsed=false;
 function subItems(mod){const S=['settings','Settings',"toast('Settings — demo')"],tk=m=>['tasks','Tasks',"openTasks('"+m+"')"];
-  return {leads:{title:'Leads',list:[['leads','Leads',"go('leads')"],tk('leads'),S]},project:{title:'Projects',list:[['projectsDash','Projects',"go('projectsDash')"],tk('project'),S]},account:{title:'Accounts',list:[['account','Accounts',"go('account')"],tk('account'),S]},vendor:{title:'Vendors',list:[['vendor','Vendors',"go('vendor')"],tk('vendor'),S]}}[mod];}
+  return {leads:{title:'Leads',list:[['leads','Leads',"go('leads')"],tk('leads'),S]},project:{title:'Projects',list:[['projectsDash','Projects',"go('projectsDash')"],tk('project'),S]},account:{title:'Accounts',list:[['account','Accounts',"go('account')"],tk('account'),S]},
+   /* vendor module mirrors the live product's sub-nav: Tasks · Vendors · RFQs · Projects · Invoices · Settings */
+   vendor:{title:'Vendors',list:[tk('vendor'),['vendor','Vendors',"go('vendor')"],['vnrfqs','RFQs',"vnModPage('vnrfqs')"],['vnprojects','Projects',"vnModPage('vnprojects')"],['vninvoices','Invoices',"vnModPage('vninvoices')"],S]},
+   contacts:{title:'Contacts',list:[['contacts','All Contacts',"go('contacts')"],S]}}[mod];}
 function subToggle(){subCollapsed=!subCollapsed;const s=document.getElementById('shell');if(s)s.classList.toggle('navcollapsed',subCollapsed);}
 function renderShell(mod,active){const it=subItems(mod);
   document.getElementById('screen').innerHTML=`<div class="box hrbox ${subCollapsed?'navcollapsed':''}" id="shell"><aside class="hrnav"><div class="hrnav-top" style="justify-content:flex-end"><button class="hrcollapse" onclick="subToggle()" title="Collapse">${svg('<path d="m11 17-5-5 5-5M18 17l-5-5 5-5"/>',16)}</button></div>${it.list.map(i=>`<a class="${i[0]===active?'on':''}" onclick="${i[2]}">${i[1]}</a>`).join('')}</aside><div class="modbody" id="modcontent"></div><button class="hrreopen" onclick="subToggle()" title="Show menu">${svg('<path d="M3 6h18M3 12h18M3 18h18"/>',17)}</button></div>`;}
@@ -116,6 +120,7 @@ function go(route){curRoute=route;closePeek();closePops();xpClose();hideCommDock
   else if(route==='profile'){setRail('r-profile');mountProfile();}
   else if(route==='admin'){setRail('navOrgAdmin');mountOrgAdmin();}
   else if(route==='vendor'){setRail('navVendors');renderShell('vendor','vendor');mountColl('vendor');}
+  else if(route==='contacts'){setRail('navContacts');renderShell('contacts','contacts');mountContacts();}
   syncGenie();}
 
 function modTools(){return `<button class="mtool"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5h18M6 12h12M10 19h4"/></svg></button>
@@ -925,7 +930,7 @@ function genieBody(){const ctx=genieContext();const ask=s=>s.replace(/'/g,"\\'")
      <button class="ggo" onclick="genieAsk(document.getElementById('gIn').value)">${svg('<path d="M12 19V5M5 12l7-7 7 7"/>',16)}</button></div>
    <div class="gnote">Ojo Genie can make mistakes. Verify important information before acting on it.</div></div></div>`;}
 function genieAsk(q){if(!q||!q.trim())return;const m=document.getElementById('gmsgs');if(!m)return;m.querySelector('.genie-hi')?.remove();
-  const ans={'Show My Leads':'You have 11 leads — 2 in Proposal, 2 Qualified, 1 Won. Want me to open the board?','Today\'s calls':'No calls scheduled today. Nova Dental is overdue for a follow-up.','Prioritize tasks for first half':'Top 3 by due date: Wireframes (10 Jun), API integration (2 Jul), QA & testing (15 Jul).'}[q.trim()]||('Here\'s what I found for “'+q.trim()+'”.');
+  const ans={'Show My Leads':'You have 12 leads — 3 in Proposal, 2 Qualified, 1 Won. Want me to open the board?','Today\'s calls':'No calls scheduled today. Nova Dental is overdue for a follow-up.','Prioritize tasks for first half':'Top 3 by due date: Wireframes (10 Jun), API integration (2 Jul), QA & testing (15 Jul).'}[q.trim()]||('Here\'s what I found for “'+q.trim()+'”.');
   m.insertAdjacentHTML('beforeend',`<div class="gq">${q.trim()}</div><div class="ga">${ans}</div>`);document.getElementById('gIn').value='';m.scrollTop=m.scrollHeight;}
 
 function nIcon(t){const m={bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>',people:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6"/>',check:'<circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',brief:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',person:'<circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/>'};return svg(m[t]||m.bell,17);}
@@ -954,10 +959,10 @@ function accountBody(){const W=[['R','#C92F3A','Reliance','13 members · Org Adm
 const EMP=[
  {code:'REL0006',name:'Test new',role:'Employee',dept:'design',mgr:'—',created:'15 May 2026',status:'Onboarding',av:'TN',color:'#64748B',phone:'8825562185',email:'vinoth+testnew@palpx.com',join:'15 May 2026'},
  {code:'REL0005',name:'Chetan',role:'Employee',dept:'—',mgr:'—',created:'05 May 2026',status:'Invitation Sent',av:'C',color:'#E08A1E',phone:'—',email:'chetan@reliance.co',join:'05 May 2026'},
- {code:'REL0003',name:'Nidhuna',role:'Finance Admin',dept:'design',mgr:'—',created:'08 Mar 2026',status:'Active',av:'N',color:'#7C53E6',phone:'—',email:'nidhuna@reliance.co',join:'08 Mar 2026'},
+ {code:'REL0003',name:'Nidhuna',role:'Finance Admin',dept:'finance',mgr:'Vinoth V V',created:'08 Mar 2026',status:'Active',av:'N',color:'#7C53E6',phone:'+91 90080 11223',email:'nidhuna@reliance.co',join:'08 Mar 2026'},
  {code:'REL0004',name:'Palpxvinoth',role:'Org Admin',dept:'—',mgr:'—',created:'01 Apr 2026',status:'Active',av:'P',color:'#2F6FED',phone:'—',email:'palpx@reliance.co',join:'01 Apr 2026'},
  {code:'REL0001',name:'Vinoth V V',role:'Org Admin',dept:'—',mgr:'—',created:'25 Feb 2026',status:'Active',av:'VV',color:'#C92F3A',phone:'9769011309',email:'vinotham@gmail.com',join:'25 Feb 2026'},
- {code:'REL0002',name:'Rajesh Kumar',role:'Project Admin',dept:'—',mgr:'—',created:'27 Feb 2026',status:'Inactive',av:'RK',color:'#15A06A',phone:'—',email:'rajesh@reliance.co',join:'27 Feb 2026'}];
+ {code:'REL0002',name:'Rajesh Kumar',role:'Project Admin',dept:'projects',mgr:'Vinoth V V',created:'27 Feb 2026',status:'Inactive',av:'RK',color:'#15A06A',phone:'+91 98220 45621',email:'rajesh@reliance.co',join:'27 Feb 2026'}];
 const EST={Active:'var(--ok)','Onboarding':'var(--info)','Invitation Sent':'#9A6B12',Inactive:'var(--coral-ink)'};
 function eav(e,s){s=s||26;return `<span class="eav" style="background:${e.color};width:${s}px;height:${s}px;font-size:${Math.round(s/2.5)}px">${e.av}</span>`;}
 let hrPage='directory',hrEmp=null,hrEmpTab='Overview',hrAttTab='Attendance',hrAttView='List',hrNavCollapsed=false;
@@ -996,24 +1001,31 @@ function empTable(){return `<div class="tablewrap"><table><thead><tr><th>Employe
 function empBoard(){const sts=['Active','Onboarding','Invitation Sent','Inactive'];return `<div class="board color">`+sts.map(s=>{const items=EMP.filter(e=>e.status===s);return `<div class="col"><div class="col-head" style="--cc:${EST[s]||'var(--faint)'}"><span class="pill"><span class="dot"></span>${s}</span><span class="ct">${items.length}</span></div><div class="col-body">${items.map(e=>`<div class="card" onclick="hrOpenEmp('${e.code}')"><div class="nm">${e.name}</div><div class="by">${e.role} · ${e.code}</div><div class="foot"><span class="src">${e.dept==='—'?'No dept':e.dept}</span>${eav(e,23)}</div></div>`).join('')||'<div class="col-empty">None</div>'}</div></div>`;}).join('')+`</div>`;}
 function empList(){const depts=[...new Set(EMP.map(e=>e.dept))];return depts.map(d=>{const items=EMP.filter(e=>e.dept===d);return `<div class="lg"><div class="lg-head"><span class="pill">${d==='—'?'No department':d}</span><span class="ct">${items.length}</span></div>${items.map(e=>`<div class="lrow" onclick="hrOpenEmp('${e.code}')">${eav(e)}<span class="nm">${e.name}</span><span class="co">${e.role} · ${e.code}</span><span style="color:${EST[e.status]};font-weight:600;font-size:12.5px">${e.status}</span></div>`).join('')}</div>`;}).join('');}
 function hrOpenEmp(code){hrEmp=EMP.find(e=>e.code===code);hrEmpTab='Overview';mountEmpRecord();}
-function mountEmpRecord(){const e=hrEmp;const tabs=['Overview','Personal','Contact','Work','Salary','Documents','Activity'];empPanelCollapsed=isMobile();
-  document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dside"><button class="dctl x" onclick="empClose()" title="Close">${svg(SVS.x,19)}</button><div class="dnav"><button class="dctl" onclick="empNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="empNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div><div class="dbox ${empPanelCollapsed?'collapsed':''}" id="empbox"><div class="dmain">
-     <div class="crumbbar"><a onclick="go('hr')">Employee Directory</a> <span class="sep">‹</span> <b>${e.name}</b></div>
-     <div class="mc-top"><div class="title-wrap"><span class="eav" style="background:${e.color};width:40px;height:40px;font-size:15px">${e.av}</span><div><h1>${e.name}</h1><div class="sub">${e.role} · ${e.status}</div></div></div><div class="sp"></div><button class="paneltoggle" onclick="empToggle()"><span id="empPtog">${empPanelCollapsed?'Show info':'Hide info'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
-     <div class="rec-actions" style="padding:0 22px 4px">
-       <button class="commbtn" data-f="call" onclick="openComm('call')">${faceIcon('call')} Call</button>
-       <button class="commbtn" data-f="email" onclick="openComm('email')">${faceIcon('email')} Email</button>
-       <button class="commbtn" data-f="chat" onclick="openComm('chat')">${faceIcon('chat')} Message</button></div>
-     <div class="emp-tabs" style="padding:0 22px 10px">${tabs.map(t=>`<button class="vtab ${t===hrEmpTab?'on':''}" onclick="hrEmpSetTab('${t}')">${t}</button>`).join('')}</div>
-     <div class="dcenter"><div class="inner" id="empBody">${hrEmpBody(e)}</div></div></div>
-   <aside class="dpanel" id="emppanel"><div class="dpanel-head"><span class="nm">${e.name}</span><button class="ed" onclick="xpOpenFrom(this)" title="Expand">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button><button class="ed" style="margin-left:6px">${svg(SVS.pencil,15)}</button></div>
-     <div class="dpanel-body" id="emppanelbody"></div></aside></div></div>`;
+/* employee record — the LOCKED record system: dside nav · crumb+cluster · viewbar · hidden activity panel */
+const EMPTABS=['Overview','Details','Salary','Documents','Notes'];
+const EMPTABICON={Overview:'star',Details:'Details',Salary:'Table',Documents:'List',Notes:'notes'};
+function mountEmpRecord(){const e=hrEmp;empPanelCollapsed=true;
+  document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dside"><div class="dnav"><button class="dctl" onclick="empNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="empNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div>
+   <div class="dbox ${empPanelCollapsed?'collapsed':''}" id="empbox"><div class="dmain">
+    <div class="dtop"><div class="crumbs"><a onclick="go('hr')">Employee Directory</a> <span class="sep">‹</span> <span id="empCrumbTab">${hrEmpTab}</span></div><div class="sp"></div>
+      <div class="commpill">${[['call','Call'],['email','Email'],['chat','Message']].map(([f,l])=>`<button title="${l} ${e.name}" onclick="openComm('${f}')">${faceIcon(f)}</button>`).join('')}</div>
+      <button class="ptog-ic ${empPanelCollapsed?'':'on'}" id="empPtogBtn" onclick="empToggle()" title="Show activity">${svg('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',17)}</button>
+      <button class="mtool hdr-x" onclick="empClose()" title="Close">${svg(SVS.x,18)}</button></div>
+    <div class="viewbar">${EMPTABS.map(x=>`<button class="vtab ${x===hrEmpTab?'on':''}" onclick="hrEmpSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[EMPTABICON[x]],14)}</span>${x}</button>`).join('')}</div>
+    <div class="dcenter"><div class="inner" id="empBody">${empRecBody(e)}</div></div></div>
+   <aside class="dpanel" id="emppanel"><div class="dpanel-head"><span class="nm">Recent activity</span></div><div class="dpanel-body" id="emppanelbody"></div></aside></div></div>`;
   renderEmpInfo();
   commSetHost({getFace:()=>empFace,setFace:empSetFace,content:commEmpContent});syncCommActive();}
 function empClose(){go('hr');}
 function empNav(dir){const i=EMP.findIndex(x=>x.code===hrEmp.code);if(i<0)return;const n=(i+dir+EMP.length)%EMP.length;hrEmp=EMP[n];empFace='info';xpClose();mountEmpRecord();}
-function hrEmpSetTab(t){hrEmpTab=t;document.getElementById('empBody').innerHTML=hrEmpBody(hrEmp);document.querySelectorAll('.emp-tabs .vtab').forEach(b=>b.classList.toggle('on',b.textContent===t));}
-function empToggle(){empPanelCollapsed=!empPanelCollapsed;document.getElementById('empbox').classList.toggle('collapsed',empPanelCollapsed);document.getElementById('empPtog').textContent=empPanelCollapsed?'Show info':'Hide info';}
+function empRecBody(e){const head=`<div class="lead-head"><div class="lh-id"><h1>${e.name}</h1>
+    <div class="byline">${eav(e,26)} <b>${e.role}</b> <span class="dotsep">·</span> <span style="color:${EST[e.status]||'var(--muted)'};font-weight:700">${e.status}</span>${e.dept!=='—'?` <span class="dotsep">·</span> ${e.dept} team`:''}${e.mgr!=='—'?` <span class="dotsep">·</span> reports to ${e.mgr}`:''} <span class="dotsep">·</span> joined ${e.join}</div></div></div>`;
+  return head+hrEmpBody(e);}
+function hrEmpSetTab(t){hrEmpTab=t;const b=document.getElementById('empBody');if(b)b.innerHTML=empRecBody(hrEmp);
+  document.querySelectorAll('#empbox .viewbar .vtab').forEach(x=>x.classList.toggle('on',x.textContent.trim()===t));
+  const c=document.getElementById('empCrumbTab');if(c)c.textContent=t;}
+function empToggle(){empPanelCollapsed=!empPanelCollapsed;document.getElementById('empbox').classList.toggle('collapsed',empPanelCollapsed);
+  const b=document.getElementById('empPtogBtn');if(b){b.classList.toggle('on',!empPanelCollapsed);b.title=empPanelCollapsed?'Show activity':'Hide activity';}}
 function empSetFace(f){empFace=f;document.querySelectorAll('#emppanel .xcface').forEach(b=>b.classList.toggle('on',b.dataset.face===f));renderEmpInfo();}
 /* OJO read of an employee — derived from status, manager, department */
 function empInsights(e){const onboarding=e.status!=='Active';const out=[];
@@ -1022,29 +1034,38 @@ function empInsights(e){const onboarding=e.status!=='Active';const out=[];
   out.push(['clock',e.dept==='—'?`<b>Department not set.</b> Add it to include them in team views and payroll.`:`<b>${e.dept} team.</b> Counted in that team's headcount.`]);
   return out;}
 function empScore(e){return ({REL0006:62,REL0005:40,REL0003:78,REL0004:85,REL0001:90,REL0002:30}[e.code])||60;}
-function empPanelCells(e){const sc=empScore(e),lbl=sc>=80?'Strong':sc>=50?'Average':'Needs focus';
-  return [
-    {render:'score',props:{pct:sc,label:lbl,reason:`Performance this quarter · ${e.role}`,tag:'OJO read'}},
-    {render:'facts',props:{rows:[['Role',e.role],['Department',e.dept],['Status',`<span style="color:${EST[e.status]||'var(--ink)'}">${e.status}</span>`],['Manager',e.mgr],['Joined',e.join]]}},
-    {render:'insights',props:{items:empInsights(e),askNoun:'profile'}},
-    {render:'contacts',props:{title:'Contact',add:null,list:[[e.name,e.role,e.email,e.color,true]]}},
-    {render:'more',props:{rows:[['Employee code',e.code],['Email',e.email],['Phone',e.phone],['Added on',e.created]]}}
-  ];}
-function empInfoBody(){return `<div class="ip">${empPanelCells(hrEmp).map(renderPanelCell).join('')}</div>`;}
+/* OJO read at the top of the overview — same .proj-ai card as lead/task/vendor/project */
+function empTopInsights(e){const sc=empScore(e),lbl=sc>=80?'Strong':sc>=50?'Average':'Needs focus';const t=scoreColors(sc);
+  return `<div class="proj-ai">
+    <div class="pa-score"><div class="pa-ring">${ring(sc,t[0],72)}<span class="pa-pct" style="color:${t[1]}">${sc}%</span></div><div class="pa-meta"><div class="pa-lbl" style="color:${t[1]}">${lbl}</div><div class="pa-sub">Performance this quarter · ${e.role} · OJO read</div></div></div>
+    <div class="pa-ins">${ojoInsightsCard(empInsights(e),'profile')}</div></div>`;}
+/* the employee's recent history — hideable panel, activity only */
+function empActivity(e){const items=[];
+  if(e.status==='Onboarding')items.push(['#2F6FED','msg','Jun 10','OJO','flagged incomplete onboarding for',e.name]);
+  if(e.status==='Invitation Sent')items.push(['#9A6B12','msg',e.created,'OJO','sent an invitation to',e.email]);
+  if(e.status==='Inactive')items.push(['#B0717A','msg','02 Jun','HR','marked as inactive',e.name]);
+  items.push(['#15A06A','done',e.join,e.name,'joined as',e.role]);
+  items.push(['#7C53E6','msg',e.created,'HR','added the profile',e.code]);
+  return actRowsHTML(items,`<div class="more"><span class="av">${e.av}</span>${e.name}'s history</div>`);}
+function empInfoBody(){return `<div class="ip"><div class="ip-actonly">${empActivity(hrEmp)}</div></div>`;}
 function renderEmpInfo(){const el=document.getElementById('emppanelbody');if(!el)return;el.innerHTML=empInfoBody();}
 function hrEmpBody(e,tab){tab=tab||hrEmpTab;
-  if(tab==='Overview')return hrPerfBlock()+hrFieldSec('Personal Details',[['Full Name',e.name],['Joining Date',e.join]])+hrFieldSec('Contact Details',[['Contact number',e.phone],['Work Email',e.email],['Address','—'],['City','—']]);
-  if(tab==='Personal')return hrFieldSec('Personal Details',[['Full Name',e.name],['Joining Date',e.join],['Date of Birth','—'],['Gender','—']]);
-  if(tab==='Contact')return hrFieldSec('Contact Details',[['Contact number',e.phone],['Emergency number','—'],['Work Email',e.email],['Personal Email','—'],['Address','—'],['City','—']]);
-  if(tab==='Work')return hrFieldSec('Work Profile',[['Role',e.role],['Department',e.dept],['Manager',e.mgr],['Employee Code',e.code]]);
-  if(tab==='Salary')return hrFieldSec('Salary Details',[['CTC','₹—'],['Monthly Gross','₹—'],['Bank','—'],['PAN','—']]);
-  if(tab==='Documents')return `<div class="emp-sec"><div class="emp-sec-h"><h3>Documents</h3></div><div class="muted2">No documents yet. Drag files here or click upload.</div></div>`;
-  return `<div class="emp-sec"><div class="emp-sec-h"><h3>Activity</h3></div><div class="muted2">Joined on ${e.join}. No recent activity.</div></div>`;}
+  const blk=(h,rows)=>`<div class="pd-block"><div class="pd-h">${h}</div><div class="pd-grid">${rows.map(([k,x])=>`<div class="pd-cell"><div class="pd-k">${k}</div><div class="pd-v">${x}</div></div>`).join('')}</div></div>`;
+  /* deterministic per-employee fills — every field reads as real data */
+  const sd=parseInt(e.code.replace(/\D/g,''))||1,pmail=e.name.toLowerCase().replace(/[^a-z]/g,'')+'@gmail.com';
+  const dob=`0${(sd%9)+1} ${['Mar','Aug','Jan','Nov','Jun','Sep'][sd%6]} 199${(sd%6)+1}`,gender=sd%2?'Male':'Female';
+  const ctc=600000+sd*120000,phone=e.phone!=='—'?e.phone:`+91 98${sd}00 4${sd}2${sd}1`;
+  if(tab==='Details')return `<div class="pdetails" style="padding:6px 0 30px">${blk('Personal',[['Full name',e.name],['Joining date',e.join],['Date of birth',dob],['Gender',gender]])}${blk('Contact',[['Contact number',phone],['Emergency number',`+91 90${sd}80 7${sd}3${sd}4`],['Work email',e.email],['Personal email',pmail],['Address',`${sd*7+12}, ${sd%2?'HSR Layout':'Indiranagar'}`],['City','Bengaluru']])}${blk('Work profile',[['Role',e.role],['Department',e.dept!=='—'?e.dept:'general'],['Manager',e.mgr],['Employee code',e.code],['Status',`<span style="color:${EST[e.status]||'var(--ink)'}">${e.status}</span>`],['Added on',e.created]])}</div>`;
+  if(tab==='Salary')return `<div class="pdetails" style="padding:6px 0 30px">${blk('Salary details',[['CTC',fmt(ctc)+' / yr'],['Monthly gross',fmt(Math.round(ctc/12))],['Bank',`HDFC ···· ${4500+sd*7}`],['PAN',`ABCPE${1200+sd*7}K`],['PF number',`KA/BLR/${44210+sd}`],['Payout day','1st of month']])}</div>`;
+  if(tab==='Documents'){const docs=[{b:'PDF',c:'#C92F3A',n:`Offer letter — ${e.name}.pdf`,m:'Signed · '+e.join},{b:'DOC',c:'#2F6FED',n:'ID & address proof.docx',m:e.status==='Active'?'Verified':'Pending verification'},{b:'PDF',c:'#C92F3A',n:'Payslip — May 2026.pdf',m:'Payroll'}];
+    return `<div class="rec-block" style="margin-top:6px"><div class="rec-block-h">Files & documents</div><div class="vdocs">${docs.map(d=>`<div class="vdoc" onclick="toast('Open ${d.n} (demo)')"><div class="fi" style="background:${d.c}">${d.b}</div><div style="min-width:0"><div class="dt">${d.n}</div><div class="dd">${d.m}</div></div></div>`).join('')}<div class="vdoc add" onclick="toast('Upload a file (demo)')">${svg(SVS.plus,15)}<span>Upload</span></div></div></div>`;}
+  if(tab==='Notes')return `<div class="rec-block" style="margin-top:6px"><div class="rec-block-h">Notes</div><div class="free notes-free" contenteditable="true" data-ph="Write a note about ${e.name}…"></div></div>`;
+  return empTopInsights(e)+hrPerfBlock();}
 function hrFieldSec(title,fields){return `<div class="emp-sec"><div class="emp-sec-h"><h3>${title}</h3><button class="iconedit" onclick="toast('Edit ${title}')">${svg(SVS.pencil,15)}</button></div><div class="fgrid">${fields.map(f=>`<div class="fld"><div class="flk">${f[0]}</div><input class="flv" value="${f[1]}"></div>`).join('')}</div></div>`;}
 function hrSpark(){const pts=[10,16,13,24,20,32,28,40,36,30,44];const w=560,h=70,mx=Math.max(...pts),step=w/(pts.length-1);const line=pts.map((p,i)=>`${(i*step).toFixed(1)},${(h-(p/mx)*h).toFixed(1)}`).join(' ');return `<svg viewBox="0 0 ${w} ${h}" class="spark" preserveAspectRatio="none"><polyline points="0,${h} ${line} ${w},${h}" fill="rgba(22,163,74,.10)" stroke="none"/><polyline points="${line}" fill="none" stroke="#16A34A" stroke-width="2.5" stroke-linejoin="round"/></svg>`;}
 function hrPerfBlock(){return `<div class="emp-sec"><div class="emp-sec-h"><h3>Performance</h3><span class="muted2" style="margin-left:auto">Monthly · time vs quality</span></div>${hrSpark()}
    <div class="perf-grid">${hrPerf.map((m,i)=>`<div class="perf-card"><button class="perf-x" onclick="hrPerfRemove(${i})">${svg(SVS.x,11)}</button><div class="pv">${m.v}</div><div class="pl">${m.l}</div><div class="pd">${svg(SVS.up,11)} ${m.d}</div></div>`).join('')}<button class="perf-add" onclick="hrPerfAdd()">${svg(SVS.plus,16)} Add metric</button></div></div>`;}
-function hrPerfRefresh(){const a=document.getElementById('empBody');if(a&&hrEmp)a.innerHTML=hrEmpBody(hrEmp);const b=document.getElementById('profEmpBody');if(b)b.innerHTML=hrEmpBody(profUser(),profTab);}
+function hrPerfRefresh(){const a=document.getElementById('empBody');if(a&&hrEmp)a.innerHTML=empRecBody(hrEmp);const b=document.getElementById('profEmpBody');if(b)b.innerHTML=hrEmpBody(profUser(),profTab);}
 function hrPerfRemove(i){hrPerf.splice(i,1);hrPerfRefresh();}
 function hrPerfAdd(){hrPerf.push({l:'New metric',v:'0',d:'+0'});hrPerfRefresh();}
 function hrAttendance(){const sub=['Attendance','Leave Requests','Holidays'];
@@ -1088,7 +1109,7 @@ function renderProfPage(){const el=document.getElementById('profmain');if(!el)re
   else if(profPage==='attendance')el.innerHTML=profAttendance();
   else if(profPage==='payslips')el.innerHTML=profPayslips();
   else el.innerHTML=profIntegrations();}
-function profBody(){const e=profUser();const tabs=['Overview','Personal','Contact','Work','Salary','Documents','Activity'];
+function profBody(){const e=profUser();const tabs=['Overview','Details','Salary','Documents'];
   return `<div class="mc-top" style="padding:2px 0 14px;align-items:center"><div class="title-wrap"><span class="eav" style="background:${e.color};width:46px;height:46px;font-size:16px">${e.av}</span><div><h1 style="font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--navy);line-height:1.2">${e.name} <span class="rolechip">${e.role}</span></h1><div class="sub">${e.email} · ${e.status}</div></div></div><div class="sp" style="flex:1"></div><span class="appearance-ctl"><span class="tlab">Appearance</span><span class="seg themeseg"><button data-t="light" class="${curTheme()==='light'?'on':''}" onclick="setTheme('light')">Light</button><button data-t="dark" class="${curTheme()==='dark'?'on':''}" onclick="setTheme('dark')">Dark</button></span></div></div>
    <div class="emp-tabs" style="margin-bottom:16px">${tabs.map(t=>`<button class="vtab ${t===profTab?'on':''}" onclick="profSetTab('${t}')">${t}</button>`).join('')}</div>
    <div id="profEmpBody">${hrEmpBody(e,profTab)}</div>`;}
@@ -1204,18 +1225,32 @@ const ACCOUNTS=[
  {id:'AC02',name:'Sunrise Pharma',type:'Customer',owner:'Sam Verma',balance:120000,status:'Overdue',email:'pay@sunrise.co',phone:'—',terms:'Net 15',limit:500000,av:'SP',color:'#2F6FED'},
  {id:'AC03',name:'GreenLeaf Organics',type:'Customer',owner:'Ravi Kapoor',balance:0,status:'Closed',email:'fin@greenleaf.co',phone:'—',terms:'Prepaid',limit:200000,av:'GO',color:'#15A06A'},
  {id:'AC04',name:'Horizon Realty',type:'Customer',owner:'Mei Lin',balance:260000,status:'Active',email:'accounts@horizon.co',phone:'—',terms:'Net 45',limit:800000,av:'HZ',color:'#E08A1E'}];
+/* Vendor cells carry the ONBOARDING data verbatim — Company Details stage (full name→poc,
+   role, team size, website, LinkedIn) + Services stage (services, engagement model, portfolio). */
 const VENDORS=[
- {id:'VN01',name:'PixelCraft Studio',type:'Design',owner:'Mei Lin',balance:60000,status:'Active',email:'hello@pixelcraft.co',phone:'+91 98220 14501',terms:'Net 30',limit:0,av:'PC',color:'#7C53E6',poc:'Aarav Shah',since:'04 Mar 2026',loc:'Bengaluru',gst:'29ABCDE1234F1Z5'},
- {id:'VN02',name:'CloudNine Hosting',type:'Infrastructure',owner:'Sam Verma',balance:24000,status:'Active',email:'billing@cloudnine.io',phone:'+91 99300 22817',terms:'Monthly',limit:0,av:'CN',color:'#2F6FED',poc:'Nikhil Rao',since:'18 Jan 2026',loc:'Mumbai',gst:'27FGHIJ5678K2Z3'},
- {id:'VN03',name:'AdReach Media',type:'Marketing',owner:'Priya Nair',balance:90000,status:'Overdue',email:'ar@adreach.co',phone:'+91 98110 90342',terms:'Net 15',limit:0,av:'AR',color:'#E08A1E',poc:'Divya Menon',since:'22 Apr 2026',loc:'Gurugram',gst:'06LMNOP9012Q3Z1'}];
+ {id:'VN01',name:'PixelCraft Studio',type:'Design',owner:'Mei Lin',balance:60000,status:'Active',email:'hello@pixelcraft.co',phone:'+91 98220 14501',terms:'Net 30',limit:0,av:'PC',color:'#7C53E6',poc:'Aarav Shah',since:'04 Mar 2026',loc:'Bengaluru',gst:'29ABCDE1234F1Z5',
+  role:'Founder & Design Lead',team:'11–50',site:'pixelcraft.co',li:'linkedin.com/company/pixelcraft',portfolio:'behance.net/pixelcraft',services:['UI/UX Design','Brand Identity','Webflow Build'],engage:['Retainer','Project-based'],
+  projects:[{name:'Apollo — Website Revamp',bud:120000,created:'12 Mar 2026',score:92,status:'Completed',bro:'BRO-114'},{name:'Hexathalon brand refresh',bud:80000,created:'02 May 2026',score:88,status:'In progress',bro:'BRO-127'}],
+  members:[['Aarav Shah','Design Lead'],['Sana Iyer','Senior UI Designer'],['Rohit K','Webflow Developer']],
+  files:[['MSA — PixelCraft.pdf','Signed · 04 Mar 2026'],['GST certificate.pdf','Verified'],['Rate card FY27.xlsx','Mei · 12 May']]},
+ {id:'VN02',name:'CloudNine Hosting',type:'Infrastructure',owner:'Sam Verma',balance:24000,status:'Active',email:'billing@cloudnine.io',phone:'+91 99300 22817',terms:'Monthly',limit:0,av:'CN',color:'#2F6FED',poc:'Nikhil Rao',since:'18 Jan 2026',loc:'Mumbai',gst:'27FGHIJ5678K2Z3',
+  role:'Solutions Architect',team:'51–200',site:'cloudnine.io',li:'linkedin.com/company/cloudnine-io',portfolio:'cloudnine.io/case-studies',services:['Cloud Hosting','CDN & Edge','Managed DevOps'],engage:['Retainer'],
+  projects:[{name:'Infra migration — Apollo',bud:60000,created:'25 Jan 2026',score:84,status:'Completed',bro:'BRO-098'},{name:'FY27 hosting renewal',bud:24000,created:'18 May 2026',score:null,status:'In progress',bro:'BRO-131'}],
+  members:[['Nikhil Rao','Solutions Architect'],['Farah A','DevOps Engineer']],
+  files:[['SLA — CloudNine.pdf','Signed · 18 Jan 2026'],['Security audit 2026.pdf','Verified']]},
+ {id:'VN03',name:'AdReach Media',type:'Marketing',owner:'Priya Nair',balance:90000,status:'Overdue',email:'ar@adreach.co',phone:'+91 98110 90342',terms:'Net 15',limit:0,av:'AR',color:'#E08A1E',poc:'Divya Menon',since:'22 Apr 2026',loc:'Gurugram',gst:'06LMNOP9012Q3Z1',
+  role:'Account Director',team:'11–50',site:'adreach.co',li:'linkedin.com/company/adreach-media',portfolio:'adreach.co/work',services:['Performance Marketing','Social Campaigns','Ad Creatives'],engage:['Project-based','Hourly'],
+  projects:[{name:'Festive campaign 2025',bud:150000,created:'02 Oct 2025',score:71,status:'Completed',bro:'BRO-071'},{name:'Always-on ad creatives',bud:90000,created:'22 Apr 2026',score:64,status:'On hold',bro:'BRO-122'}],
+  members:[['Divya Menon','Account Director'],['Karan S','Performance Lead']],
+  files:[['MSA — AdReach.pdf','Signed · 22 Apr 2026'],['Campaign report Q1.pdf','Priya · 04 Jun']]}];
 const COLL={
  account:{name:'Accounts',sing:'Account',sub:'Customer & finance accounts',icon:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16"/>',data:()=>ACCOUNTS,metricCtx:'accounts',balLabel:'Balance',
    cols:[['Account','name','b'],['Type','type'],['Owner','owner'],['Balance','balance','money'],['Status','status','badge']],
    statuses:[['Active','#15A06A'],['Overdue','#E08A1E'],['Closed','#64748B']],
    tabs:['Overview','Transactions','Documents','Activity'],
    groups:[['Account Details',[['Account name','name'],['Type','type'],['Owner','owner'],['Terms','terms']]],['Finance',[['Balance','balance','money'],['Credit limit','limit','money'],['Status','status']]],['Contact',[['Email','email'],['Phone','phone']]]]},
- vendor:{name:'Vendors',sing:'Vendor',sub:'Suppliers & service providers',icon:'<path d="M3 9 5 4h14l2 5M4 9v11h16V9M4 9h16M9 13h6"/>',data:()=>VENDORS,metricCtx:'vendors',balLabel:'Payable',
-   cols:[['Vendor','name','b'],['Category','type'],['Owner','owner'],['Payable','balance','money'],['Status','status','badge']],
+ vendor:{name:'Vendors',sing:'Vendor',sub:'Sub-contracting partners',icon:'<path d="M3 9 5 4h14l2 5M4 9v11h16V9M4 9h16M9 13h6"/>',data:()=>VENDORS,metricCtx:'vendors',balLabel:'Payable',
+   cols:[['Vendor','name','b'],['Services','services','chips'],['OJO score','id','score'],['Payable','balance','money'],['Status','status','badge']],
    statuses:[['Active','#15A06A'],['Overdue','#E08A1E']],
    tabs:['Overview','Bills','Documents','Activity'],
    groups:[['Vendor Details',[['Vendor name','name'],['Category','type'],['Owner','owner'],['Terms','terms']]],['Finance',[['Payable','balance','money'],['Status','status']]],['Contact',[['Email','email'],['Phone','phone']]]]}};
@@ -1233,7 +1268,10 @@ function mountColl(key){coll=key;collRec=null;collView='Table';const c=COLL[key]
   renderColl();}
 function collV(v){collView=v;renderColl();}
 function renderColl(){const el=document.getElementById('work');if(!el)return;const c=curColl(),rows=c.data();el.innerHTML=collView==='Board'?collBoard(c,rows):collView==='List'?collList(c,rows):collTable(c,rows);}
-function collCell(r,col){const v=r[col[1]];if(col[2]==='money')return fmt(v);if(col[2]==='badge')return `<span style="color:${stColor(v)};font-weight:600">${v}</span>`;if(col[2]==='b')return `<span class="owncell"><span class="eav" style="background:${r.color};width:26px;height:26px;font-size:10px">${r.av}</span><b style="color:var(--navy)">${v}</b></span>`;return v;}
+function collCell(r,col){const v=r[col[1]];if(col[2]==='money')return fmt(v);if(col[2]==='badge')return `<span style="color:${stColor(v)};font-weight:600">${v}</span>`;if(col[2]==='b')return `<span class="owncell"><span class="eav" style="background:${r.color};width:26px;height:26px;font-size:10px">${r.av}</span><b style="color:var(--navy)">${v}</b></span>`;
+  if(col[2]==='chips')return `<span class="vchips">${(v||[]).slice(0,2).map(s=>`<span class="vchip sm">${s}</span>`).join('')}${(v||[]).length>2?`<span class="vchip sm more">+${v.length-2}</span>`:''}</span>`;
+  if(col[2]==='score'){const sc=vnScore(r);const t=scoreColors(sc.pct);return `<span style="color:${t[1]};font-weight:700">${sc.pct}%</span> <span class="co" style="font-size:12px">${sc.label}</span>`;}
+  return v;}
 function collTable(c,rows){return `<div class="tablewrap"><table><thead><tr>${c.cols.map(col=>`<th class="${col[2]==='money'?'num':''}">${col[0]}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr onclick="collOpen('${r.id}')">${c.cols.map(col=>`<td class="${col[2]==='money'?'num':''}">${collCell(r,col)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;}
 function collBoard(c,rows){return `<div class="board color">`+c.statuses.map(s=>{const items=rows.filter(r=>r.status===s[0]);return `<div class="col"><div class="col-head" style="--cc:${s[1]}"><span class="pill"><span class="dot"></span>${s[0]}</span><span class="ct">${items.length}</span></div><div class="col-body">${items.map(r=>`<div class="card" onclick="collOpen('${r.id}')"><div class="nm">${r.name}</div><div class="by">${r.type} · ${r.owner}</div><div class="foot"><span class="val">${fmt(r.balance)}</span><span class="eav" style="background:${r.color};width:23px;height:23px;font-size:9px;margin-left:auto">${r.av}</span></div></div>`).join('')||'<div class="col-empty">None</div>'}</div></div>`;}).join('')+`</div>`;}
 function collList(c,rows){const gs=[...new Set(rows.map(r=>r.type))];return gs.map(g=>{const items=rows.filter(r=>r.type===g);return `<div class="lg"><div class="lg-head"><span class="pill">${g}</span><span class="ct">${items.length}</span></div>${items.map(r=>`<div class="lrow" onclick="collOpen('${r.id}')"><span class="eav" style="background:${r.color};width:26px;height:26px;font-size:10px">${r.av}</span><span class="nm">${r.name}</span><span class="co">${r.owner} · ${r.terms}</span><span class="val">${fmt(r.balance)}</span></div>`).join('')}</div>`;}).join('');}
@@ -1270,11 +1308,15 @@ function vnBillList(v){const s=vnSeed(v);
   return [{id:`BILL-2026-0${s}1`,ref:`PO-10${s}`,amount:v.balance,due:v.status==='Overdue'?'05 Jun 2026':'28 Jun 2026',status:v.status==='Overdue'?'Overdue':'Pending'},
           {id:`BILL-2026-0${s}0`,ref:`PO-09${s}`,amount:18000+s*4000,due:`0${s} May 2026`,status:'Paid'}];}
 function vnWinRate(v){const r=vnRfqList(v);const won=r.filter(x=>x.status==='Accepted').length;return [won,r.length,Math.round(won/r.length*100)];}
-function vnInsights(v){const sc=vnScore(v);const wr=vnWinRate(v);const out=[];
+/* partner-evaluation evidence: per-project scores from sub-contracted work */
+function vnAvgScore(v){const sc=(v.projects||[]).filter(p=>p.score!=null).map(p=>p.score);return sc.length?Math.round(sc.reduce((a,b)=>a+b,0)/sc.length):null;}
+function vnScorePill(s){if(s==null)return '<span class="co">—</span>';const t=scoreColors(s);return `<span style="color:${t[1]};font-weight:700">${s}%</span>`;}
+const VNPSTC={'Completed':'var(--ok)','In progress':'var(--info)','On hold':'#9A6B12'};
+function vnInsights(v){const sc=vnScore(v);const wr=vnWinRate(v);const avg=vnAvgScore(v);const out=[];
   out.push(['next',v.status==='Overdue'?`<b>Next best action.</b> ${fmt(v.balance)} payable is past due — <a onclick="toast('Record payment (demo)')">record a payment</a> to protect the relationship.`:`<b>Next best action.</b> Engagement is healthy — send the next RFQ while pricing is competitive.`]);
+  out.push(['target',`<b>Fit:</b> ${avg!=null?`avg <b>${avg}%</b> across ${v.projects.length} sub-contracted project${v.projects.length>1?'s':''}`:'no scored projects yet'} — strongest on <b>${v.services[0]}</b> (${v.engage[0].toLowerCase()}).`]);
   out.push(['cash',`<b>${fmt(v.balance)} outstanding</b> on ${v.terms} terms${v.status==='Overdue'?' — past due':''}.`]);
-  out.push(['target',`<b>${wr[0]} of ${wr[1]} RFQs won (${wr[2]}%).</b> ${v.type} pricing has been competitive.`]);
-  out.push(['clock',`<b>${sc.onTime}% on-time delivery.</b> ${sc.onTime>=80?'No client escalations in the last 12 months.':'1 client escalation in 12 months — monitor closely.'}`]);
+  out.push(['clock',`<b>${sc.onTime}% on-time delivery · ${wr[2]}% RFQ win rate.</b> ${sc.onTime>=80?'No client escalations in the last 12 months.':'1 client escalation in 12 months — monitor closely.'}`]);
   return out;}
 function vnTopInsights(v){const sc=vnScore(v);const t=scoreColors(sc.pct);
   return `<div class="proj-ai">
@@ -1285,15 +1327,19 @@ function vnBars(vals,color,w,h){const max=Math.max(...vals,1);const n=vals.lengt
   return `<svg width="${w}" height="${h}" style="display:block">${vals.map((x,i)=>{const bh=Math.max(3,Math.round(x/max*(h-6)));return `<rect x="${i*(bw+6)}" y="${h-bh}" width="${bw}" height="${bh}" rx="3" fill="${color}" opacity="${(0.35+0.65*(x/max)).toFixed(2)}"/>`;}).join('')}</svg>`;}
 /* chart/metric widgets — each a UI cell (render + bind:self); users add/remove per vendor */
 const VNW={
- kpis:{title:'Engagement',body:v=>{const wr=vnWinRate(v);return `<div class="wkv"><span class="k">RFQs</span><span class="v">${wr[1]} · ${wr[0]} won</span></div><div class="wkv"><span class="k">Win rate</span><span class="v">${wr[2]}%</span></div><div class="wkv"><span class="k">Engagement value</span><span class="v">${fmt(v.balance+60000)}</span></div><div class="wkv"><span class="k">Escalations · 12m</span><span class="v">${v.status==='Overdue'?1:0}</span></div>`;}},
+ /* the two cells below render the ONBOARDING data (Company Details + Services stages) */
+ profile:{title:'Company profile',body:v=>`<div class="wkv"><span class="k">Contact</span><span class="v">${v.poc}${pcommMini(v.poc)}</span></div><div class="wkv"><span class="k">Role</span><span class="v">${v.role}</span></div><div class="wkv"><span class="k">Team size</span><span class="v">${v.team} people</span></div><div class="wkv"><span class="k">Website</span><span class="v"><a class="vlink" onclick="toast('Open ${v.site} (demo)')">${v.site} ↗</a></span></div><div class="wkv"><span class="k">LinkedIn</span><span class="v"><a class="vlink" onclick="toast('Open LinkedIn (demo)')">${v.li.replace('linkedin.com/company/','in/')} ↗</a></span></div>`},
+ services:{title:'Services & engagement',body:v=>`<div class="wlbl">Services offered</div><div class="vchips">${v.services.map(s=>`<span class="vchip">${s}</span>`).join('')}</div><div class="wlbl" style="margin-top:14px">Engagement model</div><div class="vchips">${v.engage.map(s=>`<span class="vchip alt">${s}</span>`).join('')}</div><div class="wkv" style="margin-top:12px;border-top:1px solid var(--line)"><span class="k">Portfolio</span><span class="v"><a class="vlink" onclick="toast('Open ${v.portfolio} (demo)')">${v.portfolio} ↗</a></span></div>`},
+ projects:{title:'Sub-contracted projects',body:v=>(v.projects||[]).map(p=>`<div class="wkv"><span class="k" style="color:var(--ink);font-weight:600">${p.name}</span><span class="v">${vnScorePill(p.score)} <span style="color:${VNPSTC[p.status]||'var(--muted)'};font-weight:600;font-size:12px;margin-left:8px">${p.status}</span></span></div>`).join('')+`<div class="wkv"><span class="k">Average project score</span><span class="v">${vnScorePill(vnAvgScore(v))}</span></div><div class="wkv"><span class="k"></span><span class="v"><a style="color:var(--info);font-weight:600;cursor:pointer" onclick="vnSetTab('Projects')">View all →</a></span></div>`},
+ kpis:{title:'Engagement',body:v=>{const wr=vnWinRate(v);return `<div class="wkv"><span class="k">RFQs</span><span class="v">${wr[1]} · ${wr[0]} won</span></div><div class="wkv"><span class="k">Win rate</span><span class="v">${wr[2]}%</span></div><div class="wkv"><span class="k">Avg project score</span><span class="v">${vnScorePill(vnAvgScore(v))}</span></div><div class="wkv"><span class="k">Engagement value</span><span class="v">${fmt(v.balance+60000)}</span></div><div class="wkv"><span class="k">Escalations · 12m</span><span class="v">${v.status==='Overdue'?1:0}</span></div>`;}},
  spend:{title:'Spend · last 6 months',body:v=>{const s=vnSeed(v);const vals=[8,14,11,18,13,21].map(x=>x*(s+2));return `${vnBars(vals,'var(--info)',252,96)}<div class="wkv" style="margin-top:10px"><span class="k">Jan – Jun</span><span class="v">${fmt(vals.reduce((a,b)=>a+b,0)*1000)}</span></div>`;}},
  delivery:{title:'On-time delivery',body:v=>{const sc=vnScore(v);const vals=[sc.onTime-8,sc.onTime-3,sc.onTime-5,sc.onTime+1,sc.onTime-2,sc.onTime].map(x=>Math.max(20,x));return `${vnBars(vals,sc.onTime>=80?'var(--ok)':'var(--warn)',252,96)}<div class="wkv" style="margin-top:10px"><span class="k">6-month average</span><span class="v">${sc.onTime}%</span></div>`;}},
  outstanding:{title:'Outstanding',body:v=>`<div class="wkv"><span class="k">Payable</span><span class="v" style="color:${v.status==='Overdue'?'var(--coral-ink)':'var(--navy)'}">${fmt(v.balance)}</span></div><div class="wkv"><span class="k">Terms</span><span class="v">${v.terms}</span></div><div class="wkv"><span class="k">Status</span><span class="v" style="color:${stColor(v.status)}">● ${v.status}</span></div><div class="wkv"><span class="k">Next due</span><span class="v">${vnBillList(v)[0].due}</span></div>`},
  bills:{title:'Recent bills',body:v=>vnBillList(v).map(b=>`<div class="wkv"><span class="k">${b.id}</span><span class="v" style="color:${b.status==='Overdue'?'var(--coral-ink)':b.status==='Paid'?'var(--ok)':'var(--navy)'}">${fmt(b.amount)} · ${b.status}</span></div>`).join('')+`<div class="wkv"><span class="k"></span><span class="v"><a style="color:var(--info);font-weight:600;cursor:pointer" onclick="vnSetTab('Bills')">View all →</a></span></div>`},
  quality:{title:'Deliverable quality',body:v=>{const sc=vnScore(v);return `<div style="display:flex;justify-content:center;padding:6px 0;position:relative">${ring(sc.qual,sc.qual>=80?'var(--ok)':'var(--warn)',104)}<div style="position:absolute;inset:0;display:grid;place-items:center;font-weight:800;font-size:19px;color:var(--navy)">${sc.qual}%</div></div><div class="wkv"><span class="k">Rework requests</span><span class="v">${sc.qual>=80?'0':'2'} in 12m</span></div>`;}},
- team:{title:'Point of contact',body:v=>`<div class="wkv"><span class="k">POC</span><span class="v">${v.poc}${pcommMini(v.poc)}</span></div><div class="wkv"><span class="k">Email</span><span class="v" style="font-weight:500;font-size:13px">${v.email}</span></div><div class="wkv"><span class="k">Phone</span><span class="v">${v.phone}</span></div>`}};
+ team:{title:'Their team',body:v=>(v.members||[]).map(m=>`<div class="wkv"><span class="k" style="color:var(--ink);font-weight:600">${m[0]}</span><span class="v" style="color:var(--muted);font-weight:500">${m[1]}</span></div>`).join('')+`<div class="wkv"><span class="k">Team size</span><span class="v">${v.team} people</span></div><div class="wkv"><span class="k">Reach them</span><span class="v">${v.poc}${pcommMini(v.poc)}</span></div>`}};
 let vnWsets={};
-function vnWset(v){if(!vnWsets[v.id])vnWsets[v.id]=['kpis','spend','delivery','outstanding','bills'].map(t=>({id:'vw'+(++WUID),type:t}));return vnWsets[v.id];}
+function vnWset(v){if(!vnWsets[v.id])vnWsets[v.id]=['projects','services','profile','kpis','outstanding','bills'].map(t=>({id:'vw'+(++WUID),type:t}));return vnWsets[v.id];}
 function vnGrid(v){return `<div class="bgrid">${vnWset(v).map(w=>{const d=VNW[w.type];if(!d)return '';
    return `<div class="bsec"><div class="bsec-h">${d.title}<span class="bx" onclick="vnWRemove('${w.id}')">${svg(SVS.x,12)}</span></div><div class="bcard">${d.body(v)}</div></div>`;}).join('')}
   <div class="bsec add"><div class="bsec-h">&nbsp;</div><div class="baddtile" onclick="vnAddOpen(event)" title="Add a chart">${svg(SVS.plus,20)}<span>Add a chart</span></div></div></div>`;}
@@ -1310,37 +1356,251 @@ function vnActivity(v){const items=[];
   return actRowsHTML(items,`<div class="more"><span class="av">${v.av}</span>${v.poc} active for this vendor</div>`);}
 function vnInfo(){const v=curVn();return `<div class="ip"><div class="ip-actonly">${vnActivity(v)}</div></div>`;}
 function commVendorContent(f){const v=curVn();return f==='info'?vnInfo():commChannel(f,v?v.poc:'this vendor');}
-const VNTABICON={Overview:'star',RFQs:'List',Bills:'Table',Details:'Details',Notes:'notes'};
+const VNTABICON={Overview:'star',Projects:'Board',RFQs:'List',Bills:'Table',Details:'Details','Notes & Files':'notes'};
 function vnStatusPill(s){const c={Accepted:'var(--ok)',Paid:'var(--ok)',Sent:'var(--info)',Pending:'#9A6B12',Overdue:'var(--coral-ink)'}[s]||'var(--muted)';return `<span style="color:${c};font-weight:600">${s}</span>`;}
 function vnBody(){const v=curVn();
+  /* head chips = the vendor's onboarding profile, always in view on every tab */
+  const chips=`<div class="propchips">
+    <span class="pchip" title="Team size">${svg('<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M17 14a6 6 0 0 1 4 6"/>',13)} ${v.team} people</span>
+    <span class="pchip" title="Engagement model">${svg('<path d="M3 12h4l2-7 4 14 2-7h6"/>',13)} ${v.engage.join(' · ')}</span>
+    <button class="pchip lnk" onclick="toast('Open ${v.site} (demo)')" title="Website">${svg('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',13)} ${v.site}</button>
+    <button class="pchip lnk" onclick="toast('Open LinkedIn (demo)')" title="${v.li}">${svg('<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 11v5M8 8v.01M12 16v-5m0 2a2.5 2.5 0 0 1 5 0v3"/>',13)} LinkedIn</button>
+    <button class="pchip lnk" onclick="toast('Open ${v.portfolio} (demo)')" title="${v.portfolio}">${svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 15 5-5 4 4 3-3 6 6"/><circle cx="9" cy="9" r="1.2"/>',13)} Portfolio</button></div>`;
   const head=`<div class="lead-head"><div class="lh-id"><h1>${v.name}</h1>
-    <div class="byline"><span class="av" style="background:${v.color}">${v.av}</span> <b>${v.type}</b> <span class="dotsep">·</span> <span style="color:${stColor(v.status)};font-weight:700">${v.status}</span> <span class="dotsep">·</span> owner ${v.owner}</div></div></div>`;
+    <div class="byline"><span class="av" style="background:${v.color}">${v.av}</span> <b>${v.type}</b> <span class="dotsep">·</span> <span style="color:${stColor(v.status)};font-weight:700">${v.status}</span> <span class="dotsep">·</span> owner ${v.owner}</div>${chips}</div></div>`;
+  if(vnTab==='Projects')return head+((v.projects||[]).length
+    ?`<div class="tablewrap" style="margin-top:6px"><table><thead><tr><th>Project</th><th class="num">Budget</th><th>Created on</th><th>Project score</th><th>Status</th><th>BRO</th></tr></thead><tbody>${v.projects.map(p=>`<tr onclick="toast('Open ${p.name} (demo)')"><td><b style="color:var(--navy)">${p.name}</b></td><td class="num">${fmt(p.bud)}</td><td class="co">${p.created}</td><td>${vnScorePill(p.score)}</td><td><span style="color:${VNPSTC[p.status]||'var(--muted)'};font-weight:600">${p.status}</span></td><td><a class="vlink" onclick="event.stopPropagation();toast('Open ${p.bro} (demo)')">${p.bro} ↗</a></td></tr>`).join('')}</tbody></table></div>`
+    :`<div class="tp-empty" style="margin-top:20px"><div class="tp-empty-ic">${svg(ICONS.Board,26)}</div><h3>No projects yet</h3><p>Sub-contract a project to start building this vendor's track record.</p></div>`);
   if(vnTab==='RFQs')return head+`<div class="tablewrap" style="margin-top:6px"><table><thead><tr><th>RFQ ID</th><th>Title</th><th>Service</th><th class="num">Est. budget</th><th>Date</th><th>Status</th></tr></thead><tbody>${vnRfqList(v).map(r=>`<tr onclick="toast('Open ${r.id} (demo)')"><td><b style="color:var(--navy)">${r.id}</b></td><td>${r.title}</td><td class="co">${r.svc}</td><td class="num">${r.bud}</td><td class="co">${r.date}</td><td>${vnStatusPill(r.status)}</td></tr>`).join('')}</tbody></table></div>`;
   if(vnTab==='Bills')return head+`<div class="tablewrap" style="margin-top:6px"><table><thead><tr><th>Bill ID</th><th>Reference</th><th class="num">Amount</th><th>Due</th><th>Status</th></tr></thead><tbody>${vnBillList(v).map(b=>`<tr onclick="toast('Open ${b.id} (demo)')"><td><b style="color:var(--navy)">${b.id}</b></td><td class="co">${b.ref}</td><td class="num">${fmt(b.amount)}</td><td class="co">${b.due}</td><td>${vnStatusPill(b.status)}</td></tr>`).join('')}</tbody></table></div>`;
-  if(vnTab==='Details'){const about=[['Category',v.type],['Status',v.status],['Owner',v.owner],['Terms',v.terms],['Onboarded',v.since],['Location',v.loc]];
-    const contact=[['POC',v.poc+pcommMini(v.poc)],['Email',v.email],['Phone',v.phone]];
-    const fin=[['Payable',fmt(v.balance)],['GST',v.gst],['PAN','—'],['Bank A/C','—']];
+  if(vnTab==='Details'){const lnk=(u,lbl)=>`<a class="vlink" onclick="toast('Open ${u} (demo)')">${lbl||u} ↗</a>`;
+    /* blocks mirror the onboarding stages: Company Details · Services · plus ops/finance */
+    const about=[['Company',v.name],['Category',v.type],['Team size',v.team+' people'],['Location',v.loc],['Website',lnk(v.site)],['LinkedIn',lnk(v.li,'Company page')],['Onboarded',v.since],['Owner',v.owner]];
+    const svc=[['Services',v.services.map(s=>`<span class="vchip">${s}</span>`).join(' ')],['Engagement model',v.engage.map(s=>`<span class="vchip alt">${s}</span>`).join(' ')],['Portfolio',lnk(v.portfolio)]];
+    const contact=[['Contact',v.poc+pcommMini(v.poc)],['Role',v.role],['Email',v.email],['Phone',v.phone]];
+    const fin=[['Payable',fmt(v.balance)],['Terms',v.terms],['GST',v.gst],['PAN',v.gst.slice(2,12)],['Bank A/C',`ICICI ···· ${2240+vnSeed(v)*13}`]];
     const block=(h,rows)=>`<div class="pd-block"><div class="pd-h">${h}</div><div class="pd-grid">${rows.map(([k,x])=>`<div class="pd-cell"><div class="pd-k">${k}</div><div class="pd-v">${x}</div></div>`).join('')}</div></div>`;
-    return head+`<div class="pdetails" style="padding:6px 0 30px">${block('About this vendor',about)}${block('Contact',contact)}${block('Finance & tax',fin)}</div>`;}
-  if(vnTab==='Notes')return head+`<div class="rec-block" style="margin-top:6px"><div class="rec-block-h">Notes</div><div class="free notes-free" contenteditable="true" data-ph="Write a note about this vendor…"></div></div>`;
+    return head+`<div class="pdetails" style="padding:6px 0 30px">${block('Company profile',about)}${block('Services & engagement',svc)}${block('Contact',contact)}${block('Finance & tax',fin)}</div>`;}
+  if(vnTab==='Notes & Files'){
+    /* files are DOCUMENTS, not field values — card treatment, portfolio included */
+    const ftc={pdf:['PDF','#C92F3A'],xlsx:['XLS','#15A06A'],xls:['XLS','#15A06A'],fig:['FIG','#7C53E6'],doc:['DOC','#2F6FED'],docx:['DOC','#2F6FED']};
+    const docs=(v.files||[]).map(f=>{const t=ftc[f[0].split('.').pop().toLowerCase()]||['DOC','#2F6FED'];return {b:t[0],c:t[1],n:f[0],m:f[1]};});
+    docs.push({b:'LINK',c:'#7C53E6',n:'Portfolio — '+v.portfolio,m:'From onboarding'});
+    return head+`<div class="rec-block" style="margin-top:6px"><div class="rec-block-h">Files & documents</div>
+      <div class="vdocs">${docs.map(d=>`<div class="vdoc" onclick="toast('Open ${d.n} (demo)')"><div class="fi" style="background:${d.c}">${d.b}</div><div style="min-width:0"><div class="dt">${d.n}</div><div class="dd">${d.m}</div></div></div>`).join('')}
+      <div class="vdoc add" onclick="toast('Upload a file (demo)')">${svg(SVS.plus,15)}<span>Upload</span></div></div></div>
+     <div class="rec-block"><div class="rec-block-h">Notes</div><div class="free notes-free" contenteditable="true" data-ph="Write a note about this vendor…"></div></div>`;}
   return head+vnTopInsights(v)+vnGrid(v);}
 function vnRender(){const el=document.getElementById('vninner');if(el)el.innerHTML=vnBody();}
-function vnSetTab(t){vnTab=t;vnRender();document.querySelectorAll('#vnbox .viewbar .vtab').forEach(b=>b.classList.toggle('on',b.textContent.trim()===t));}
+function vnSetTab(t){vnTab=t;vnRender();document.querySelectorAll('#vnbox .viewbar .vtab').forEach(b=>b.classList.toggle('on',b.textContent.trim()===t));const c=document.getElementById('vnCrumbTab');if(c)c.textContent=t;}
 function vnToggle(){vnColl=!vnColl;document.getElementById('vnbox').classList.toggle('collapsed',vnColl);
   const b=document.getElementById('vnPtogBtn');if(b){b.classList.toggle('on',!vnColl);b.title=vnColl?'Show activity':'Hide activity';}}
 function vnNav(dir){const i=VENDORS.findIndex(x=>x.id===vnRec);if(i<0)return;vnRec=VENDORS[(i+dir+VENDORS.length)%VENDORS.length].id;xpClose();mountVendor();}
 function vnOpen(id){vnRec=id;vnTab='Overview';vnColl=true;vnFace='info';mountVendor();}
+function vnOpenTab(id,tab){vnRec=id;vnTab=tab;vnColl=true;vnFace='info';mountVendor();}
+/* ---- vendor module pages (sub-nav): RFQs · Projects · Invoices, aggregated across partners ---- */
+function vnVendCell(v){return `<span class="owncell"><span class="eav" style="background:${v.color};width:24px;height:24px;font-size:9px">${v.av}</span><b style="color:var(--navy)">${v.name}</b></span>`;}
+function vnModPage(p){curRoute='vendor';setRail('navVendors');renderShell('vendor',p);
+  const pageBox=(t,s,ic,table)=>`<div class="box"><div class="mc-top"><div class="title-wrap"><div class="picon">${svg(ic,20)}</div><div><h1>${t}</h1><div class="sub">${s}</div></div></div><div class="sp"></div><div class="newbtn"><button class="a" onclick="toast('New (demo)')">New</button><span class="b">${svg(SVS.caret,11)}</span></div></div><div style="padding:6px 26px 40px"><div class="tablewrap">${table}</div></div></div>`;
+  let html='';
+  if(p==='vnrfqs'){const rows=VENDORS.flatMap(v=>vnRfqList(v).map(r=>({r,v})));
+    html=pageBox('RFQs','Requests for quote across your partners','<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/>',
+      `<table><thead><tr><th>RFQ ID</th><th>Vendor</th><th>Title</th><th class="num">Est. budget</th><th>Date</th><th>Status</th></tr></thead><tbody>${rows.map(({r,v})=>`<tr onclick="vnOpenTab('${v.id}','RFQs')"><td><b style="color:var(--navy)">${r.id}</b></td><td>${vnVendCell(v)}</td><td>${r.title}</td><td class="num">${r.bud}</td><td class="co">${r.date}</td><td>${vnStatusPill(r.status)}</td></tr>`).join('')}</tbody></table>`);}
+  else if(p==='vnprojects'){const rows=VENDORS.flatMap(v=>(v.projects||[]).map(pr=>({pr,v})));
+    html=pageBox('Projects','Sub-contracted work across your partners','<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/>',
+      `<table><thead><tr><th>Project</th><th>Vendor</th><th class="num">Budget</th><th>Created on</th><th>Score</th><th>Status</th></tr></thead><tbody>${rows.map(({pr,v})=>`<tr onclick="vnOpenTab('${v.id}','Projects')"><td><b style="color:var(--navy)">${pr.name}</b></td><td>${vnVendCell(v)}</td><td class="num">${fmt(pr.bud)}</td><td class="co">${pr.created}</td><td>${vnScorePill(pr.score)}</td><td><span style="color:${VNPSTC[pr.status]||'var(--muted)'};font-weight:600">${pr.status}</span></td></tr>`).join('')}</tbody></table>`);}
+  else{const rows=VENDORS.flatMap(v=>vnBillList(v).map(b=>({b,v})));
+    html=pageBox('Invoices','Bills raised by your partners','<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/>',
+      `<table><thead><tr><th>Bill ID</th><th>Vendor</th><th>Reference</th><th class="num">Amount</th><th>Due</th><th>Status</th></tr></thead><tbody>${rows.map(({b,v})=>`<tr onclick="vnOpenTab('${v.id}','Bills')"><td><b style="color:var(--navy)">${b.id}</b></td><td>${vnVendCell(v)}</td><td class="co">${b.ref}</td><td class="num">${fmt(b.amount)}</td><td class="co">${b.due}</td><td>${vnStatusPill(b.status)}</td></tr>`).join('')}</tbody></table>`);}
+  document.getElementById('modcontent').innerHTML=html;syncGenie();}
 function mountVendor(){const v=curVn();
   document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dside"><div class="dnav"><button class="dctl" onclick="vnNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="vnNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div>
    <div class="dbox ${vnColl?'collapsed':''}" id="vnbox"><div class="dmain">
-    <div class="dtop"><div class="crumbs"><a onclick="go('vendor')">Vendors</a> <span class="sep">‹</span> ${vnTab}</div><div class="sp"></div>
+    <div class="dtop"><div class="crumbs"><a onclick="go('vendor')">Vendors</a> <span class="sep">‹</span> <span id="vnCrumbTab">${vnTab}</span></div><div class="sp"></div>
       <div class="commpill">${[['call','Call'],['email','Email'],['chat','Message']].map(([f,l])=>`<button title="${l} ${v.poc}" onclick="openComm('${f}')">${faceIcon(f)}</button>`).join('')}</div>
       <button class="ptog-ic ${vnColl?'':'on'}" id="vnPtogBtn" onclick="vnToggle()" title="${vnColl?'Show activity':'Hide activity'}">${svg('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',17)}</button>
       <button class="mtool hdr-x" onclick="go('vendor')" title="Close">${svg(SVS.x,18)}</button></div>
-    <div class="viewbar">${['Overview','RFQs','Bills','Details','Notes'].map(x=>`<button class="vtab ${x===vnTab?'on':''}" onclick="vnSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[VNTABICON[x]],14)}</span>${x}</button>`).join('')}</div>
+    <div class="viewbar">${['Overview','Projects','RFQs','Bills','Details','Notes & Files'].map(x=>`<button class="vtab ${x===vnTab?'on':''}" onclick="vnSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[VNTABICON[x]],14)}</span>${x}</button>`).join('')}</div>
     <div class="dcenter"><div class="inner" id="vninner">${vnBody()}</div></div></div>
    <aside class="dpanel"><div class="dpanel-head"><span class="nm">Recent activity</span></div><div class="dpanel-body" id="vnpanelbody">${vnInfo()}</div></aside></div></div>`;
   commSetHost({getFace:()=>vnFace,setFace:f=>{vnFace=f;},content:commVendorContent});}
+
+/* ============ CONTACTS MODULE — every person you do business with. One simple list,
+   a prominent profile record on the locked system, links into leads/vendors/employees. ============ */
+const CTYPE={Client:['#0E7B52','rgba(21,160,106,.13)'],Vendor:['#9A5200','rgba(224,138,30,.15)'],Employee:['#6539C8','rgba(124,83,230,.13)'],Freelance:['#0E7490','rgba(14,116,144,.12)'],Other:['#5B6473','rgba(100,116,139,.13)']};
+let CONTACTS=[
+ {id:'CT01',name:'Anjali Rao',org:'Meridian Cafe',type:'Client',role:'Owner',dept:"Founder's office",ind:'Hospitality',email:'anjali@meridian.cafe',phone:'+91 98220 22341',li:'linkedin.com/in/anjalirao',site:'meridian.cafe',addr:'Bengaluru',src:'Referral',by:'Vinoth V V',added:'02 Mar 2026',av:'AR',color:'#7C53E6',link:{kind:'lead',idx:0}},
+ {id:'CT02',name:'Aman bhai',org:'Hexathalon',type:'Client',role:'Founder',dept:"Founder's office",ind:'Apparel & Sportswear',email:'amanuay@gmail.com',phone:'+91 88923 84323',li:'linkedin.com/in/amanbhai',site:'hexathalon.in',addr:'Bengaluru',src:'Direct',by:'Vinotham',added:'07 May 2026',av:'AB',color:'#2F6FED',link:{kind:'lead',idx:11}},
+ {id:'CT03',name:'Aarav Shah',org:'PixelCraft Studio',type:'Vendor',role:'Founder & Design Lead',dept:'Design',email:'hello@pixelcraft.co',phone:'+91 98220 14501',li:'linkedin.com/in/aaravshah',site:'pixelcraft.co',addr:'Bengaluru',src:'Vendor onboarding',by:'Mei Lin',added:'04 Mar 2026',av:'AS',color:'#C92F3A',link:{kind:'vendor',id:'VN01'}},
+ {id:'CT04',name:'Nikhil Rao',org:'CloudNine Hosting',type:'Vendor',role:'Solutions Architect',dept:'Solutions',email:'billing@cloudnine.io',phone:'+91 99300 22817',li:'',site:'cloudnine.io',addr:'Mumbai',src:'Vendor onboarding',by:'Sam Verma',added:'18 Jan 2026',av:'NR',color:'#2F6FED',link:{kind:'vendor',id:'VN02'}},
+ {id:'CT05',name:'Divya Menon',org:'AdReach Media',type:'Vendor',role:'Account Director',dept:'Client Services',email:'ar@adreach.co',phone:'+91 98110 90342',li:'',site:'adreach.co',addr:'Gurugram',src:'Vendor onboarding',by:'Priya Nair',added:'22 Apr 2026',av:'DM',color:'#E08A1E',link:{kind:'vendor',id:'VN03'}},
+ {id:'CT06',name:'Nidhuna',org:'Reliance',type:'Employee',role:'Finance Admin',dept:'Finance',ind:'Your workspace',email:'nidhuna@reliance.co',phone:'+91 90080 11223',li:'linkedin.com/in/nidhuna',site:'reliance.co',addr:'Bengaluru',src:'HR',by:'HR',added:'08 Mar 2026',av:'N',color:'#7C53E6',link:{kind:'emp',id:'REL0003'}},
+ {id:'CT07',name:'Devika',org:'Bluestar',type:'Client',role:'Procurement Lead',dept:'Procurement',ind:'Consumer Durables',email:'vinoth+devi@palpx.com',phone:'+91 88255 62185',li:'linkedin.com/in/devika-n',site:'bluestar.in',addr:'Chennai',src:'Direct',by:'Vinotham',added:'26 Mar 2026',av:'D',color:'#15A06A',link:null},
+ {id:'CT08',name:'Free Firangi',org:'—',type:'Freelance',role:'Motion Designer',dept:'—',ind:'—',email:'vinotham+freelancer@gmail.com',phone:'+91 88255 62185',li:'linkedin.com/in/freefirangi',site:'firangi.design',addr:'Goa',src:'Direct',by:'Vinotham',added:'12 Apr 2026',av:'FF',color:'#0E7490',link:null},
+ {id:'CT09',name:'Karthik R',org:'Bluefin Studios',type:'Client',role:'Studio Head',dept:'Production',ind:'Media Production',email:'karthik@bluefin.studio',phone:'+91 98450 77812',li:'linkedin.com/in/karthikr',site:'bluefin.studio',addr:'Bengaluru',src:'Website',by:'Vinoth V V',added:'20 Apr 2026',av:'KR',color:'#E08A1E',link:{kind:'lead',idx:1}},
+ {id:'CT10',name:'Deepak N',org:'Sunrise Pharma',type:'Client',role:'VP Operations',dept:'Operations',ind:'Pharmaceuticals',email:'deepak@sunrisepharma.in',phone:'+91 99887 33401',li:'linkedin.com/in/deepakn',site:'sunrisepharma.in',addr:'Hyderabad',src:'Referral',by:'Sam Verma',added:'15 Feb 2026',av:'DN',color:'#0E7B52',link:{kind:'lead',idx:8}}];
+METRIC_DEFS.contacts={total:['Contacts',()=>CONTACTS.length],clients:['Clients',()=>CONTACTS.filter(c=>c.type==='Client').length],vendors:['Vendors',()=>CONTACTS.filter(c=>c.type==='Vendor').length],employees:['Employees',()=>CONTACTS.filter(c=>c.type==='Employee').length]};
+METR.contacts=['total','clients','vendors','employees'];
+let ctFilter='All',ctRec=null,ctTab='Overview',ctColl=true,ctFace='info';
+function curCt(){return CONTACTS.find(x=>x.id===ctRec);}
+function ctBadge(t){const c=CTYPE[t]||CTYPE.Other;return `<span class="ctbadge" style="color:${c[0]};background:${c[1]}">${t}</span>`;}
+function mountContacts(){
+  document.getElementById('modcontent').innerHTML=`<div class="box"><div class="mc-top"><div class="title-wrap"><div class="picon">${svg('<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M17 14a6 6 0 0 1 4 6"/>',20)}</div><div><h1>Contacts</h1><div class="sub">Every person you do business with</div></div></div><div class="sp"></div>${modTools()}<div class="newbtn"><button class="a" onclick="ctAddOpen(event)">＋ Add contact</button></div></div>
+   <div class="viewbar"><div class="switch2" style="margin-left:2px">${['All','Client','Vendor','Employee','Freelance'].map(t=>`<button class="${ctFilter===t?'on':''}" onclick="ctFilterSet('${t}')">${t==='All'?'All':t+'s'}</button>`).join('')}</div></div>
+   <div style="padding:0 22px">${metricsBar('contacts')}</div>
+   <div class="work" id="ctwork" style="padding:14px 22px 40px"></div></div>`;
+  ctRenderList();}
+function ctFilterSet(t){ctFilter=t;mountContacts();}
+function ctOrgCell(c){if(c.org&&c.org!=='—')return `<a class="vlink" onclick="event.stopPropagation();orgOpen('${c.org.replace(/'/g,"\\'")}')">${c.org} ↗</a>`;return c.org;}
+function ctRenderList(){const rows=CONTACTS.filter(c=>ctFilter==='All'||c.type===ctFilter);
+  document.getElementById('ctwork').innerHTML=`<div class="tablewrap"><table><thead><tr><th>Contact</th><th>Organisation</th><th>Email</th><th>Phone</th><th>Type</th></tr></thead><tbody>
+   ${rows.map(c=>`<tr onclick="ctOpen('${c.id}')"><td><span class="owncell"><span class="eav" style="background:${c.color};width:26px;height:26px;font-size:10px">${c.av}</span><b style="color:var(--navy)">${c.name}</b></span></td><td>${ctOrgCell(c)}</td><td class="co">${c.email||'—'}</td><td class="co">${c.phone}</td><td>${ctBadge(c.type)}</td></tr>`).join('')}</tbody></table></div>`;}
+/* quickly build contacts — three fields and you're in; enrich the profile later */
+function ctAddOpen(e){e.stopPropagation();const m=document.getElementById('wpal');
+  m.innerHTML=`<div class="h">Add a contact</div><div style="display:flex;flex-direction:column;gap:8px;padding:6px 4px 2px;width:250px">
+    <input class="flv" id="ctNm" placeholder="Full name" onkeydown="if(event.key==='Enter')ctAdd()">
+    <input class="flv" id="ctOrg" placeholder="Organisation" onkeydown="if(event.key==='Enter')ctAdd()">
+    <select class="flv" id="ctTy">${['Client','Vendor','Freelance','Other'].map(t=>`<option>${t}</option>`).join('')}</select>
+    <button class="cact" style="margin-top:2px" onclick="ctAdd()">＋ Add contact</button></div>`;
+  const r=e.currentTarget.getBoundingClientRect();m.style.top=Math.min(r.bottom+8,window.innerHeight-320)+'px';m.style.left=Math.max(12,Math.min(r.left-120,window.innerWidth-300))+'px';openPop('wpal');
+  setTimeout(()=>document.getElementById('ctNm')?.focus(),50);}
+function ctAdd(){const n=(document.getElementById('ctNm').value||'').trim();if(!n){toast('Give them a name first');return;}
+  const org=(document.getElementById('ctOrg').value||'').trim()||'—',ty=document.getElementById('ctTy').value;
+  const av=n.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()||'?';
+  CONTACTS.unshift({id:'CT'+(100+CONTACTS.length),name:n,org,type:ty,role:'',email:'',phone:'—',li:'',site:'',addr:'',src:'Manual',by:'Vinoth V V',added:'13 Jun 2026',av,color:'#2F6FED',link:null});
+  closePops();mountContacts();toast('Contact added — open it to enrich the profile');}
+function ctOpenLink(id){const c=CONTACTS.find(x=>x.id===id);if(!c||!c.link)return;
+  if(c.link.kind==='lead')openDetail('lead',leads[c.link.idx].id);
+  else if(c.link.kind==='vendor')vnOpen(c.link.id);
+  else if(c.link.kind==='emp')hrOpenEmp(c.link.id);}
+/* ---- contact record — the locked record system; the PROFILE is the hero ---- */
+const CTTABICON={Overview:'star',Details:'Details',Notes:'notes'};
+function ctScore(c){return c.link?(c.type==='Vendor'?82:88):c.type==='Freelance'?58:c.type==='Other'?40:64;}
+function ctLinkName(c){if(!c.link)return null;
+  if(c.link.kind==='lead')return ['Lead — '+leads[c.link.idx].co,'Deal in motion'];
+  if(c.link.kind==='vendor'){const v=VENDORS.find(x=>x.id===c.link.id);return ['Vendor — '+v.name,vnScore(v).pct+'% OJO score'];}
+  const e=EMP.find(x=>x.code===c.link.id);return ['Employee — '+e.name,e.role];}
+function ctInsights(c){const out=[];const ln=ctLinkName(c);
+  out.push(['next',ln?`<b>Next best action.</b> ${c.link.kind==='lead'?`The linked deal is live — <a onclick="ctOpenLink('${c.id}')">open the lead</a> and follow up through ${c.name.split(' ')[0]}.`:c.link.kind==='vendor'?`${c.name.split(' ')[0]} is the door to this partner — <a onclick="ctOpenLink('${c.id}')">open the vendor</a> to send the next RFQ.`:'Internal contact — reach them directly.'}`:`<b>Next best action.</b> No business linked yet — <a onclick="toast('New lead from contact (demo)')">start a lead</a> with ${c.name.split(' ')[0]} to put this contact to work.`]);
+  if(ln)out.push(['target',`<b>${ln[0]}.</b> ${ln[1]}.`]);
+  const miss=[!c.li&&'LinkedIn',!c.site&&'website',!c.role&&'role'].filter(Boolean);
+  out.push([miss.length?'flame':'clock',miss.length?`<b>Profile ${Math.round((6-miss.length)/6*100)}% complete.</b> Add ${miss.join(', ')} to enrich it.`:`<b>Profile complete.</b> Rich profiles make warmer intros.`]);
+  out.push(['cash',`<b>Added ${c.added}</b> via ${c.src} by ${c.by}.`]);
+  return out;}
+function ctTopInsights(c){const sc=ctScore(c),t=scoreColors(sc),lbl=sc>=80?'Strong tie':sc>=55?'Warm':'Cold';
+  return `<div class="proj-ai">
+    <div class="pa-score"><div class="pa-ring">${ring(sc,t[0],72)}<span class="pa-pct" style="color:${t[1]}">${sc}%</span></div><div class="pa-meta"><div class="pa-lbl" style="color:${t[1]}">${lbl}</div><div class="pa-sub">Relationship strength · ${c.type} · OJO read</div></div></div>
+    <div class="pa-ins">${ojoInsightsCard(ctInsights(c),'contact')}</div></div>`;}
+function ctBody(){const c=curCt();
+  const head=`<div class="lead-head"><div class="lh-id"><h1>${c.name}</h1>
+    <div class="byline"><span class="eav" style="background:${c.color};width:26px;height:26px;font-size:10px">${c.av}</span> ${ctBadge(c.type)} <span class="dotsep">·</span> <b>${c.org}</b>${c.role?` <span class="dotsep">·</span> ${c.role}`:''} <span class="dotsep">·</span> added ${c.added}</div></div></div>`;
+  if(ctTab==='Details'){const lnk=(u,lbl)=>u?`<a class="vlink" onclick="toast('Open ${u} (demo)')">${lbl||u} ↗</a>`:'—';
+    const blk=(h,rows)=>`<div class="pd-block"><div class="pd-h">${h}</div><div class="pd-grid">${rows.map(([k,x])=>`<div class="pd-cell"><div class="pd-k">${k}</div><div class="pd-v">${x}</div></div>`).join('')}</div></div>`;
+    return head+`<div class="pdetails" style="padding:6px 0 30px">${blk('Basic details',[['Full name',c.name],['Company',c.org],['Type',ctBadge(c.type)]])}${blk('Contact details',[['Contact number',c.phone],['Work email',c.email||'—'],['LinkedIn',lnk(c.li,'Profile')],['Website',lnk(c.site)],['Address',c.addr||'—']])}${blk('Job details',[['Job title',c.role||'—'],['Department',c.dept||'—']])}${blk('Source',[['Source',c.src],['Added by',c.by],['Added on',c.added]])}</div>`;}
+  if(ctTab==='Notes')return head+`<div class="rec-block" style="margin-top:6px"><div class="rec-block-h">Notes</div><div class="free notes-free" contenteditable="true" data-ph="Write a note about ${c.name}…"></div></div>`;
+  const ln=ctLinkName(c);
+  return head+ctTopInsights(c)+`<div class="bgrid" style="margin-top:18px">
+    <div class="bsec"><div class="bsec-h">Reach them</div><div class="bcard">
+      <div class="wkv"><span class="k">Contact</span><span class="v">${c.name}${pcommMini(c.name)}</span></div>
+      <div class="wkv"><span class="k">Phone</span><span class="v">${c.phone}</span></div>
+      <div class="wkv"><span class="k">Email</span><span class="v" style="font-weight:500;font-size:13px">${c.email||'—'}</span></div>
+      <div class="wkv"><span class="k">LinkedIn</span><span class="v">${c.li?`<a class="vlink" onclick="toast('Open ${c.li} (demo)')">Profile ↗</a>`:'—'}</span></div>
+      <div class="wkv"><span class="k">Address</span><span class="v">${c.addr||'—'}</span></div></div></div>
+    <div class="bsec"><div class="bsec-h">Network &amp; business</div><div class="bcard">
+      <div class="wkv"><span class="k">Organisation</span><span class="v">${c.org&&c.org!=='—'?`<a class="vlink" onclick="orgOpen('${c.org.replace(/'/g,"\\'")}')">${c.org} ↗</a>`:c.org}</span></div>
+      <div class="wkv"><span class="k">Linked record</span><span class="v">${ln?`<a class="vlink" onclick="ctOpenLink('${c.id}')">${ln[0]} ↗</a>`:'—'}</span></div>
+      <div class="wkv"><span class="k">${ln?'Signal':'Put to work'}</span><span class="v">${ln?ln[1]:`<a class="vlink" onclick="toast('New lead from contact (demo)')">Start a lead</a>`}</span></div>
+      <div class="wkv"><span class="k">Source</span><span class="v">${c.src} · ${c.by}</span></div></div></div></div>`;}
+function ctActivity(c){const items=[];const ln=ctLinkName(c);
+  if(ln)items.push(['#2F6FED','msg','Jun 8',c.name.split(' ')[0],'active on',ln[0].split(' — ')[1]]);
+  items.push(['#15A06A','done',c.added,c.by,'added the contact',c.name]);
+  if(c.src==='Referral')items.push(['#7C53E6','msg',c.added,'OJO','tagged the source as',c.src]);
+  return actRowsHTML(items,`<div class="more"><span class="av">${c.av}</span>${c.name}'s history</div>`);}
+function ctInfo(){return `<div class="ip"><div class="ip-actonly">${ctActivity(curCt())}</div></div>`;}
+function commContactContent(f){const c=curCt();return f==='info'?ctInfo():commChannel(f,c?c.name:'this contact');}
+function ctOpen(id){ctRec=id;ctTab='Overview';ctColl=true;ctFace='info';mountContact();}
+function ctNav(dir){const i=CONTACTS.findIndex(x=>x.id===ctRec);if(i<0)return;ctRec=CONTACTS[(i+dir+CONTACTS.length)%CONTACTS.length].id;xpClose();mountContact();}
+function ctSetTab(t){ctTab=t;const b=document.getElementById('ctinner');if(b)b.innerHTML=ctBody();
+  document.querySelectorAll('#ctbox .viewbar .vtab').forEach(x=>x.classList.toggle('on',x.textContent.trim()===t));
+  const cr=document.getElementById('ctCrumbTab');if(cr)cr.textContent=t;}
+function ctToggle(){ctColl=!ctColl;document.getElementById('ctbox').classList.toggle('collapsed',ctColl);
+  const b=document.getElementById('ctPtogBtn');if(b){b.classList.toggle('on',!ctColl);b.title=ctColl?'Show activity':'Hide activity';}}
+function mountContact(){const c=curCt();
+  document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dside"><div class="dnav"><button class="dctl" onclick="ctNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="ctNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div>
+   <div class="dbox ${ctColl?'collapsed':''}" id="ctbox"><div class="dmain">
+    <div class="dtop"><div class="crumbs"><a onclick="go('contacts')">Contacts</a> <span class="sep">‹</span> <span id="ctCrumbTab">${ctTab}</span></div><div class="sp"></div>
+      <div class="commpill">${[['call','Call'],['email','Email'],['chat','Message']].map(([f,l])=>`<button title="${l} ${c.name}" onclick="openComm('${f}')">${faceIcon(f)}</button>`).join('')}</div>
+      <button class="ptog-ic ${ctColl?'':'on'}" id="ctPtogBtn" onclick="ctToggle()" title="Show activity">${svg('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',17)}</button>
+      <button class="mtool hdr-x" onclick="go('contacts')" title="Close">${svg(SVS.x,18)}</button></div>
+    <div class="viewbar">${['Overview','Details','Notes'].map(x=>`<button class="vtab ${x===ctTab?'on':''}" onclick="ctSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[CTTABICON[x]],14)}</span>${x}</button>`).join('')}</div>
+    <div class="dcenter"><div class="inner" id="ctinner">${ctBody()}</div></div></div>
+   <aside class="dpanel"><div class="dpanel-head"><span class="nm">Recent activity</span></div><div class="dpanel-body">${ctInfo()}</div></aside></div></div>`;
+  commSetHost({getFace:()=>ctFace,setFace:f=>{ctFace=f;},content:commContactContent});}
+
+/* ---- ORGANISATION page — what an org link opens. Derived entirely from existing cells:
+   its contacts = Team, its leads = Deals, its vendor record = Projects + score. ---- */
+let orgRec=null,orgTab='Overview',orgColl=true;
+function orgList(){return [...new Set(CONTACTS.map(c=>c.org).filter(o=>o&&o!=='—'))];}
+function orgData(name){
+  const people=CONTACTS.filter(c=>c.org===name);
+  const v=VENDORS.find(x=>x.name===name);
+  const deals=leads.filter(l=>l.co===name);
+  const f=people[0]||{};
+  return {name,people,v,deals,projects:v?(v.projects||[]):[],
+    type:v?'Vendor':(f.type||'Client'),
+    email:f.email||(v?v.email:'—'),site:(v?v.site:f.site)||'',li:(v?v.li:f.li)||'',
+    industry:v?v.type:(f.ind&&f.ind!=='—'?f.ind:(deals.length?'Services':'—')),loc:(v?v.loc:f.addr)||'—',
+    src:f.src||'Direct',by:f.by||'Vinoth V V',added:f.added||'—',
+    av:name.replace(/[^A-Za-z ]/g,'').split(' ').filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase()||'O',color:f.color||'#E08A1E'};}
+function orgEmpty(ic,t){return `<div class="org-empty">${svg(ic,22)}<span>${t}</span></div>`;}
+function orgBody(){const o=orgData(orgRec);
+  const head=`<div class="lead-head"><div class="lh-id"><h1>${o.name}</h1>
+    <div class="byline"><span class="eav" style="background:${o.color};width:26px;height:26px;font-size:10px">${o.av}</span> ${ctBadge(o.type)} <span class="dotsep">·</span> <span style="color:var(--ok);font-weight:700">Active</span> <span class="dotsep">·</span> ${o.people.length} contact${o.people.length===1?'':'s'}${o.loc!=='—'?` <span class="dotsep">·</span> ${o.loc}`:''}</div></div></div>`;
+  if(orgTab==='Notes')return head+`<div class="rec-block" style="margin-top:6px"><div class="rec-block-h">Notes</div><div class="free notes-free" contenteditable="true" data-ph="Write a note about ${o.name}…"></div></div>`;
+  return head+`<div class="bgrid" style="margin-top:14px">
+    <div class="bsec"><div class="bsec-h">Organisation</div><div class="bcard">
+      <div class="wkv"><span class="k">Industry</span><span class="v">${o.industry}</span></div>
+      <div class="wkv"><span class="k">Location</span><span class="v">${o.loc}</span></div>
+      <div class="wkv"><span class="k">Email</span><span class="v" style="font-weight:500;font-size:13px">${o.email}</span></div>
+      <div class="wkv"><span class="k">Website</span><span class="v">${o.site?`<a class="vlink" onclick="toast('Open ${o.site} (demo)')">${o.site} ↗</a>`:'—'}</span></div>
+      <div class="wkv"><span class="k">LinkedIn</span><span class="v">${o.li?`<a class="vlink" onclick="toast('Open LinkedIn (demo)')">Company page ↗</a>`:'—'}</span></div>
+      ${o.v?`<div class="wkv"><span class="k">OJO vendor score</span><span class="v">${vnScorePill(vnScore(o.v).pct)} <a class="vlink" onclick="vnOpen('${o.v.id}')" style="margin-left:8px">Vendor record ↗</a></span></div>`:''}</div></div>
+    <div class="bsec"><div class="bsec-h">Team</div><div class="bcard">
+      ${o.people.map(c=>`<div class="wkv" style="cursor:pointer" onclick="ctOpen('${c.id}')"><span class="k" style="color:var(--ink);font-weight:600"><span class="owncell"><span class="eav" style="background:${c.color};width:24px;height:24px;font-size:9px">${c.av}</span>${c.name}</span></span><span class="v">${ctBadge(c.type)}</span></div>`).join('')||orgEmpty('<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/>','No people yet')}
+      <div class="wkv"><span class="k"></span><span class="v"><a class="vlink" onclick="toast('Add a person (demo)')">＋ Add person</a></span></div></div></div>
+    <div class="bsec"><div class="bsec-h">Deals</div><div class="bcard">
+      ${o.deals.length?o.deals.map(l=>`<div class="wkv" style="cursor:pointer" onclick="openDetail('lead','${l.id}')"><span class="k" style="color:var(--ink);font-weight:600">${l.nm} · ${l.st}</span><span class="v">${fmt(l.val)}</span></div>`).join(''):orgEmpty('<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>','No deals yet')}
+      ${o.deals.length?'':`<div class="wkv"><span class="k"></span><span class="v"><a class="vlink" onclick="toast('New lead for ${o.name} (demo)')">Start a lead</a></span></div>`}</div></div>
+    <div class="bsec"><div class="bsec-h">Projects</div><div class="bcard">
+      ${o.projects.length?o.projects.map(p=>`<div class="wkv" style="cursor:pointer" onclick="vnOpenTab('${o.v.id}','Projects')"><span class="k" style="color:var(--ink);font-weight:600">${p.name}</span><span class="v">${vnScorePill(p.score)}</span></div>`).join(''):orgEmpty('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/>','No projects yet')}</div></div>
+    <div class="bsec"><div class="bsec-h">Source</div><div class="bcard">
+      <div class="wkv"><span class="k">Source</span><span class="v">${o.src}</span></div>
+      <div class="wkv"><span class="k">Added by</span><span class="v">${o.by}</span></div>
+      <div class="wkv"><span class="k">Added on</span><span class="v">${o.added}</span></div></div></div></div>`;}
+function orgActivity(o){const items=[];
+  if(o.deals.length)items.push(['#2F6FED','msg','Jun 8',o.deals[0].nm,'moved to',o.deals[0].st]);
+  if(o.v)items.push(['#15A06A','done','Jun 8',o.v.owner,'approved a bill from',o.name]);
+  items.push(['#7C53E6','msg',o.added,o.by,'added the organisation',o.name]);
+  return actRowsHTML(items,`<div class="more"><span class="av">${o.av}</span>${o.name}'s history</div>`);}
+function orgInfo(){return `<div class="ip"><div class="ip-actonly">${orgActivity(orgData(orgRec))}</div></div>`;}
+function orgOpen(name){orgRec=name;orgTab='Overview';orgColl=true;mountOrg();}
+function orgNav(dir){const l=orgList();const i=l.indexOf(orgRec);orgRec=l[(i+dir+l.length)%l.length];xpClose();mountOrg();}
+function orgSetTab(t){orgTab=t;const b=document.getElementById('orginner');if(b)b.innerHTML=orgBody();
+  document.querySelectorAll('#orgbox .viewbar .vtab').forEach(x=>x.classList.toggle('on',x.textContent.trim()===t));
+  const cr=document.getElementById('orgCrumbTab');if(cr)cr.textContent=t;}
+function orgToggle(){orgColl=!orgColl;document.getElementById('orgbox').classList.toggle('collapsed',orgColl);
+  const b=document.getElementById('orgPtogBtn');if(b){b.classList.toggle('on',!orgColl);b.title=orgColl?'Show activity':'Hide activity';}}
+function mountOrg(){const o=orgData(orgRec);
+  document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dside"><div class="dnav"><button class="dctl" onclick="orgNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="orgNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div>
+   <div class="dbox ${orgColl?'collapsed':''}" id="orgbox"><div class="dmain">
+    <div class="dtop"><div class="crumbs"><a onclick="go('contacts')">Contacts</a> <span class="sep">‹</span> <span id="orgCrumbTab">${orgTab}</span></div><div class="sp"></div>
+      <div class="commpill">${[['call','Call'],['email','Email'],['chat','Message']].map(([f,l])=>`<button title="${l} ${o.name}" onclick="openComm('${f}')">${faceIcon(f)}</button>`).join('')}</div>
+      <button class="ptog-ic ${orgColl?'':'on'}" id="orgPtogBtn" onclick="orgToggle()" title="Show activity">${svg('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',17)}</button>
+      <button class="mtool hdr-x" onclick="go('contacts')" title="Close">${svg(SVS.x,18)}</button></div>
+    <div class="viewbar">${['Overview','Notes'].map(x=>`<button class="vtab ${x===orgTab?'on':''}" onclick="orgSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[x==='Overview'?'star':'notes'],14)}</span>${x}</button>`).join('')}</div>
+    <div class="dcenter"><div class="inner" id="orginner">${orgBody()}</div></div></div>
+   <aside class="dpanel"><div class="dpanel-head"><span class="nm">Recent activity</span></div><div class="dpanel-body">${orgInfo()}</div></aside></div></div>`;
+  commSetHost({getFace:()=>'info',setFace:()=>{},content:f=>f==='info'?orgInfo():commChannel(f,o.people[0]?o.people[0].name:o.name)});}
 
 /* ============ START ============ */
 /* ============ ACCOUNTS MODULE (cell-style, sub-nav like HR) ============ */

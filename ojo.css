@@ -213,6 +213,32 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 .pchip:hover{background:var(--surface-2);color:var(--ink)}
 .pchip svg{color:var(--faint);flex:0 0 auto}
 .pchip.sel{cursor:pointer}
+/* link chips (vendor head: website / LinkedIn / portfolio from onboarding) */
+.pchip.lnk{cursor:pointer;border:none;background:none;font:inherit}
+.pchip.lnk:hover{background:var(--surface-2);color:var(--navy)}
+/* onboarding data chips inside cards & details (services · engagement model) */
+.wlbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);margin:4px 0 8px}
+.vchips{display:flex;flex-wrap:wrap;gap:6px}
+.vchip{display:inline-block;font-size:12px;font-weight:600;color:var(--ink);background:var(--surface-2);border:1px solid var(--line-2);border-radius:999px;padding:4px 11px;line-height:1.4}
+.vchip.alt{color:var(--coral-ink);background:var(--coral-soft);border-color:var(--coral-line)}
+.vchip.sm{font-size:11px;padding:2px 8px}
+.vchip.sm.more{color:var(--faint);background:transparent}
+/* contact type badge (Client/Vendor/Employee/Freelance/Other) */
+.ctbadge{display:inline-block;font-size:11.5px;font-weight:700;border-radius:999px;padding:3px 10px;line-height:1.4}
+/* organisation page empty states (deals / projects / people) */
+.org-empty{display:flex;flex-direction:column;align-items:center;gap:8px;padding:26px 0 18px;color:var(--faint);font-size:13px}
+.org-empty svg{color:var(--ghost)}
+.vlink{color:var(--info);font-weight:600;cursor:pointer;font-size:13px}
+.vlink:hover{text-decoration:underline}
+/* vendor documents — card treatment (contracts, certificates, rate cards, portfolio) */
+.vdocs{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.vdoc{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--line-2);border-radius:12px;padding:12px 14px;cursor:pointer;box-shadow:var(--sh-xs);transition:.12s;min-width:0}
+.vdoc:hover{border-color:var(--line-3);box-shadow:var(--sh-sm)}
+.vdoc .fi{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:#fff;font-size:9.5px;font-weight:700;flex:0 0 34px}
+.vdoc .dt{font-weight:700;color:var(--navy);font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vdoc .dd{font-size:11.5px;color:var(--faint);margin-top:1px}
+.vdoc.add{justify-content:center;border-style:dashed;color:var(--muted);font-weight:600;font-size:13px;box-shadow:none;gap:7px;min-height:58px}
+.vdoc.add:hover{color:var(--coral-ink);border-color:var(--coral-line)}
 .pchip.sel select{appearance:none;-webkit-appearance:none;border:none;background:none;font:inherit;color:inherit;cursor:pointer;outline:none}
 .pcomm{display:inline-flex;gap:3px;margin-left:8px;vertical-align:middle}
 .pcomm button{width:24px;height:24px;display:grid;place-items:center;border-radius:50%;color:var(--muted);background:var(--surface-2);transition:.14s}
