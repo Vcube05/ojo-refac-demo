@@ -1265,7 +1265,8 @@ function curColl(){return COLL[coll];}function curRec(){return curColl().data().
 function mountColl(key){coll=key;collRec=null;collView='Table';const c=COLL[key];
   const vtabs=[['All '+c.name,'star',"collV('Table')"],['By Status','Board',"collV('Board')"],['List','List',"collV('List')"]];
   const active=collView==='Table'?'All '+c.name:collView==='Board'?'By Status':'List';
-  document.getElementById('modcontent').innerHTML=`<div class="box"><div class="mc-top"><div class="title-wrap"><div class="picon">${svg(c.icon,20)}</div><div><h1>${c.name}</h1><div class="sub">${c.sub}</div></div></div><div class="sp"></div><span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span><div class="newbtn"><button class="a" onclick="toast('New ${c.sing}')">New</button><span class="b">${svg(SVS.caret,11)}</span></div></div>
+  const findBtn=key==='vendor'?`<button class="ojofind" onclick="vnReqSvcs=[];vnReqBudget='';vnFindPartner()">${svg(SPARK,13)} Find a partner</button>`:'';
+  document.getElementById('modcontent').innerHTML=`<div class="box"><div class="mc-top"><div class="title-wrap"><div class="picon">${svg(c.icon,20)}</div><div><h1>${c.name}</h1><div class="sub">${c.sub}</div></div></div><div class="sp"></div><span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span>${findBtn}<div class="newbtn"><button class="a" onclick="toast('New ${c.sing}')">New</button><span class="b">${svg(SVS.caret,11)}</span></div></div>
    ${listVTabs(vtabs,active)}
    <div id="metricsBar" class="metrics" style="padding-left:22px;padding-right:22px">${metricsInner(c.metricCtx)}</div>
    <div class="work" id="work" style="padding:14px 22px 40px"></div></div>`;
@@ -1461,6 +1462,48 @@ function vnModPage(p){curRoute='vendor';setRail('navVendors');renderShell('vendo
     html=pageBox('Invoices','Bills raised by your partners','<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/>',
       `<table><thead><tr><th>Bill ID</th><th>Vendor</th><th>Reference</th><th class="num">Amount</th><th>Due</th><th>Status</th></tr></thead><tbody>${rows.map(({b,v})=>`<tr onclick="vnOpenTab('${v.id}','Bills')"><td><b style="color:var(--navy)">${b.id}</b></td><td>${vnVendCell(v)}</td><td class="co">${b.ref}</td><td class="num">${fmt(b.amount)}</td><td class="co">${b.due}</td><td>${vnStatusPill(b.status)}</td></tr>`).join('')}</tbody></table>`);}
   document.getElementById('modcontent').innerHTML=html;syncGenie();}
+/* ---- OJO partner shortlist: rank vendors by service match + track record for a brief/RFQ ---- */
+let vnReqSvcs=[],vnReqBudget='';
+function vnAllServices(){return [...new Set(VENDORS.flatMap(v=>v.services))];}
+function vnAvgBud(v){const b=(v.projects||[]).map(p=>p.bud);return b.length?Math.round(b.reduce((a,c)=>a+c,0)/b.length):null;}
+/* fit = service match (the biggest lever) + OJO score + on-time delivery; budget is a soft flag */
+function vnFit(v){const need=vnReqSvcs,sc=vnScore(v);
+  const matched=v.services.filter(s=>need.includes(s)),missing=need.filter(s=>!v.services.includes(s));
+  const matchPct=need.length?matched.length/need.length:1;
+  const fit=Math.round(matchPct*55+(sc.pct/100)*30+(sc.onTime/100)*15);
+  const bud=vnAvgBud(v),budN=parseInt((vnReqBudget||'').replace(/\D/g,''))||0;
+  const inBudget=budN&&bud!=null?bud<=budN*1.1:null;
+  return {v,sc,matched,missing,matchPct,fit,bud,inBudget};}
+function vnShortRank(){return VENDORS.map(vnFit).sort((a,b)=>b.fit-a.fit||b.sc.pct-a.sc.pct);}
+function vnReqToggle(s){vnReqSvcs.includes(s)?vnReqSvcs=vnReqSvcs.filter(x=>x!==s):vnReqSvcs.push(s);vnShortRender();}
+function vnReqBudgetSet(val){vnReqBudget=val;vnShortRender();}
+function vnFindPartner(){curRoute='vendor';setRail('navVendors');renderShell('vendor','vnshort');document.getElementById('modcontent').innerHTML=vnShortPage();syncGenie();
+  const i=document.getElementById('vnReqBud');if(i)i.addEventListener('input',e=>{vnReqBudget=e.target.value;const r=document.getElementById('vnShortResults');if(r)r.innerHTML=vnShortResults();});}
+function vnShortRender(){const r=document.getElementById('vnShortResults');if(r)r.innerHTML=vnShortResults();document.querySelectorAll('#vnReqChips .reqchip').forEach(c=>c.classList.toggle('on',vnReqSvcs.includes(c.dataset.s)));}
+function vnShortPage(){const all=vnAllServices();
+  return `<div class="box"><div class="mc-top"><div class="title-wrap"><div class="picon">${svg('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',20)}</div><div><h1>Find a partner</h1><div class="sub">OJO ranks your partners by fit for a brief</div></div></div><div class="sp"></div><button class="manual" onclick="go('vendor')">${svg(SVS.arrow,15)} All vendors</button></div>
+   <div style="padding:6px 26px 40px">
+    <div class="reqcard"><div class="reqh">${svg(SPARK,13)} What do you need?</div>
+      <div class="reqlbl">Services required</div>
+      <div class="reqchips" id="vnReqChips">${all.map(s=>`<button class="reqchip ${vnReqSvcs.includes(s)?'on':''}" data-s="${s}" onclick="vnReqToggle('${s.replace(/'/g,"\\'")}')">${s}</button>`).join('')}</div>
+      <div class="reqlbl" style="margin-top:14px">Budget (optional)</div>
+      <div class="reqbud"><span>₹</span><input id="vnReqBud" value="${vnReqBudget}" placeholder="e.g. 80000" inputmode="numeric"></div>
+    </div>
+    <div id="vnShortResults">${vnShortResults()}</div>
+   </div></div>`;}
+function vnShortResults(){const ranked=vnShortRank(),need=vnReqSvcs;
+  const top=ranked[0];
+  const rec=need.length?`<div class="plrec">${svg(SPARK,14)} <span><b>OJO recommends ${top.v.name}</b> — ${top.matched.length===need.length?`matches all ${need.length} required service${need.length>1?'s':''}`:`matches ${top.matched.length} of ${need.length} services`}, ${top.sc.pct}% OJO score${top.inBudget?', within budget':''}.</span></div>`
+    :`<div class="plrec subtle">${svg(SPARK,14)} <span>Pick the services you need above and OJO will rank the best-fit partners. Showing all by OJO score.</span></div>`;
+  return rec+`<div class="plwrap">${ranked.map((r,i)=>{const t=scoreColors(r.fit);
+    const chips=need.length?`${r.matched.map(s=>`<span class="vchip sm">${s}</span>`).join('')}${r.missing.map(s=>`<span class="vchip sm miss">${s}</span>`).join('')}`:r.v.services.slice(0,3).map(s=>`<span class="vchip sm">${s}</span>`).join('');
+    return `<div class="plrow ${i===0&&need.length?'top':''}" onclick="vnOpen('${r.v.id}')">
+      <span class="plrank">${i+1}</span>
+      <span class="eav" style="background:${r.v.color};width:34px;height:34px;font-size:11px;flex:0 0 34px">${r.v.av}</span>
+      <div class="plmeta"><div class="plname">${r.v.name}</div><div class="plsub">${r.v.type} · ${r.sc.onTime}% on-time · ${r.v.engage.join(' · ')}${r.inBudget===true?' · <span style="color:var(--ok);font-weight:600">within budget</span>':r.inBudget===false?' · <span style="color:var(--warn);font-weight:600">over budget</span>':''}</div><div class="plchips">${chips}</div></div>
+      <div class="plfit"><div class="pf" style="color:${t[1]}">${r.fit}%</div><div class="pl">fit</div></div>
+      <div class="plfit" style="min-width:54px"><div class="pf" style="font-size:14px;color:var(--navy)">${r.sc.pct}%</div><div class="pl">OJO</div></div>
+      ${svg('<path d="M9 18l6-6-6-6"/>',16)}</div>`;}).join('')}</div>`;}
 function mountVendor(){const v=curVn();
   document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dside"><div class="dnav"><button class="dctl" onclick="vnNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="vnNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div>
    <div class="dbox ${vnColl?'collapsed':''}" id="vnbox"><div class="dmain">

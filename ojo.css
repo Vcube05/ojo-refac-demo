@@ -228,6 +228,34 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 /* organisation page empty states (deals / projects / people) */
 .org-empty{display:flex;flex-direction:column;align-items:center;gap:8px;padding:26px 0 18px;color:var(--faint);font-size:13px}
 .org-empty svg{color:var(--ghost)}
+/* OJO partner shortlist */
+.ojofind{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 14px;border-radius:999px;background:var(--coral-soft);color:var(--coral-ink);font-size:13px;font-weight:700;border:1px solid var(--coral-line);margin-right:8px}
+.ojofind:hover{filter:brightness(.98)}.ojofind svg{color:var(--coral)}
+.reqcard{background:var(--surface);border:1px solid var(--line-2);border-radius:16px;padding:18px 20px;margin-bottom:18px;max-width:920px}
+.reqh{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--navy);font-size:14.5px;margin-bottom:14px}.reqh svg{color:var(--coral)}
+.reqlbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);margin-bottom:9px}
+.reqchips{display:flex;flex-wrap:wrap;gap:8px}
+.reqchip{font-size:12.5px;font-weight:600;color:var(--ink);background:var(--surface-2);border:1px solid var(--line-2);border-radius:999px;padding:6px 13px;transition:.12s}
+.reqchip:hover{border-color:var(--line-3)}
+.reqchip.on{background:var(--coral-soft);color:var(--coral-ink);border-color:var(--coral-line)}
+.reqbud{display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line-2);border-radius:10px;padding:8px 13px;font-weight:600;color:var(--ink)}
+.reqbud input{border:none;outline:none;background:transparent;font:inherit;color:var(--ink);width:140px}
+.plrec{display:flex;align-items:flex-start;gap:9px;background:var(--coral-soft);border:1px solid var(--coral-line);border-radius:12px;padding:12px 15px;font-size:13.5px;color:var(--ink);line-height:1.5;max-width:920px;margin-bottom:14px}
+.plrec svg{color:var(--coral);flex:0 0 auto;margin-top:2px}.plrec b{color:var(--coral-ink)}
+.plrec.subtle{background:var(--surface-2);border-color:var(--line-2)}.plrec.subtle svg{color:var(--muted)}
+.plwrap{display:flex;flex-direction:column;gap:10px;max-width:920px}
+.plrow{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--line-2);border-radius:14px;padding:13px 16px;cursor:pointer;transition:.12s}
+.plrow:hover{border-color:var(--line-3);box-shadow:var(--sh-sm)}
+.plrow.top{border-color:var(--coral-line);box-shadow:0 0 0 2px var(--coral-soft)}
+.plrow>svg{color:var(--ghost);flex:0 0 auto}
+.plrank{width:26px;height:26px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-weight:800;font-size:12px;color:var(--muted);flex:0 0 26px}
+.plrow.top .plrank{background:var(--coral);color:#fff}
+.plmeta{flex:1;min-width:0}
+.plname{font-weight:700;color:var(--navy);font-size:14.5px}
+.plsub{font-size:12px;color:var(--faint);margin-top:2px}
+.plchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.plfit{text-align:center;flex:0 0 auto}.plfit .pf{font-size:18px;font-weight:800;line-height:1}.plfit .pl{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;margin-top:3px}
+.vchip.sm.miss{color:var(--faint);background:transparent;border-style:dashed;text-decoration:line-through}
 .vlink{color:var(--info);font-weight:600;cursor:pointer;font-size:13px}
 .vlink:hover{text-decoration:underline}
 /* vendor documents — card treatment (contracts, certificates, rate cards, portfolio) */
