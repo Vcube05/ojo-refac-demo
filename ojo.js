@@ -1280,23 +1280,67 @@ function collTable(c,rows){return `<div class="tablewrap"><table><thead><tr>${c.
 function collBoard(c,rows){return `<div class="board color">`+c.statuses.map(s=>{const items=rows.filter(r=>r.status===s[0]);return `<div class="col"><div class="col-head" style="--cc:${s[1]}"><span class="pill"><span class="dot"></span>${s[0]}</span><span class="ct">${items.length}</span></div><div class="col-body">${items.map(r=>`<div class="card" onclick="collOpen('${r.id}')"><div class="nm">${r.name}</div><div class="by">${r.type} · ${r.owner}</div><div class="foot"><span class="val">${fmt(r.balance)}</span><span class="eav" style="background:${r.color};width:23px;height:23px;font-size:9px;margin-left:auto">${r.av}</span></div></div>`).join('')||'<div class="col-empty">None</div>'}</div></div>`;}).join('')+`</div>`;}
 function collList(c,rows){const gs=[...new Set(rows.map(r=>r.type))];return gs.map(g=>{const items=rows.filter(r=>r.type===g);return `<div class="lg"><div class="lg-head"><span class="pill">${g}</span><span class="ct">${items.length}</span></div>${items.map(r=>`<div class="lrow" onclick="collOpen('${r.id}')"><span class="eav" style="background:${r.color};width:26px;height:26px;font-size:10px">${r.av}</span><span class="nm">${r.name}</span><span class="co">${r.owner} · ${r.terms}</span><span class="val">${fmt(r.balance)}</span></div>`).join('')}</div>`;}).join('');}
 function collOpen(id){if(coll==='vendor'){vnOpen(id);return;}collRec=id;collTab='Overview';collColl=true;mountCollRecord();}
-function mountCollRecord(){const c=curColl(),r=curRec();collFace='info';
-  document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dside"><button class="dctl x" onclick="collClose()" title="Close">${svg(SVS.x,19)}</button><div class="dnav"><button class="dctl" onclick="collNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="collNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div><div class="dbox ${collColl?'collapsed':''}" id="cbox"><div class="dmain">
-     <div class="crumbbar"><a onclick="go('${coll}')">${c.name}</a> <span class="sep">‹</span> <b>${r.name}</b></div>
-     <div class="mc-top"><div class="title-wrap"><span class="eav" style="background:${r.color};width:38px;height:38px;font-size:14px">${r.av}</span><div><h1>${r.name}</h1><div class="sub">${r.type} · ${r.status}</div></div></div><div class="sp"></div><button class="paneltoggle" onclick="collTogglePanel()"><span id="cPtog">${collColl?'Show info':'Hide info'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></div>
-     <div class="emp-tabs">${c.tabs.map(t=>`<button class="vtab ${t===collTab?'on':''}" onclick="collSetTab('${t}')">${t}</button>`).join('')}</div>
-     <div class="dcenter"><div class="inner" id="cinner">${collBody(c,r)}</div></div></div>
-   <aside class="dpanel" id="cpanel"><div class="dpanel-head"><span class="nm">${r.name}</span><button class="ed" onclick="xpOpenFrom(this)" title="Expand">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button><button class="ed" style="margin-left:6px">${svg(SVS.pencil,15)}</button></div><div class="dpanel-body">${collPanel(c,r)}</div></aside></div></div>`;
+/* Account = a customer you bill. Health read from receivables: utilization + overdue. */
+const ACCTABS=['Overview','Transactions','Details','Notes'];
+const ACCTABICON={Overview:'star',Transactions:'Table',Details:'Details',Notes:'notes'};
+function acctRecScore(a){const util=a.limit?Math.min(100,Math.round(a.balance/a.limit*100)):0;
+  let s=a.status==='Overdue'?42:a.status==='Closed'?72:88-Math.round(util*0.25);return Math.max(20,Math.min(96,s));}
+function acctTxnPill(s){const c={Paid:'var(--ok)',Overdue:'var(--coral-ink)',Sent:'var(--info)',Draft:'#9A6B12'}[s]||'var(--muted)';return `<span style="color:${c};font-weight:600">${s}</span>`;}
+function acctTxns(a){const sd=parseInt(a.id.replace(/\D/g,''))||1;
+  return [{id:'INV-26-0'+sd+'2',date:'02 Jun 2026',amt:a.balance||50000,status:a.status==='Overdue'?'Overdue':a.balance?'Sent':'Paid'},
+          {id:'PMT-26-0'+sd+'1',date:'18 May 2026',amt:60000+sd*15000,status:'Paid'},
+          {id:'INV-26-0'+sd+'0',date:'04 May 2026',amt:40000+sd*9000,status:'Paid'}];}
+function acctRecInsights(a){const util=a.limit?Math.round(a.balance/a.limit*100):0;const out=[];
+  out.push(['next',a.status==='Overdue'?`<b>Next best action.</b> ${fmt(a.balance)} is past due — <a onclick="toast('Send reminder (demo)')">send a payment reminder</a> to ${a.name.split(' ')[0]}.`:a.balance?`<b>Next best action.</b> ${fmt(a.balance)} outstanding on ${a.terms} — on track; ${a.owner} owns the relationship.`:`<b>Next best action.</b> No open balance — a good moment to pitch the next engagement.`]);
+  out.push(['cash',`<b>${fmt(a.balance)} receivable.</b> ${a.limit?`${util}% of the ${fmt(a.limit)} credit limit used.`:'No credit limit set.'}`]);
+  out.push([util>=80?'flame':'clock',`<b>${a.terms} terms · ${a.status}.</b> ${util>=80?'Near the credit limit — review before extending more.':'Healthy utilisation.'}`]);
+  return out;}
+function acctTopInsights(a){const sc=acctRecScore(a),t=scoreColors(sc),lbl=sc>=80?'Healthy':sc>=55?'Watch':'At risk';
+  return `<div class="proj-ai">
+    <div class="pa-score"><div class="pa-ring">${ring(sc,t[0],72)}<span class="pa-pct" style="color:${t[1]}">${sc}%</span></div><div class="pa-meta"><div class="pa-lbl" style="color:${t[1]}">${lbl}</div><div class="pa-sub">Account health · ${a.type} · OJO read</div></div></div>
+    <div class="pa-ins">${ojoInsightsCard(acctRecInsights(a),'account')}</div></div>`;}
+function mountCollRecord(){const c=curColl(),r=curRec();collFace='info';collColl=true;
+  document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dside"><div class="dnav"><button class="dctl" onclick="collNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="collNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div>
+   <div class="dbox ${collColl?'collapsed':''}" id="cbox"><div class="dmain">
+    <div class="dtop"><div class="crumbs"><a onclick="collBackTo()">${c.name}</a> <span class="sep">‹</span> <span id="cCrumbTab">${collTab}</span></div><div class="sp"></div>
+      <div class="commpill">${[['call','Call'],['email','Email'],['chat','Message']].map(([f,l])=>`<button title="${l} ${r.name}" onclick="openComm('${f}')">${faceIcon(f)}</button>`).join('')}</div>
+      <button class="ptog-ic ${collColl?'':'on'}" id="cPtogBtn" onclick="collToggle()" title="Show activity">${svg('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',17)}</button>
+      <button class="mtool hdr-x" onclick="collBackTo()" title="Close">${svg(SVS.x,18)}</button></div>
+    <div class="viewbar">${ACCTABS.map(x=>`<button class="vtab ${x===collTab?'on':''}" onclick="collSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[ACCTABICON[x]],14)}</span>${x}</button>`).join('')}</div>
+    <div class="dcenter"><div class="inner" id="cinner">${collBody(c,r)}</div></div></div>
+   <aside class="dpanel"><div class="dpanel-head"><span class="nm">Recent activity</span></div><div class="dpanel-body">${collInfo()}</div></aside></div></div>`;
   commSetHost({getFace:()=>collFace,setFace:collSetFace,content:commCollContent});}
-function collClose(){go(coll);}
+function collBackTo(){if(coll==='account'){curRoute='account';setRail('navAccounts');acctPage='customers';mountAccounts();return;}go(coll);}
+function collClose(){collBackTo();}
 function collNav(dir){const rows=curColl().data();const i=rows.findIndex(x=>x.id===collRec);if(i<0)return;const n=(i+dir+rows.length)%rows.length;collRec=rows[n].id;xpClose();mountCollRecord();}
-function collSetTab(t){collTab=t;document.getElementById('cinner').innerHTML=collBody(curColl(),curRec());document.querySelectorAll('.emp-tabs .vtab').forEach(b=>b.classList.toggle('on',b.textContent===t));}
-function collTogglePanel(){collColl=!collColl;document.getElementById('cbox').classList.toggle('collapsed',collColl);document.getElementById('cPtog').textContent=collColl?'Show info':'Hide info';}
-function collBody(c,r){if(collTab!=='Overview')return `<div class="emp-sec"><div class="emp-sec-h"><h3>${collTab}</h3></div><div class="muted2">No ${collTab.toLowerCase()} yet.</div></div>`;
-  return c.groups.map(g=>`<div class="emp-sec"><div class="emp-sec-h"><h3>${g[0]}</h3><button class="iconedit" onclick="toast('Edit ${g[0]}')">${svg(SVS.pencil,15)}</button></div><div class="fgrid">${g[1].map(f=>{let v=r[f[1]];if(f[2]==='money')v=fmt(v);return `<div class="fld"><div class="flk">${f[0]}</div><input class="flv" value="${v}"></div>`;}).join('')}</div></div>`).join('');}
-function collPanel(c,r){return `<div class="xipanel"><div class="xirow"><span class="k">Type</span><span class="v">${r.type}</span></div><div class="xirow"><span class="k">Status</span><span class="v" style="color:${stColor(r.status)}">${r.status}</span></div><div class="xirow"><span class="k">Owner</span><span class="v">${r.owner}</span></div></div>
-   <div class="xipanel"><div class="xirow"><span class="k">${c.balLabel}</span><span class="v">${fmt(r.balance)}</span></div><div class="xirow"><span class="k">Terms</span><span class="v">${r.terms}</span></div></div>
-   <div class="xigroup"><div class="gh">Contact ${chev2()}</div><div class="xipanel"><div class="xirow"><span class="k">Email</span><span class="v" style="font-size:13px">${r.email}</span></div><div class="xirow"><span class="k">Phone</span><span class="v">${r.phone}</span></div></div></div>`;}
+function collSetTab(t){collTab=t;const b=document.getElementById('cinner');if(b)b.innerHTML=collBody(curColl(),curRec());document.querySelectorAll('#cbox .viewbar .vtab').forEach(x=>x.classList.toggle('on',x.textContent.trim()===t));const cr=document.getElementById('cCrumbTab');if(cr)cr.textContent=t;}
+function collToggle(){collColl=!collColl;document.getElementById('cbox').classList.toggle('collapsed',collColl);const b=document.getElementById('cPtogBtn');if(b){b.classList.toggle('on',!collColl);b.title=collColl?'Show activity':'Hide activity';}}
+function collBody(c,r){
+  const head=`<div class="lead-head"><div class="lh-id"><h1>${r.name}</h1>
+    <div class="byline"><span class="eav" style="background:${r.color};width:26px;height:26px;font-size:10px">${r.av}</span> <b>${r.type}</b> <span class="dotsep">·</span> <span style="color:${stColor(r.status)};font-weight:700">${r.status}</span> <span class="dotsep">·</span> owner ${r.owner} <span class="dotsep">·</span> ${r.terms}</div></div></div>`;
+  if(collTab==='Transactions')return head+`<div class="tablewrap" style="margin-top:6px"><table><thead><tr><th>Reference</th><th>Date</th><th class="num">Amount</th><th>Status</th></tr></thead><tbody>${acctTxns(r).map(t=>`<tr onclick="toast('Open ${t.id} (demo)')"><td><b style="color:var(--navy)">${t.id}</b></td><td class="co">${t.date}</td><td class="num">${fmt(t.amt)}</td><td>${acctTxnPill(t.status)}</td></tr>`).join('')}</tbody></table></div>`;
+  if(collTab==='Details'){const blk=(h,rows)=>`<div class="pd-block"><div class="pd-h">${h}</div><div class="pd-grid">${rows.map(([k,x])=>`<div class="pd-cell"><div class="pd-k">${k}</div><div class="pd-v">${x}</div></div>`).join('')}</div></div>`;
+    return head+`<div class="pdetails" style="padding:6px 0 30px">${c.groups.map(g=>blk(g[0],g[1].map(f=>[f[0],f[2]==='money'?fmt(r[f[1]]):(f[1]==='status'?`<span style="color:${stColor(r[f[1]])}">${r[f[1]]}</span>`:r[f[1]])]))).join('')}</div>`;}
+  if(collTab==='Notes')return head+`<div class="rec-block" style="margin-top:6px"><div class="rec-block-h">Notes</div><div class="free notes-free" contenteditable="true" data-ph="Write a note about ${r.name}…"></div></div>`;
+  const util=r.limit?Math.round(r.balance/r.limit*100):0;
+  return head+acctTopInsights(r)+`<div class="bgrid" style="margin-top:18px">
+    <div class="bsec"><div class="bsec-h">Receivables</div><div class="bcard">
+      <div class="wkv"><span class="k">Outstanding</span><span class="v" style="color:${r.status==='Overdue'?'var(--coral-ink)':'var(--navy)'}">${fmt(r.balance)}</span></div>
+      <div class="wkv"><span class="k">Credit limit</span><span class="v">${fmt(r.limit)}</span></div>
+      <div class="wkv"><span class="k">Utilisation</span><span class="v">${util}%</span></div>
+      <div class="wkv"><span class="k">Terms</span><span class="v">${r.terms}</span></div>
+      <div class="wkv"><span class="k">Status</span><span class="v" style="color:${stColor(r.status)}">● ${r.status}</span></div></div></div>
+    <div class="bsec"><div class="bsec-h">Recent transactions</div><div class="bcard">
+      ${acctTxns(r).map(t=>`<div class="wkv"><span class="k" style="color:var(--ink);font-weight:600">${t.id}</span><span class="v">${fmt(t.amt)} <span style="margin-left:8px">${acctTxnPill(t.status)}</span></span></div>`).join('')}
+      <div class="wkv"><span class="k"></span><span class="v"><a class="vlink" onclick="collSetTab('Transactions')">View all →</a></span></div></div></div></div>`;}
+function collActivity(r){const items=[];
+  if(r.status==='Overdue')items.push(['#E08A1E','msg','Jun 8','OJO','flagged an overdue balance for',r.name]);
+  else if(r.balance)items.push(['#2F6FED','msg','Jun 8','OJO','tracked '+fmt(r.balance)+' receivable from',r.name]);
+  items.push(['#15A06A','done','18 May',r.owner,'recorded a payment from',r.name]);
+  items.push(['#7C53E6','msg','04 May',r.owner,'raised an invoice for',r.name]);
+  return actRowsHTML(items,`<div class="more"><span class="av">${r.av}</span>${r.name}'s history</div>`);}
+function collInfo(){const r=curRec();return r?`<div class="ip"><div class="ip-actonly">${collActivity(r)}</div></div>`:'';}
+function collPanel(c,r){return collInfo();}
 
 /* ============ VENDOR RECORD — the locked record system (header cluster · activity panel · flexible chart grid) ============ */
 let vnRec=null,vnTab='Overview',vnColl=true,vnFace='info';
@@ -1610,7 +1654,7 @@ function mountOrg(){const o=orgData(orgRec);
 
 /* ============ START ============ */
 /* ============ ACCOUNTS MODULE (cell-style, sub-nav like HR) ============ */
-const ACCNAV=[['tasks','Tasks'],['overview','Overview'],['accounting','Accounting'],['invoice','Invoice/Sales'],['bills','Bills/Purchase'],['payroll','Payroll'],['settings','Settings']];
+const ACCNAV=[['tasks','Tasks'],['overview','Overview'],['accounting','Accounting'],['invoice','Invoice/Sales'],['customers','Customers'],['bills','Bills/Purchase'],['payroll','Payroll'],['settings','Settings']];
 let acctPage='overview',acctTab='pl',acctDoc=null,acctNavCollapsed=false;
 const SELLER={name:'Reliance',email:'vinotham@gmail.com',phone:'9769033059',addr:'123, 7th cross, 8th street, 9th ring, Bengaluru, Karnataka, India',gstin:'29AJPPV9765B',bank:'sbi',acc:'23452435',ifsc:'ICIC0000359'};
 const inr=n=>'₹'+new Intl.NumberFormat('en-IN',{maximumFractionDigits:2}).format(n);
@@ -1654,7 +1698,18 @@ function acctBack(){acctDoc=null;renderAcct();}
 function renderAcct(){const el=document.getElementById('acctmain');if(!el)return;
   if(acctDoc){el.innerHTML=acctDetail();return;}
   const p=acctPage;
-  el.innerHTML=p==='overview'?acctOverview():p==='accounting'?acctAccounting():p==='invoice'?acctInvoice():p==='bills'?acctBills():p==='payroll'?acctPayroll():p==='settings'?acctSettings():acctTasks();}
+  el.innerHTML=p==='overview'?acctOverview():p==='accounting'?acctAccounting():p==='invoice'?acctInvoice():p==='customers'?acctCustomers():p==='bills'?acctBills():p==='payroll'?acctPayroll():p==='settings'?acctSettings():acctTasks();}
+/* Customers = the Accounts collection, in its natural home (finance). Same listing header as
+   every module; rows open the locked Account record (collOpen → mountCollRecord). */
+function acctCustomers(){coll='account';const c=COLL.account,rows=c.data();
+  const vtabs=[['All Customers','star',"acctCustV('Table')"],['By Status','Board',"acctCustV('Board')"],['List','List',"acctCustV('List')"]];
+  const active=collView==='Board'?'By Status':collView==='List'?'List':'All Customers';
+  const work=collView==='Board'?collBoard(c,rows):collView==='List'?collList(c,rows):collTable(c,rows);
+  return `<div class="mc-top"><div class="title-wrap"><div class="picon">${svg(c.icon,20)}</div><div><h1>Customers</h1><div class="sub">Who you bill · ${rows.length} accounts · receivables</div></div></div><div class="sp"></div><span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span><div class="newbtn"><button class="a" onclick="toast('New customer')">New</button><span class="b">${svg(SVS.caret,11)}</span></div></div>
+   ${listVTabs(vtabs,active)}
+   <div id="metricsBar" class="metrics" style="padding-left:0;padding-right:0">${metricsInner('accounts')}</div>
+   <div class="work" style="padding-top:8px">${work}</div>`;}
+function acctCustV(v){collView=v;renderAcct();}
 function acctTasks(){taskModule='account';taskScope='account';taskContainer='acctmain';return tasksListHTML('account');}
 /* ---- Overview: P&L / Balance Sheet ---- */
 function acctOverview(){const tab=acctTab||'pl';
