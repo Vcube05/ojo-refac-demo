@@ -128,6 +128,9 @@ function modTools(){return `<button class="mtool"><svg width="17" height="17" vi
       <button class="mtool"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></button>
       <button class="mtool" id="setBtn" onclick="toggleSettings(event)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></button>`;}
 function modNew(){return `<div class="newbtn"><button class="a" onclick="toast('New ${curMod==='leads'?'lead':curMod==='projdash'?'project':'task'}')">New</button><span class="b"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg></span></div>`;}
+/* canonical Leads-style view-tab row (★ first tab + add-view) — shared by every listing page
+   so all modules read identically: title·tools·New on top, ★tabs, then metrics, then content */
+function listVTabs(tabs,active,add){return `<div class="viewbar"><div style="display:flex;gap:5px">${tabs.map((t,i)=>`<button class="vtab ${t[0]===active?'on':''}" onclick="${t[2]}"><span class="${i===0?'star':''}">${svg(ICONS[t[1]]||ICONS.Table,15)}</span>${t[0]}</button>`).join('')}</div><button class="vadd" onclick="${add||"toast('Add a view — demo')"}">${svg(SVS.plus,15)}</button></div>`;}
 function modViewbar(){return `<div class="viewbar"><div id="vtabs" style="display:flex;gap:5px"></div>
       <button class="vadd" id="vaddBtn" onclick="toggleVMenu(event)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
       <div class="pop vmenu" id="vmenu"><div class="h">Add a new view</div><div class="vgrid" id="vgrid"></div>
@@ -987,14 +990,13 @@ function hrDirSetView(n){hrDirActive=n;renderHRPage();}
 function hrDirVMenu(e){e.stopPropagation();openPop('vmenu');}
 function hrDirAddView(t){hrDirViews.push([t,t,t]);hrDirActive=t;closePops();renderHRPage();toast(t+' view added');}
 function hrDirectory(){const t=hrDirType();
-  return `${pageHeader('Employee Directory','Everyone in your workspace','<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M21 20a5 5 0 0 0-4-4.9"/>')}
-   ${metricsBar('hrdir')}
-   <div class="viewbar" style="padding:8px 0 12px;margin-bottom:4px">
+  return `<div class="mc-top"><div class="title-wrap"><div class="picon">${svg('<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M21 20a5 5 0 0 0-4-4.9"/>',20)}</div><div><h1>Employee Directory</h1><div class="sub">Everyone in your workspace · ${EMP.length} people</div></div></div><div class="sp"></div><span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span><div class="newbtn"><button class="a" onclick="toast('New employee')">New</button><span class="b">${svg(SVS.caret,11)}</span></div></div>
+   <div class="viewbar">
      <div style="display:flex;gap:5px">${hrDirViews.map(v=>`<button class="vtab ${v[0]===hrDirActive?'on':''}" onclick="hrDirSetView('${v[0]}')"><span class="${v[1]==='star'?'star':''}">${svg(ICONS[v[1]]||ICONS.Table,15)}</span>${v[0]}</button>`).join('')}</div>
      <button class="vadd" id="vaddBtn" onclick="hrDirVMenu(event)">${svg(SVS.plus,15)}</button>
      <div class="pop vmenu" id="vmenu" style="left:0"><div class="h">Add a new view</div><div class="vgrid">${['Table','Board','List','Gallery','Calendar','Timeline','Chart','Feed','Map'].map(x=>`<button class="vitem" onclick="hrDirAddView('${x}')"><span class="ic">${svg(ICONS[x],22)}</span><span class="n">${x}</span></button>`).join('')}</div><button class="src"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/></svg>New data source</button></div>
-     <div style="margin-left:auto;display:flex;align-items:center;gap:8px"><div class="hsearch" style="max-width:240px">${svg(SVS.search,15)} Search employees</div>${hrTools()}<div class="newbtn"><button class="a" onclick="toast('New employee')">New Employee</button><span class="b">${svg(SVS.caret,11)}</span></div></div>
    </div>
+   <div id="metricsBar" class="metrics" style="padding-left:0;padding-right:0">${metricsInner('hrdir')}</div>
    ${t==='Board'?empBoard():t==='List'?empList():t==='Table'?empTable():placeholder(t)}`;}
 function empTable(){return `<div class="tablewrap"><table><thead><tr><th>Employee Code</th><th>Employee Name</th><th>Role</th><th>Department</th><th>Manager</th><th>Created on</th><th>Status</th></tr></thead><tbody>
    ${EMP.map(e=>`<tr onclick="hrOpenEmp('${e.code}')"><td>${e.code}</td><td><span class="owncell">${eav(e)}<b style="color:var(--navy)">${e.name}</b></span></td><td>${e.role}</td><td>${e.dept}</td><td>${e.mgr}</td><td class="co">${e.created}</td><td><span style="color:${EST[e.status]||'var(--muted)'};font-weight:600">${e.status}</span></td></tr>`).join('')}</tbody></table></div>`;}
@@ -1261,12 +1263,14 @@ const STC={Active:'var(--ok)',Overdue:'#9A6B12',Closed:'var(--muted)'};function 
 let coll=null,collView='Table',collRec=null,collTab='Overview',collColl=true;
 function curColl(){return COLL[coll];}function curRec(){return curColl().data().find(r=>r.id===collRec);}
 function mountColl(key){coll=key;collRec=null;collView='Table';const c=COLL[key];
+  const vtabs=[['All '+c.name,'star',"collV('Table')"],['By Status','Board',"collV('Board')"],['List','List',"collV('List')"]];
+  const active=collView==='Table'?'All '+c.name:collView==='Board'?'By Status':'List';
   document.getElementById('modcontent').innerHTML=`<div class="box"><div class="mc-top"><div class="title-wrap"><div class="picon">${svg(c.icon,20)}</div><div><h1>${c.name}</h1><div class="sub">${c.sub}</div></div></div><div class="sp"></div><span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span><div class="newbtn"><button class="a" onclick="toast('New ${c.sing}')">New</button><span class="b">${svg(SVS.caret,11)}</span></div></div>
-   <div class="viewbar"><div class="switch2" style="margin-left:2px"><button class="${collView==='Table'?'on':''}" onclick="collV('Table')">Table</button><button class="${collView==='Board'?'on':''}" onclick="collV('Board')">Board</button><button class="${collView==='List'?'on':''}" onclick="collV('List')">List</button></div></div>
-   <div style="padding:0 22px">${metricsBar(c.metricCtx)}</div>
+   ${listVTabs(vtabs,active)}
+   <div id="metricsBar" class="metrics" style="padding-left:22px;padding-right:22px">${metricsInner(c.metricCtx)}</div>
    <div class="work" id="work" style="padding:14px 22px 40px"></div></div>`;
   renderColl();}
-function collV(v){collView=v;renderColl();}
+function collV(v){collView=v;const lbl=v==='Table'?'All '+curColl().name:v==='Board'?'By Status':'List';document.querySelectorAll('#modcontent .viewbar .vtab').forEach(b=>b.classList.toggle('on',b.textContent.trim()===lbl));renderColl();}
 function renderColl(){const el=document.getElementById('work');if(!el)return;const c=curColl(),rows=c.data();el.innerHTML=collView==='Board'?collBoard(c,rows):collView==='List'?collList(c,rows):collTable(c,rows);}
 function collCell(r,col){const v=r[col[1]];if(col[2]==='money')return fmt(v);if(col[2]==='badge')return `<span style="color:${stColor(v)};font-weight:600">${v}</span>`;if(col[2]==='b')return `<span class="owncell"><span class="eav" style="background:${r.color};width:26px;height:26px;font-size:10px">${r.av}</span><b style="color:var(--navy)">${v}</b></span>`;
   if(col[2]==='chips')return `<span class="vchips">${(v||[]).slice(0,2).map(s=>`<span class="vchip sm">${s}</span>`).join('')}${(v||[]).length>2?`<span class="vchip sm more">+${v.length-2}</span>`:''}</span>`;
@@ -1445,9 +1449,11 @@ let ctFilter='All',ctRec=null,ctTab='Overview',ctColl=true,ctFace='info';
 function curCt(){return CONTACTS.find(x=>x.id===ctRec);}
 function ctBadge(t){const c=CTYPE[t]||CTYPE.Other;return `<span class="ctbadge" style="color:${c[0]};background:${c[1]}">${t}</span>`;}
 function mountContacts(){
-  document.getElementById('modcontent').innerHTML=`<div class="box"><div class="mc-top"><div class="title-wrap"><div class="picon">${svg('<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M17 14a6 6 0 0 1 4 6"/>',20)}</div><div><h1>Contacts</h1><div class="sub">Every person you do business with</div></div></div><div class="sp"></div>${modTools()}<div class="newbtn"><button class="a" onclick="ctAddOpen(event)">＋ Add contact</button></div></div>
-   <div class="viewbar"><div class="switch2" style="margin-left:2px">${['All','Client','Vendor','Employee','Freelance'].map(t=>`<button class="${ctFilter===t?'on':''}" onclick="ctFilterSet('${t}')">${t==='All'?'All':t+'s'}</button>`).join('')}</div></div>
-   <div style="padding:0 22px">${metricsBar('contacts')}</div>
+  const tabs=[['All','star',"ctFilterSet('All')"],['Clients','people',"ctFilterSet('Client')"],['Vendors','Board',"ctFilterSet('Vendor')"],['Employees','people',"ctFilterSet('Employee')"],['Freelances','List',"ctFilterSet('Freelance')"]];
+  const active=ctFilter==='All'?'All':ctFilter+'s';
+  document.getElementById('modcontent').innerHTML=`<div class="box"><div class="mc-top"><div class="title-wrap"><div class="picon">${svg('<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M17 14a6 6 0 0 1 4 6"/>',20)}</div><div><h1>Contacts</h1><div class="sub">Every person you do business with</div></div></div><div class="sp"></div><span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span><div class="newbtn"><button class="a" onclick="ctAddOpen(event)">New</button><span class="b" onclick="ctAddOpen(event)">${svg(SVS.caret,11)}</span></div></div>
+   ${listVTabs(tabs,active)}
+   <div id="metricsBar" class="metrics" style="padding-left:22px;padding-right:22px">${metricsInner('contacts')}</div>
    <div class="work" id="ctwork" style="padding:14px 22px 40px"></div></div>`;
   ctRenderList();}
 function ctFilterSet(t){ctFilter=t;mountContacts();}
