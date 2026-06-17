@@ -535,7 +535,7 @@ let detailFrom=null; /* set when a task record is cross-launched (Tasks module /
 function openDetail(type,id,from){const r=newRec(type,id);if(!r)return;rec=r;recMode='detail';detailFace='info';detailTab='Overview';detailCollapsed=true;detailFrom=from||null;trkReset();mountDetail();syncGenie();}
 function faceIcon(f){const m={info:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',chat:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',call:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',video:'<rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4z"/>',email:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>'};return svg(m[f],17);}
 function mountDetail(){const r=rec,isLead=r.type==='lead',e=r.ent;
-  const crumb=isLead?`<a onclick="go('leads')">Leads</a> <span class="sep">‹</span> ${detailTab}`
+  const crumb=isLead?`<a onclick="go('leads')">Leads</a> <span class="sep">‹</span> <a onclick="detailSetTab('Overview')">${e.co}</a> <span class="sep">‹</span> ${detailTab}`
     :`<a onclick="go('projectsDash')">Projects</a> <span class="sep">‹</span> <a onclick="go('project')">Apollo</a> <span class="sep">‹</span> ${e.ms} <span class="sep">‹</span> ${detailTab}`;
   const dside=`<div class="dside">
       <div class="dnav"><button class="dctl" onclick="detailNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="detailNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div>
@@ -709,8 +709,7 @@ function leadRecHTML(){const l=rec.ent;const own=l.asg?PEOPLE[l.asg]:null;
     :`<button class="ip-assign" onclick="toast('Assign owner')">${svg('<path d="M12 5v14M5 12h14"/>',12)} Assign</button>`;
   return `
   <div class="lead-head">
-    <div class="lh-id"><h1>${l.co}</h1>
-      <div class="byline"><span class="av" style="background:${own?own[1]:'#F04D56'}">${own?own[0]:'PN'}</span> <b>${l.nm}</b> <span class="dotsep">·</span> contact <span class="dotsep">·</span> added by Priya Nair</div></div>
+    <div class="lh-id"><h1>${l.co}</h1></div>
   </div>
   ${leadTopInsights(l)}
   <div class="sec"><div class="sec-h">Pipeline</div>
