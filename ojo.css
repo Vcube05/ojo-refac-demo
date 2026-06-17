@@ -1965,3 +1965,13 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .brmd{max-width:920px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;line-height:1.75;color:var(--ink);background:var(--surface);border:1px solid var(--line-2);border-radius:14px;padding:22px 24px;white-space:pre-wrap;box-shadow:var(--sh-xs);overflow-x:auto}
 :root[data-theme="dark"] .brmd{background:#0f1115}
 @media(max-width:760px){.brwrap{grid-template-columns:1fr}.brnav{position:static}}
+/* ===== template overview — mini document/markdown structure preview ===== */
+.tmpldoc{display:flex;flex-wrap:wrap;align-items:center;gap:7px 9px;margin-top:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.tmpldoc-t{font-size:12px;font-weight:700;color:var(--navy);margin-right:4px}
+.mdsec{font-size:11.5px;color:var(--muted);background:var(--surface-2);border:1px solid var(--line-2);border-radius:7px;padding:3px 9px;white-space:nowrap}
+.mdsec::first-letter{color:var(--info)}
+.mdsec.core{color:var(--coral-ink);background:var(--coral-soft);border-color:var(--coral-line)}
+/* SLA section body in the document editor (real content with merge tokens) */
+.brbody{font-size:13px;color:var(--ink);line-height:1.65;margin-top:7px;padding-left:26px}
+.sladoc-title{text-align:center;font-size:17px;font-weight:800;color:var(--navy);margin-bottom:8px}
+.sladoc-hr{border:none;border-top:1px solid var(--line-3);margin:0 0 6px}

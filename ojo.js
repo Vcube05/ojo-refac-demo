@@ -1561,9 +1561,8 @@ function leadSetBody(){
    +BROTEMPLATES.map(t=>`<div class="tmplcard"><div class="th"><div class="ti">${svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',18)}</div>
       <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:10px"><span class="tn">${t.name}</span>${celltag('BROTemplate',t.id)}</div><div class="tm">Last updated ${t.updated} · Version ${t.ver}</div><div class="td">${t.desc}</div></div>
       <button class="rowmenu" onclick="lsOpen('bro','${t.id}')">${svg(SVS.more,16)}</button></div>
-      <div class="fieldrow"><span class="fl">Core</span><div class="fieldchips">${t.core.map(f=>`<span class="fieldchip core"><span class="dot"></span>${f}</span>`).join('')}</div></div>
-      <div class="fieldrow"><span class="fl">Extended</span><div class="fieldchips">${t.ext.map(f=>`<span class="fieldchip ext"><span class="dot"></span>${f}</span>`).join('')}</div></div>
-      <div class="cellnote">composes <b>${t.core.length+t.ext.length}</b> field cells · <code>render: form · bind: collection:Field</code></div></div>`).join('');}
+      ${lsTmplDoc(t.name,[...t.core.map(f=>({t:f,core:1})),...t.ext.map(f=>({t:f}))])}
+      <div class="cellnote">composes <b>${t.core.length+t.ext.length}</b> field cells (${t.core.length} core · ${t.ext.length} extended) · <code>render: form</code></div></div>`).join('');}
 function lsStages(){return lsLegend(`Each <b>lead stage</b> is a cell. Its <code>property</code> links the document cell OJO generates there — Proposal→<b>BRO</b>, SLA→<b>Agreement</b>, Closure→<b>Invoice</b>. The <b>Mark as Won</b> capability only shows on a stage whose property is <code>Closed</code>.`)
    +`<div class="setrowh"><h2 class="set-h">Lead Stages</h2><button class="ojofind" onclick="lsOpen('stage',null)">${svg(SVS.plus,13)} Add new</button></div>`
    +`<div class="stagepipe">${LEADSTAGE_DEF.map((s,i)=>`<div class="sp-node ${i===0?'first':''}"><span class="sp-bar" style="background:${s.cc}"></span><span class="sp-lbl">${s.name}${s.prop?` ${svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',11)}`:''}</span></div>`).join('')}</div>
@@ -1589,15 +1588,30 @@ function lsPricing(){
 function lsSLA(){return lsLegend(`An <b>SLA template</b> is a document cell bound to the <b>SLA stage</b>. The one marked <code>Default</code> is used when a lead reaches that stage.`)
    +`<div class="setrowh"><h2 class="set-h">SLA Templates</h2><button class="ojofind" onclick="lsOpen('sla',null)">${svg(SVS.plus,13)} Add new</button></div>`
    +SLATEMPLATES.map(t=>`<div class="tmplcard"><div class="th"><div class="ti">${svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',18)}</div><div style="flex:1"><div style="display:flex;align-items:center;gap:10px"><span class="tn">${t.name}</span>${t.def?'<span class="ebadge" style="color:var(--ok);background:var(--ok-soft)">Default</span>':''}${celltag('SLATemplate',t.id)}</div><div class="tm">Last updated ${t.updated}</div></div><button class="rowmenu" onclick="lsOpen('sla','${t.id}')">${svg(SVS.pencil,15)}</button></div>
-     <div class="cellnote"><code>render: document · bind: cell:${t.id}</code> · linked to <b>stage-sla</b></div></div>`).join('');}
+     ${lsTmplDoc('Service Agreement (SLA)',[...SLA_CORE.map(x=>({t:x,core:1})),...SLA_DEF_EXTRA.map(x=>({t:x}))])}
+     <div class="cellnote">${SLA_CORE.length+SLA_DEF_EXTRA.length} document sections · binds ${SLA_VARS.length} variables · <code>render: document</code> · linked to <b>stage-sla</b></div></div>`).join('');}
 
 /* ---- Lead Settings detail/editor pages (open from Add new / Edit) ---- */
 const BRO_CORE=['Budget','Timeline','Deliverables'];
 const BRO_EXT_POOL=['Team','Objective','Goal','KPIs','Communication Channels','Communication','Requirements','Target Audience'];
 const SLA_VARS=['client_name','client_contact','client_email','project_title','services_list','start_date','end_date','budget','company_name','current_date','sla_response_time','sla_resolution_time','support_hours','milestone_table'];
+const SLA_CORE=['Agreement Header','1. Project Overview','1.1 Services'];
+const SLA_POOL=['2. Service Levels','3. Support Hours','4. Milestones','5. Confidentiality','6. Termination','Payment Terms','IP Ownership'];
+const SLA_DEF_EXTRA=['2. Service Levels','4. Milestones'];
+const SLA_BODY={'Agreement Header':'**Date:** {{current_date}}\n**Provider:** {{company_name}}\n**Client:** {{client_name}}\n**Contact:** {{client_contact}} ({{client_email}})','1. Project Overview':'This Service Level Agreement outlines the terms between {{company_name}} (“Provider”) and {{client_name}} (“Client”) for {{project_title}}.','1.1 Services':'{{services_list}}','2. Service Levels':'Response within {{sla_response_time}}, resolution within {{sla_resolution_time}}.','3. Support Hours':'Support available {{support_hours}}.','4. Milestones':'{{milestone_table}}','5. Confidentiality':'Both parties keep all shared information confidential for the term and 2 years after.','6. Termination':'Either party may terminate with 30 days written notice.','Payment Terms':'Invoices due within 15 days. Total budget {{budget}}.','IP Ownership':'All delivered IP transfers to {{client_name}} on final payment.'};
+const LOCK_SVG='<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>';
+let lsSlaDraft=null;
+function slaFmt(t){return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\{\{(\w+)\}\}/g,'<span class="var">{{$1}}</span>').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>');}
+function slaMarkdown(d){const secs=[...SLA_CORE,...d.sec];return '# Service Agreement (SLA)\n\n'+secs.map(x=>'## '+x+'\n'+(SLA_BODY[x]||'')).join('\n\n')+'\n';}
+function lsSlaSync(){const n=document.getElementById('lsName');if(n)lsSlaDraft.name=n.value;const ty=document.getElementById('lsType');if(ty)lsSlaDraft.type=ty.value;const df=document.getElementById('lsDef');if(df)lsSlaDraft.def=df.checked;}
+function lsSlaView(v){lsSlaSync();lsSlaDraft.view=v;mountLeadsSettings();}
+function lsSlaToggle(x){if(!x)return;lsSlaSync();const i=lsSlaDraft.sec.indexOf(x);i>=0?lsSlaDraft.sec.splice(i,1):lsSlaDraft.sec.push(x);mountLeadsSettings();}
+/* shared mini document/markdown structure preview for the overview cards */
+function lsTmplDoc(title,sections){return '<div class="tmpldoc"><span class="tmpldoc-t"># '+title+'</span>'+sections.map(x=>'<span class="mdsec'+(x.core?' core':'')+'">## '+x.t+'</span>').join('')+'</div>';}
 let lsBroDraft=null;
 function lsOpen(kind,id){leadSetDetail={kind,id};
   if(kind==='bro'){const t=BROTEMPLATES.find(x=>x.id===id);lsBroDraft={name:t?t.name:'',desc:t?t.desc:'',ext:[...(t?t.ext:['Team'])],view:'doc'};}
+  if(kind==='sla'){const t=SLATEMPLATES.find(x=>x.id===id);lsSlaDraft={name:t?t.name:'',type:'All Services (Generic)',def:t?!!t.def:false,sec:[...SLA_DEF_EXTRA],view:'doc'};}
   mountLeadsSettings();}
 function lsBack(){leadSetDetail=null;lsBroDraft=null;mountLeadsSettings();}
 function lsSave(){const m={bro:'Template',stage:'Stage',service:'Service',sla:'SLA template',package:'Package'}[leadSetDetail.kind];toast(m+' saved (demo)');lsBack();}
@@ -1644,16 +1658,13 @@ function lsEditPackage(){const svcs=SVC_CATALOG.flatMap(g=>g.items.map(i=>i[0]))
     <div class="lssec-h" style="margin-top:6px">Bundle services</div>
     <div class="lsaddrow">${svcs.map(s=>`<button class="addchip" onclick="this.classList.toggle('on')">${s}</button>`).join('')}</div>
     <div class="cellnote">a package cell <b>bundles service cells</b> via <code>links.members</code> · price rolls up</div></div>`;}
-function lsEditSLA(){const t=SLATEMPLATES.find(x=>x.id===leadSetDetail.id)||{name:'',def:false};
-  return `<div class="lssec"><div class="lsgrid2"><label class="lsfield"><span>Template Name *</span><input value="${t.name}" placeholder="Standard SLA Template"></label>
-     <label class="lsfield"><span>Service Type</span><select><option>All Services (Generic)</option><option>Branding</option><option>Development</option><option>Digital marketing</option></select></label></div>
-    <label class="lstoggle"><input type="checkbox" ${t.def?'checked':''}> Set as default SLA template</label>
-    <div class="slavars"><div class="slavars-h">${svg(SPARK,12)} Available Variables</div><div class="slavars-chips">${SLA_VARS.map(v=>`<button class="varchip" onclick="toast('Inserted {{${v}}}')">{{${v}}}</button>`).join('')}</div><div class="slavars-note">Click a variable to insert it — replaced with real values when generating SLAs.</div></div>
-    <div class="lssec-h" style="margin-top:18px;display:flex;align-items:center">Template Content *<button class="addchip" style="margin-left:auto" onclick="toast('Upload document (demo)')">${svg('<path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/>',12)} Upload</button></div>
-    <div class="slaeditor"><div class="slatoolbar"><b>B</b><i>I</i><u>U</u><span class="sep"></span>Paragraph<span class="sep"></span>${svg('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',14)}${svg('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>',14)}${svg('<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>',14)}</div>
-      <div class="sladoc"><h2>Service Agreement (SLA)</h2><hr><p><b>Date:</b> <span class="var">{{current_date}}</span><br><b>Provider:</b> <span class="var">{{company_name}}</span><br><b>Client:</b> <span class="var">{{client_name}}</span><br><b>Contact:</b> <span class="var">{{client_contact}}</span> (<span class="var">{{client_email}}</span>)</p><h3>1. Project Overview</h3><p>This Service Level Agreement outlines the terms between <span class="var">{{company_name}}</span> (“Provider”) and <span class="var">{{client_name}}</span> (“Client”) for <b><span class="var">{{project_title}}</span></b>.</p><h3>1.1 Services</h3><p><span class="var">{{services_list}}</span></p></div></div>
-    <div class="cellnote"><code>render: document · bind: cell tokens</code> · linked to <b>stage-sla</b></div></div>`;}
-
+function lsEditSLA(){const d=lsSlaDraft,pool=SLA_POOL.filter(x=>!d.sec.includes(x)),secs=[...SLA_CORE,...d.sec];
+  const head='<div class="lssec"><div class="lsgrid2"><label class="lsfield"><span>Template Name *</span><input id="lsName" value="'+(d.name||'').replace(/"/g,'&quot;')+'" placeholder="Standard SLA Template"></label><label class="lsfield"><span>Service Type</span><select id="lsType">'+['All Services (Generic)','Branding','Development','Digital marketing'].map(o=>'<option '+(o===d.type?'selected':'')+'>'+o+'</option>').join('')+'</select></label></div><label class="lstoggle"><input id="lsDef" type="checkbox" '+(d.def?'checked':'')+'> Set as default SLA template</label></div>';
+  const blk=(x,core)=>'<div class="brblock'+(core?' core':'')+'" id="'+broId(x)+'"><div class="brbh"><span class="brmark">##</span><span class="brh">'+x+'</span>'+(core?'<span class="brcore">'+svg(LOCK_SVG,11)+' Core</span>':'<span class="brx" onclick="lsSlaToggle(\''+x+'\')" title="Remove section">'+svg(SVS.x,13)+'</span>')+'</div><div class="brbody">'+slaFmt(SLA_BODY[x])+'</div></div>';
+  const nav='<div class="brnav"><div class="brnav-g">Sections</div>'+SLA_CORE.map(c=>'<button class="brnav-i lock" onclick="lsBroScroll(\''+broId(c)+'\')">'+svg(LOCK_SVG,12)+' '+c+'</button>').join('')+d.sec.map(x=>'<button class="brnav-i" onclick="lsBroScroll(\''+broId(x)+'\')">'+x+'<span class="brx" onclick="event.stopPropagation();lsSlaToggle(\''+x+'\')">'+svg(SVS.x,11)+'</span></button>').join('')+(pool.length?'<div class="brnav-g">Add section</div><div class="brnav-add">'+pool.map(x=>'<button class="addchip" onclick="lsSlaToggle(\''+x+'\')">'+x+' '+svg(SVS.plus,11)+'</button>').join('')+'</div>':'')+'<div class="brnav-g">Variables</div><div class="brnav-add">'+SLA_VARS.map(v=>'<button class="varchip" onclick="toast(\'Inserted {{'+v+'}}\')">{{'+v+'}}</button>').join('')+'</div></div>';
+  const doc='<div class="brdoc"><h2 class="sladoc-title">Service Agreement (SLA)</h2><hr class="sladoc-hr">'+SLA_CORE.map(x=>blk(x,true)).join('')+d.sec.map(x=>blk(x,false)).join('')+(pool.length?'<button class="bradd" onclick="lsSlaToggle(\''+pool[0]+'\')">'+svg(SVS.plus,14)+' Add section</button>':'')+'</div>';
+  const md='<pre class="brmd">'+slaMarkdown(d).replace(/</g,'&lt;')+'</pre>';
+  return head+'<div class="lssec-h" style="display:flex;align-items:center">Template Content *<span class="brviewtg" style="margin-left:auto"><button class="'+(d.view!=='md'?'on':'')+'" onclick="lsSlaView(\'doc\')">Document</button><button class="'+(d.view==='md'?'on':'')+'" onclick="lsSlaView(\'md\')">Markdown</button></span></div><div class="brwrap'+(d.view==='md'?' md':'')+'">'+(d.view==='md'?md:nav+doc)+'</div><div class="cellnote">'+celltag('SLATemplate',leadSetDetail.id||'new')+' · '+secs.length+' sections · binds '+SLA_VARS.length+' variables · <code>render: document</code> · linked to <b>stage-sla</b></div>';}
 /* ============ CONTACTS MODULE — every person you do business with. One simple list,
    a prominent profile record on the locked system, links into leads/vendors/employees. ============ */
 const CTYPE={Client:['#0E7B52','rgba(21,160,106,.13)'],Vendor:['#9A5200','rgba(224,138,30,.15)'],Employee:['#6539C8','rgba(124,83,230,.13)'],Freelance:['#0E7490','rgba(14,116,144,.12)'],Other:['#5B6473','rgba(100,116,139,.13)']};
