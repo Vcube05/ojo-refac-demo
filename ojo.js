@@ -101,7 +101,7 @@ function curType(){return cm().views.find(v=>v.name===cm().active).type;}
 function setRail(id){['navHome','navLeads','navProjects','navHR','navAccounts','navVendors','navOrgAdmin'].forEach(n=>{const e=document.getElementById(n);if(e)e.classList.remove('active');});document.getElementById('r-profile')?.classList.toggle('on',id==='r-profile');if(id&&id!=='r-profile'){const e=document.getElementById(id);if(e)e.classList.add('active');}}
 let subCollapsed=false;
 function subItems(mod){const S=['settings','Settings',"toast('Settings — demo')"],tk=m=>['tasks','Tasks',"openTasks('"+m+"')"];
-  return {leads:{title:'Leads',list:[['leads','Leads',"go('leads')"],tk('leads'),S]},project:{title:'Projects',list:[['projectsDash','Projects',"go('projectsDash')"],tk('project'),S]},account:{title:'Accounts',list:[['account','Accounts',"go('account')"],tk('account'),S]},
+  return {leads:{title:'Leads',list:[['leads','Leads',"go('leads')"],tk('leads'),['settings','Settings',"go('leadsSettings')"]]},project:{title:'Projects',list:[['projectsDash','Projects',"go('projectsDash')"],tk('project'),S]},account:{title:'Accounts',list:[['account','Accounts',"go('account')"],tk('account'),S]},
    /* vendor module mirrors the live product's sub-nav: Tasks · Vendors · RFQs · Projects · Invoices · Settings */
    vendor:{title:'Vendors',list:[tk('vendor'),['vendor','Vendors',"go('vendor')"],['vnrfqs','RFQs',"vnModPage('vnrfqs')"],['vnprojects','Projects',"vnModPage('vnprojects')"],['vninvoices','Invoices',"vnModPage('vninvoices')"],S]},
    contacts:{title:'Contacts',list:[['contacts','All Contacts',"go('contacts')"],S]}}[mod];}
@@ -121,6 +121,7 @@ function go(route){curRoute=route;closePeek();closePops();xpClose();hideCommDock
   else if(route==='admin'){setRail('navOrgAdmin');mountOrgAdmin();}
   else if(route==='vendor'){setRail('navVendors');renderShell('vendor','vendor');mountColl('vendor');}
   else if(route==='contacts'){setRail('navContacts');renderShell('contacts','contacts');mountContacts();}
+  else if(route==='leadsSettings'){curMod='leads';setRail('navLeads');renderShell('leads','settings');mountLeadsSettings();}
   syncGenie();}
 
 function modTools(){return `<button class="mtool"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5h18M6 12h12M10 19h4"/></svg></button>
@@ -1515,6 +1516,79 @@ function mountVendor(){const v=curVn();
     <div class="dcenter"><div class="inner" id="vninner">${vnBody()}</div></div></div>
    <aside class="dpanel"><div class="dpanel-head"><span class="nm">Recent activity</span></div><div class="dpanel-body" id="vnpanelbody">${vnInfo()}</div></aside></div></div>`;
   commSetHost({getFace:()=>vnFace,setFace:f=>{vnFace=f;},content:commVendorContent});}
+
+/* ============ LEAD SETTINGS — the cell model made visible. Each entity below IS a cell:
+   a domain cell (what exists) composed via links, surfaced by this UI cell. Mirrors the
+   product's 4 tabs: BRO Templates · Pipelines & Lead stages · Service Pricing · SLA Template. ============ */
+const BROTEMPLATES=[
+ {id:'bro-tmpl-03',name:'Common Default',updated:'13 Apr 2026',ver:2,desc:'Default requirement template used when no specific template matches a service type.',core:['Budget','Timeline','Deliverables'],ext:['Team','Objective','KPIs','Communication Channels','Requirements']},
+ {id:'bro-tmpl-02',name:'Development',updated:'08 Mar 2026',ver:1,desc:'For software & product builds.',core:['Budget','Timeline','Deliverables'],ext:['Team','Objective','Goal','KPIs','Target Audience','Communication']},
+ {id:'bro-tmpl-01',name:'Branding Sprint',updated:'04 May 2026',ver:1,desc:'Identity & brand engagements.',core:['Budget','Timeline','Deliverables'],ext:['Team','Target Audience']}];
+/* stage cells: each links a document cell via `property` (the doc OJO generates at that stage) */
+const LEADSTAGE_DEF=[
+ {id:'stage-created',name:'Created',desc:'Lead captured',prop:null,cc:'#15A06A'},
+ {id:'stage-proposal',name:'Proposal',desc:'send proposal',prop:'BRO',cc:'#7AC943'},
+ {id:'stage-sla',name:'SLA',desc:'send sla',prop:'Agreement',cc:'#B6E03A'},
+ {id:'stage-closure',name:'Closure',desc:'won & invoiced',prop:'Invoice',cc:'#CDE85A'}];
+const STAGE_PROP={BRO:'var(--info)','Agreement':'#7C53E6','Invoice':'var(--ok)'};
+/* service cells, grouped by category; rate model + price are value props on each cell */
+const SVC_CATALOG=[
+ {group:'Branding',rate:'Per unit',price:'₹1,20,000 /unit',items:[['logo design','Per unit','₹30,000 – ₹2,00,000 /unit'],['strategy','Per unit','₹10,000 – ₹3,00,000 /unit']]},
+ {group:'Development',rate:'Group',price:'—',items:[['backend','Hourly','₹2,000 – ₹4,000 /hr'],['front end','Hourly','₹1,500 – ₹3,000 /hr'],['testing','Hourly','₹1,000 – ₹2,000 /hr']]},
+ {group:'Digital marketing',rate:'Monthly retainer',price:'₹50,000 /mo',items:[['PPC google','Monthly retainer','₹40,000 /mo'],['PPC Meta','Monthly retainer','₹40,000 /mo'],['SEO','Monthly retainer','₹50,000 /mo'],['SMM-META','Monthly retainer','₹40,000 /mo'],['SMM-META+ others','Monthly retainer','₹60,000 /mo']]}];
+/* packages = cells that BUNDLE service cells via links — the clearest case of cell composition */
+const SVC_PACKAGES=[{id:'pkg-launch',name:'Brand Launch Kit',price:'₹3,40,000',items:['logo design','strategy','SEO']}];
+const SLATEMPLATES=[{id:'sla-std',name:'Standard SLA Template',updated:'05 May 2026',def:true}];
+const RATECLR={'Per unit':'var(--info)','Hourly':'#7C53E6','Monthly retainer':'var(--ok)','Group':'var(--faint)'};
+let leadSetTab='bro',leadSetSub='services';
+const LSTABS=[['bro','BRO Templates'],['stages','Pipelines & Lead stages'],['pricing','Service Pricing'],['sla','SLA Template']];
+function celltag(type,id){return `<span class="celltag"><span class="dot"></span>${type}<span class="cid">${id}</span></span>`;}
+function mountLeadsSettings(){
+  document.getElementById('modcontent').innerHTML=`<div class="box"><div class="mc-top"><div class="title-wrap"><div class="picon">${svg('<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',20)}</div><div><h1>Lead Settings</h1><div class="sub">Configure how leads work — every item is a cell</div></div></div><div class="sp"></div><span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span></div>
+   <div class="viewbar">${LSTABS.map(t=>`<button class="vtab ${t[0]===leadSetTab?'on':''}" onclick="leadSetSetTab('${t[0]}')">${t[1]}</button>`).join('')}</div>
+   <div id="lsBody" style="padding:6px 26px 44px">${leadSetBody()}</div></div>`;}
+function leadSetSetTab(t){leadSetTab=t;document.querySelectorAll('#modcontent .viewbar .vtab').forEach((b,i)=>b.classList.toggle('on',LSTABS[i][0]===t));const e=document.getElementById('lsBody');if(e)e.innerHTML=leadSetBody();}
+function leadSetSub_(s){leadSetSub=s;const e=document.getElementById('lsBody');if(e)e.innerHTML=leadSetBody();}
+function lsLegend(txt){return `<div class="setlegend">${svg(SPARK,14)}<span>${txt}</span></div>`;}
+function leadSetBody(){
+  if(leadSetTab==='stages')return lsStages();
+  if(leadSetTab==='pricing')return lsPricing();
+  if(leadSetTab==='sla')return lsSLA();
+  // BRO Templates
+  return lsLegend(`A <b>BRO template</b> is a cell that <b>composes field cells</b> — <code>Core</code> always collected, <code>Extended</code> optional. Leads bind to one when they reach the Proposal stage.`)
+   +`<div class="setrowh"><h2 class="set-h">BRO Templates</h2><button class="ojofind" onclick="toast('New template (demo)')">${svg(SVS.plus,13)} Add new</button></div>`
+   +BROTEMPLATES.map(t=>`<div class="tmplcard"><div class="th"><div class="ti">${svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',18)}</div>
+      <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:10px"><span class="tn">${t.name}</span>${celltag('BROTemplate',t.id)}</div><div class="tm">Last updated ${t.updated} · Version ${t.ver}</div><div class="td">${t.desc}</div></div>
+      <button class="rowmenu" onclick="toast('Edit ${t.name} (demo)')">${svg(SVS.more,16)}</button></div>
+      <div class="fieldrow"><span class="fl">Core</span><div class="fieldchips">${t.core.map(f=>`<span class="fieldchip core"><span class="dot"></span>${f}</span>`).join('')}</div></div>
+      <div class="fieldrow"><span class="fl">Extended</span><div class="fieldchips">${t.ext.map(f=>`<span class="fieldchip ext"><span class="dot"></span>${f}</span>`).join('')}</div></div>
+      <div class="cellnote">composes <b>${t.core.length+t.ext.length}</b> field cells · <code>render: form · bind: collection:Field</code></div></div>`).join('');}
+function lsStages(){return lsLegend(`Each <b>lead stage</b> is a cell. Its <code>property</code> links the document cell OJO generates there — Proposal→<b>BRO</b>, SLA→<b>Agreement</b>, Closure→<b>Invoice</b>. The <b>Mark as Won</b> capability only shows on a stage whose property is <code>Closed</code>.`)
+   +`<div class="setrowh"><h2 class="set-h">Lead Stages</h2><button class="ojofind" onclick="toast('New stage (demo)')">${svg(SVS.plus,13)} Add new</button></div>`
+   +`<div class="stagepipe">${LEADSTAGE_DEF.map((s,i)=>`<div class="sp-node ${i===0?'first':''}"><span class="sp-bar" style="background:${s.cc}"></span><span class="sp-lbl">${s.name}${s.prop?` ${svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',11)}`:''}</span></div>`).join('')}</div>
+   <div class="tablewrap" style="max-width:920px"><table><thead><tr><th style="width:30px"></th><th>Lead stage</th><th>Description</th><th>Property (links a doc cell)</th><th>Cell</th><th style="width:30px"></th></tr></thead><tbody>
+   ${LEADSTAGE_DEF.map(s=>`<tr><td style="color:var(--ghost);cursor:grab">${svg('<circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/>',15)}</td>
+     <td><b style="color:var(--navy)">${s.name}</b></td><td class="co">${s.desc}</td>
+     <td>${s.prop?`<span class="vchip" style="color:${STAGE_PROP[s.prop]};border-color:color-mix(in srgb,${STAGE_PROP[s.prop]} 35%,transparent);background:color-mix(in srgb,${STAGE_PROP[s.prop]} 8%,transparent)">${s.prop}</span>`:'<span class="co">—</span>'}</td>
+     <td><span class="celltag"><span class="dot"></span>LeadStage<span class="cid">${s.id}</span></span></td>
+     <td><button class="rowmenu" onclick="toast('Edit ${s.name} (demo)')">${svg(SVS.more,16)}</button></td></tr>`).join('')}</tbody></table></div>`;}
+function lsPricing(){
+  const sub=`<div class="lssub"><button class="${leadSetSub==='packages'?'on':''}" onclick="leadSetSub_('packages')">Packages</button><button class="${leadSetSub==='services'?'on':''}" onclick="leadSetSub_('services')">Services</button></div>`;
+  if(leadSetSub==='packages'){
+    return lsLegend(`A <b>package</b> is a cell that <b>bundles service cells</b> via links — the clearest cell composition. Price rolls up from its members.`)
+     +`<div class="setrowh"><h2 class="set-h">Services &amp; Packages</h2><button class="ojofind" onclick="toast('Create package (demo)')">${svg(SVS.plus,13)} Create package</button></div>`+sub
+     +`<div style="margin-top:14px">${SVC_PACKAGES.map(p=>`<div class="tmplcard"><div class="th"><div class="ti">${svg('<path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/>',18)}</div><div style="flex:1"><div style="display:flex;align-items:center;gap:10px"><span class="tn">${p.name}</span>${celltag('Package',p.id)}</div><div class="tm">${p.price} · bundles ${p.items.length} service cells</div></div><button class="rowmenu" onclick="toast('Edit (demo)')">${svg(SVS.more,16)}</button></div>
+       <div class="fieldrow"><span class="fl">Services</span><div class="fieldchips">${p.items.map(s=>`<span class="fieldchip core"><span class="dot"></span>${s}</span>`).join('')}</div></div>
+       <div class="cellnote"><code>links.members → [Service]</code> · price rolls up</div></div>`).join('')}</div>`;}
+  return lsLegend(`Each <b>service</b> is a domain cell with a <code>rate model</code> and <code>price</code>. Grouped by category; bind these into packages or quote them straight on a proposal.`)
+   +`<div class="setrowh"><h2 class="set-h">Services &amp; Packages</h2><button class="ojofind" onclick="toast('Add service (demo)')">${svg(SVS.plus,13)} Add service</button></div>`+sub
+   +`<div class="tablewrap" style="max-width:920px;margin-top:14px"><table><thead><tr><th>Service</th><th>Rate model</th><th class="num">Price</th><th style="width:30px"></th></tr></thead><tbody>
+   ${SVC_CATALOG.map(g=>`<tr class="svcgrp"><td><b style="color:var(--navy)">${g.group}</b></td><td>${g.rate==='Group'?'<span class="co">Group</span>':`<span class="ratechip" style="color:${RATECLR[g.rate]}">${g.rate}</span>`}</td><td class="num">${g.price}</td><td></td></tr>
+     ${g.items.map(it=>`<tr><td style="padding-left:30px">${it[0]}<div style="font-size:11.5px;color:var(--faint)">Under ${g.group}</div></td><td><span class="ratechip" style="color:${RATECLR[it[1]]}">${it[1]}</span></td><td class="num">${it[2]}</td><td><button class="rowmenu" onclick="event.stopPropagation();toast('Edit ${it[0]} (demo)')">${svg(SVS.pencil,14)}</button></td></tr>`).join('')}`).join('')}</tbody></table></div>`;}
+function lsSLA(){return lsLegend(`An <b>SLA template</b> is a document cell bound to the <b>SLA stage</b>. The one marked <code>Default</code> is used when a lead reaches that stage.`)
+   +`<div class="setrowh"><h2 class="set-h">SLA Templates</h2><button class="ojofind" onclick="toast('New SLA (demo)')">${svg(SVS.plus,13)} Add new</button></div>`
+   +SLATEMPLATES.map(t=>`<div class="tmplcard"><div class="th"><div class="ti">${svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',18)}</div><div style="flex:1"><div style="display:flex;align-items:center;gap:10px"><span class="tn">${t.name}</span>${t.def?'<span class="ebadge" style="color:var(--ok);background:var(--ok-soft)">Default</span>':''}${celltag('SLATemplate',t.id)}</div><div class="tm">Last updated ${t.updated}</div></div><button class="rowmenu" onclick="toast('Edit (demo)')">${svg(SVS.pencil,15)}</button></div>
+     <div class="cellnote"><code>render: document · bind: cell:${t.id}</code> · linked to <b>stage-sla</b></div></div>`).join('');}
 
 /* ============ CONTACTS MODULE — every person you do business with. One simple list,
    a prominent profile record on the locked system, links into leads/vendors/employees. ============ */
