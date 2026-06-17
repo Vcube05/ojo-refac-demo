@@ -511,12 +511,13 @@ function pTable(){let h='<div class="tablewrap"><table><thead><tr><th>Task</th><
 function toggleDone(id){const t=tasks.find(x=>x.id===id);if(!t)return;t.st=t.st==='Done'?'Todo':'Done';renderWork();}
 
 /* ============ RECORD (shared by side-peek + full detail) ============ */
-let rec=null, recMode='peek', detailFace='info', detailTab='Overview', detailCollapsed=true;
+let rec=null, recMode='peek', detailFace='info', detailTab='Overview', detailCollapsed=true, recWatch=true;
 const SCORE={New:[20,'Cold'],Contacted:[35,'Warming'],Qualified:[60,'Average'],Proposal:[72,'Warm'],Won:[95,'Hot'],Lost:[12,'Cold']};
 const TABICON={Overview:'star','Deal room':'List',Details:'Details',Notes:'notes',Activity:'activity'};
 function newRec(type,id){const ent=type==='lead'?leads.find(x=>x.id===id):tasks.find(x=>x.id===id);if(!ent)return null;
   const subs=type==='lead'?[{t:'Confirm budget with client',done:true},{t:'Add target audience',done:false},{t:'Send proposal',done:false}]:[{t:'Define scope',done:true},{t:'Draft',done:false},{t:'Review with PM',done:false}];
-  return {type,ent,subs,comments:[]};}
+  const comments=type==='lead'?[{who:'Priya Nair',av:'PN',color:'#7C53E6',body:'Shared the brief with the client — awaiting sign-off on the budget.',at:'2 days ago',react:1,own:false},{who:'Vinoth V V',av:'VV',color:'#C92F3A',body:'Updated the proposal in the Deal room. @Priya can you review the timeline before we send?',at:'yesterday',react:0,own:true}]:[];
+  return {type,ent,subs,comments};}
 
 /* ---- card click → full detail page (with breadcrumb). Right peek removed. ---- */
 function openPeek(id){openDetail(cm().peek,id);}
@@ -665,7 +666,8 @@ function leadDetailsTab(){const l=rec.ent;const own=l.asg?PEOPLE[l.asg]:null;con
   const about=[['Stage',`<span style="color:${(LSTAGES.find(s=>s.k===l.st)||{}).cc||'var(--ink)'};font-weight:700">${l.st}</span>`],['Deal value',fmt(l.val)],['Source',l.src],['Owner',own?own[2]:'—'],['Service type','Meta Ad Campaigns · Ad Creative'],['Created','07 May 2026']];
   const contact=[['Client contact',`${l.nm}${pcommMini(l.nm)}`],['Role','POC'],['Email',c?c[2]:'—'],['Phone','+91 98220 41100']];
   const org=[['Organisation',l.co],['Address','Bengaluru'],['Added by','Vinoth V V'],['Last updated','07 May 2026']];
-  return `<div class="pdetails" style="padding:6px 0 30px">${blk('About this deal',about)}${blk('Client',contact)}${blk('Organisation',org)}</div>`;}
+  const notif=[['Watchers',`<span class="wpills"><span class="pp">VV</span><span class="pp" style="background:#3B6FED">SV</span></span><button class="vlink" style="margin-left:8px" onclick="toast('Add / remove people (demo)')">Add / remove people</button>`],['On new comment','Everyone watching is emailed'],['Notify me',`<label class="lstoggle" style="margin:0;font-weight:600"><input type="checkbox" checked> Email me on replies & @mentions</label>`]];
+  return `<div class="pdetails" style="padding:6px 0 30px">${blk('About this deal',about)}${blk('Client',contact)}${blk('Organisation',org)}${blk('Notifications',notif)}</div>`;}
 function taskDetailsTab(){const t=rec.ent;const p=PEOPLE[t.asg];
   const about=[['Status',t.st],['Priority',t.pri],['Due',t.due||'—'],['Estimate',t.est],['Milestone',t.ms],['Created','7 May 2026']];
   const people=[['Assignee',(p?p[2]:'Unassigned')+pcommMini(p?p[2]:'')],['Created by','Priya Nair'+pcommMini('Priya Nair')]];
@@ -682,10 +684,25 @@ function renderRec(){const inner=document.getElementById('dinner');if(!inner)ret
   else inner.innerHTML=`<div class="placeholder" style="margin-top:30px"><div class="pic">${svg(ICONS.List,28)}</div><h2>${detailTab}</h2><p>This view renders the same cell's data, arranged as ${detailTab}.</p></div>`;
   const ta=document.getElementById('cmt');if(ta){ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();recComment();}});}}
 function subsHTML(){return `<div class="subs">${rec.subs.map((s,i)=>`<div class="sub ${s.done?'done':''}"><button class="scheck" onclick="recSub(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></button><span class="txt">${s.t}</span></div>`).join('')}<div class="subadd"><span class="scheck"></span><input placeholder="Add a new subtask" onkeydown="if(event.key==='Enter')recAddSub(this)"></div></div>`;}
-function commentsHTML(noun){return `<div class="commentbar"><div id="comments">${rec.comments.map(c=>`<div class="comment"><span class="av">VK</span><div><div><b>Vinoth K</b><span class="tm">just now</span></div><div style="margin-top:3px">${c}</div></div></div>`).join('')}</div>
-  <div class="cinput"><span class="av">VK</span><textarea id="cmt" placeholder="Add your comment…" rows="1"></textarea></div>
-  <div class="notify"><div class="t">${rec.comments.length+1} people will be notified when someone comments on this ${noun}.</div>
-    <div class="pills"><span class="pp">SV</span><button class="pill">${svg('<path d="M12 5v14M5 12h14"/>',14)}Add/remove people…</button><button class="pill">${svg('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>',14)}Notify me</button></div></div></div>`;}
+function cmtTools(){const ic=d=>`<button class="ct-b" onmousedown="event.preventDefault()" onclick="toast('Formatting (demo)')">${svg(d,15)}</button>`;
+  return ic('<path d="M6 4h7a4 4 0 0 1 0 8H6zM6 12h8a4 4 0 0 1 0 8H6z"/>')+ic('<path d="M4 7h12M4 12h16M4 17h10"/>')+ic('<circle cx="12" cy="12" r="3.5"/><path d="M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-3.5 7.1"/>')+ic('<circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9.5h.01M15 9.5h.01"/>')+ic('<path d="m21 8-9.5 9.5a4 4 0 0 1-5.7-5.7L14 4a2.6 2.6 0 0 1 3.7 3.7L9.2 16.2"/>');}
+function cmtHTML(c,i){return `<div class="cmt"><span class="av" style="background:${c.color}">${c.av}</span>
+   <div class="cmt-c"><div class="cmt-meta"><b>${c.who}</b><span class="cmt-time">${c.at}</span></div>
+    <div class="cmt-text">${c.body.replace(/@(\w+)/g,'<span class="ment">@$1</span>')}</div>
+    <div class="cmt-foot"><button class="cmt-react ${c.react?'on':''}" onclick="recReact(${i})">${svg('<circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9.5h.01M15 9.5h.01"/>',14)}${c.react?` ${c.react}`:''}</button>${c.own?`<a onclick="toast('Edit comment (demo)')">Edit</a><span class="cmt-dot">·</span><a onclick="recCmtDel(${i})">Delete</a>`:`<a onclick="recReply('${c.who.split(' ')[0]}')">Reply</a>`}</div>
+   </div></div>`;}
+function commentsHTML(noun){const cs=rec.comments;
+  return `<div class="cmts">
+   <div class="cmts-h">${svg('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',16)} Comments${cs.length?` <span class="ct">${cs.length}</span>`:''}</div>
+   <div class="cmt-new"><span class="av" style="background:var(--ink-bg)">VV</span>
+     <div class="cmt-box"><textarea id="cmt" placeholder="Write a comment — share an update, attach a file, or @mention a teammate" rows="1"></textarea>
+       <div class="cmt-bar"><span class="cmt-tools">${cmtTools()}</span><button class="cmt-send" onclick="recComment()">Comment</button></div></div></div>
+   <div id="comments" class="cmt-list">${cs.length?cs.map((c,i)=>cmtHTML(c,i)).reverse().join(''):'<div class="cmt-empty">No comments yet — start the thread with your team or the client.</div>'}</div>
+   <div class="cmt-watch"><button class="watchbtn ${recWatch?'on':''}" onclick="recWatchToggle()">${svg('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>',14)} ${recWatch?'Watching':'Watch'}</button><span class="cmt-watch-t">${recWatch?'You\'ll get an email when someone replies or @mentions you.':'Get an email when someone replies on this '+noun+'.'}</span></div>
+  </div>`;}
+function recWatchToggle(){recWatch=!recWatch;renderRec();toast(recWatch?'Watching — email on replies':'Stopped watching');}
+function recReact(i){const c=rec.comments[i];c.react=c.react?0:1;renderRec();}
+function recReply(name){const ta=document.getElementById('cmt');if(ta){ta.value='@'+name+' ';ta.focus();}}
 /* lead stages as a state machine; Won/Lost carry the "Closed" property */
 function leadClosed(k){return k==='Won'||k==='Lost';}
 function leadStepper(l){const order=LSTAGES.filter(s=>s.k!=='Lost');const idx=order.findIndex(s=>s.k===l.st);const pct=idx<=0?0:(idx/(order.length-1))*100;
@@ -767,7 +784,8 @@ function taskRecHTML(){const t=rec.ent;if(!t.accept)t.accept=[];if(!t.proof)t.pr
 function recMove(v){rec.ent.st=v;renderRec();if(recMode==='detail')renderDetailInfo();if(document.getElementById('work'))renderWork();toast('Moved to '+v);}
 function recSub(i){rec.subs[i].done=!rec.subs[i].done;renderRec();}
 function recAddSub(inp){if(!inp.value.trim())return;rec.subs.push({t:inp.value.trim(),done:false});renderRec();setTimeout(()=>{const a=document.querySelectorAll('.subadd input');a[a.length-1]?.focus();},0);}
-function recComment(){const ta=document.getElementById('cmt');const v=ta.value.trim();if(!v)return;rec.comments.push(v);renderRec();toast('Comment added');}
+function recComment(){const ta=document.getElementById('cmt');const v=ta.value.trim();if(!v)return;rec.comments.push({who:'Vinoth V V',av:'VV',color:'#C92F3A',body:v,at:'just now',react:0,own:true});renderRec();toast('Comment added');}
+function recCmtDel(i){rec.comments.splice(i,1);renderRec();toast('Comment deleted');}
 /* ---- task detail: time tracking + acceptance/review capabilities ---- */
 let trkSec=0,trkRunning=false,trkInt=null;
 function fmtHMS(s){return `${Math.floor(s/3600)}h ${Math.floor(s%3600/60)}m ${s%60}s`;}
