@@ -203,12 +203,18 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 /* OJO Insights — one universal card: header (score · brand · LIVE) → insight list → ask */
 .proj-ai{display:block;margin:4px 0 24px;max-width:940px}
 .proj-ai .ojo-card{padding:0;overflow:hidden}
-.ojo-top{display:flex;align-items:center;gap:16px;padding:16px 20px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.ojo-top{display:flex;align-items:center;gap:16px;padding:15px 18px;cursor:pointer;transition:background .14s}
+.ojo-card:not(.collapsed) .ojo-top{border-bottom:1px solid var(--line)}
+.ojo-top:hover{background:var(--surface-2)}
 .pa-score{display:flex;align-items:center;gap:14px;flex:1;min-width:0}
-.pa-ring{position:relative;width:58px;height:58px;flex:0 0 58px}.pa-ring svg{width:58px;height:58px}.pa-pct{position:absolute;inset:0;display:grid;place-items:center;font-size:15px;font-weight:800;color:var(--navy)}
+.pa-ring{position:relative;width:54px;height:54px;flex:0 0 54px}.pa-ring svg{width:54px;height:54px}.pa-pct{position:absolute;inset:0;display:grid;place-items:center;font-size:14px;font-weight:800;color:var(--navy)}
 .pa-lbl{font-size:16px;font-weight:700;color:var(--navy);letter-spacing:-.01em}.pa-sub{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45}
-.ojo-brand{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--muted);flex:0 0 auto;align-self:flex-start}
+.ojo-brand{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--muted);flex:0 0 auto}
 .ojo-brand .ojo-bn{color:var(--ink)}
+.ojo-orb{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#0E0E10;box-shadow:0 0 0 3px var(--coral-soft)}
+.ojo-collapse{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;color:var(--ghost);flex:0 0 auto;transition:transform .22s var(--ease)}
+.ojo-card.collapsed .ojo-collapse{transform:rotate(-90deg)}
+.ojo-card.collapsed .ojo-body{display:none}
 /* per-person comm icons (next to names) */
 /* inline property chips under a record title (assignee · status · priority · due · planned) */
 .propchips{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:14px 0 2px}
@@ -1531,10 +1537,11 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .ip-more-b{max-height:0;overflow:hidden;transition:max-height .26s var(--ease)}.ip-more.open .ip-more-b{max-height:360px}
 .ip-more-b .ip-facts{background:none;padding:0}
 /* OJO Insights — the product's intelligence, made visible */
-.ojo-card{border:1px solid var(--line);border-radius:18px;background:var(--surface);box-shadow:var(--sh-xs)}
-.ojo-mini{width:24px;height:24px;border-radius:50%;object-fit:cover;background:#0E0E10}
+.ojo-card{border:1px solid var(--line);border-left:3px solid var(--coral);border-radius:14px;background:var(--surface);box-shadow:var(--sh-xs);overflow:hidden}
+.ojo-mini{width:18px;height:18px;border-radius:50%;object-fit:cover;display:block}
 .ojo-live{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ok);display:inline-flex;align-items:center;gap:5px}
-.ojo-live::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 22%,transparent)}
+.ojo-live::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--ok);animation:ojopulse 2.2s ease-out infinite}
+@keyframes ojopulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 45%,transparent)}70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
 .ojo-insights{display:flex;flex-direction:column;gap:15px;padding:18px 20px}
 .oi{display:flex;gap:12px;align-items:flex-start}
 .oi-ic{flex:0 0 24px;width:24px;height:24px;border-radius:7px;background:var(--coral-soft);color:var(--coral);display:grid;place-items:center}.oi-ic svg{width:14px;height:14px}

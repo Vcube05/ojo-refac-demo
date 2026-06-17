@@ -604,9 +604,11 @@ function leadInsights(l){const sc=(SCORE[l.st]||[40])[0];const out=[];
   out.push(['cash',l.val<120000?`<b>Budget ${fmt(l.val)} is on the low side</b> for ${l.src} deals — room to upsell the Ad Creative add-on.`:`<b>Budget ${fmt(l.val)} is healthy</b> for a ${l.src} deal at this stage.`]);
   return out;}
 /* shared building blocks — reused by the right panel (A/B) and the full board (C) */
-function ojoInsightsCard(items,noun,scoreHTML){return `<div class="ojo-card"><div class="ojo-top">${scoreHTML||''}<div class="ojo-brand"><img class="ojo-mini" src="assets/ojo-logo.png" alt="OJO"><span class="ojo-bn">OJO Insights</span><span class="ojo-live">live</span></div></div>
-  <div class="ojo-insights">${items.map(i=>`<div class="oi"><span class="oi-ic">${svg(OI_ICONS[i[0]]||OI_ICONS.target,15)}</span><span class="oi-t">${i[1]}</span></div>`).join('')}</div>
-  <button class="ojo-ask" onclick="openSection('genie')">${svg(SPARK,13)} Ask OJO about this ${noun||'lead'}</button></div>`;}
+function ojoInsightsCard(items,noun,scoreHTML){return `<div class="ojo-card">
+  <div class="ojo-top" onclick="oiToggle(this)">${scoreHTML||''}<div class="ojo-brand"><span class="ojo-orb"><img class="ojo-mini" src="assets/ojo-logo.png" alt="OJO"></span><span class="ojo-bn">OJO read</span><span class="ojo-live">live</span></div><span class="ojo-collapse">${svg('<path d="m6 9 6 6 6-6"/>',16)}</span></div>
+  <div class="ojo-body"><div class="ojo-insights">${items.map(i=>`<div class="oi"><span class="oi-ic">${svg(OI_ICONS[i[0]]||OI_ICONS.target,15)}</span><span class="oi-t">${i[1]}</span></div>`).join('')}</div>
+  <button class="ojo-ask" onclick="event.stopPropagation();openSection('genie')">${svg(SPARK,13)} Ask OJO about this ${noun||'lead'}</button></div></div>`;}
+function oiToggle(el){const c=el.closest('.ojo-card');if(c)c.classList.toggle('collapsed');}
 function leadContacts(l){const first=(l.nm||'contact').split(' ')[0].toLowerCase();const org=l.co.toLowerCase().replace(/[^a-z]/g,'')||'co';
   return [[l.nm,'Primary contact',`${first}@${org}.com`,'#7C53E6',true],['Rohit Mehra','Finance · Decision maker',`rohit@${org}.com`,'#2F6FED',false]];}
 function contactsListHTML(list,addLabel){const add=addLabel===null?'':`<button class="contact-add" onclick="toast('${addLabel||'Add a contact'}')">${svg('<path d="M12 5v14M5 12h14"/>',13)} ${addLabel||'Add a contact'}</button>`;
