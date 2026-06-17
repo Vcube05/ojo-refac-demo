@@ -261,7 +261,7 @@ const DOCK_ICONS={
   search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>'
 };
 /* Genie's comm faces — selected via the topbar cluster; null = the Genie chat itself */
-let genieFace=null;
+let genieFace=null,genieRegen=null;
 const GFACES=['chat','call','video','email'];
 const GFACE_LBL={chat:'Messages',call:'Calls',video:'Meetings',email:'Email'};
 /* short labels for the traveling tab — they ride beside the icon, room is tight */
@@ -798,11 +798,7 @@ const DOCNAME={BRO:'Proposal (BRO)',SLA:'Contract (SLA)',Invoice:'Invoice'};
 const DOCFULL={BRO:'Business requirement overview',SLA:'Service level agreement',Invoice:'Invoice'};
 const LEAD_SVC='Meta Ad Campaigns · Ad Creative';
 const DOCPROMPTS={BRO:['Emphasise the budget breakdown','Add a phased timeline','Expand the deliverables list','Match the client\u2019s brand tone'],SLA:['Add response & resolution SLAs','Include a termination clause','Tighten the payment terms'],Invoice:['Split into milestone invoices','Add a GST line item','Apply the agreed discount']};
-function docRegenOpen(e){e.stopPropagation();const cur=curDoc().cur,m=document.getElementById('wpal');
-  m.innerHTML='<div class="h">Regenerate '+DOCFULL[cur].toLowerCase()+'</div><div class="rgnote">'+svg(SPARK,12)+' Add any extra context for OJO before it regenerates — same prompts you\u2019d ask in the Genie panel.</div><div class="rgsugg">'+(DOCPROMPTS[cur]||[]).map(x=>'<button onclick="docRegenPick(this)">'+x+'</button>').join('')+'</div><div class="rgask"><input id="rgIn" placeholder="Add a prompt…" onkeydown="if(event.key===\'Enter\')docRegenGo()"><button class="rggo" onclick="docRegenGo()">Regenerate</button></div>';
-  const r=e.currentTarget.getBoundingClientRect();m.style.top=Math.min(r.bottom+8,window.innerHeight-320)+'px';m.style.left=Math.max(12,Math.min(r.right-300,window.innerWidth-312))+'px';openPop('wpal');setTimeout(()=>document.getElementById('rgIn')?.focus(),40);}
-function docRegenPick(b){const i=document.getElementById('rgIn');if(i){i.value=(i.value?i.value+'; ':'')+b.textContent;i.focus();}}
-function docRegenGo(){closePops();toast('Regenerating '+DOCFULL[curDoc().cur].toLowerCase()+'\u2026');}
+function docRegen(){genieRegen={doc:curDoc().cur,title:DOCFULL[curDoc().cur]};openSection('genie');}
 function docMenuOpen(e){e.stopPropagation();const m=document.getElementById('wpal');
   m.innerHTML='<button class="pli danger" onclick="docDelete()">'+svg('<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',15)+'<span class="nm">Delete document</span></button>';
   const r=e.currentTarget.getBoundingClientRect();m.style.top=(r.bottom+6)+'px';m.style.left=Math.max(12,r.right-200)+'px';openPop('wpal');}
@@ -812,7 +808,7 @@ function curDoc(){return rec.ent.docs;}
 function renderDocs(l){if(!l.docs)l.docs=makeDocs(l);const d=l.docs;
   return `<div class="docpipe">${d.pipe.map(p=>`<div class="docchip ${p.k===d.cur?'on':''}" onclick="docSelect('${p.k}')"><div class="dci">${svg(DOCICON[p.k],18)}</div><div style="flex:1"><div class="dcn">${p.label}</div><div class="dcs">${p.sub}</div></div><div class="dcr" style="color:${p.pct===100?'var(--ok)':'var(--warn)'}">${p.pct}%</div></div>`).join('')}</div>
    <div class="doc"><div class="doc-head" onclick="docToggle()"><span class="dhi">${svg(DOCICON[d.cur],18)}</span><span class="dhn">${DOCFULL[d.cur]}</span><span class="dhsvc">for ${LEAD_SVC}</span>
-       <span class="dh-actions"><button class="dhregen" onclick="event.stopPropagation();docRegenOpen(event)">${svg('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',13)} Regenerate</button><button class="dhm" onclick="event.stopPropagation();docMenuOpen(event)">${svg('<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',16)}</button></span></div>
+       <span class="dh-actions"><button class="dhregen" onclick="event.stopPropagation();docRegen()">${svg('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',13)} Regenerate</button><button class="dhm" onclick="event.stopPropagation();docMenuOpen(event)">${svg('<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',16)}</button></span></div>
      ${d.open?`<div class="doc-body" id="docBody">${docBlocksHTML(d)}</div>`:''}</div>
    ${d.open?docBar(d):''}`;}
 function docBlocksHTML(d){const arr=d.blocks[d.cur];return arr.map((b,i)=>docBlockHTML(b,i)).join('')+`<div class="dadd" onclick="docAddOpen(event,${arr.length})">${svg('<path d="M12 5v14M5 12h14"/>',15)} Add a block, or press <b style="font-weight:700;margin:0 2px">/</b> for blocks</div>`;}
@@ -935,7 +931,7 @@ function genieSel(f){
   }else openSection('genie');
   gnotchSync();renderPanelTabs();
 }
-function genieHome(){genieFace=null;openSection('genie');}
+function genieHome(){genieFace=null;genieRegen=null;openSection('genie');}
 function genieSwapHTML(){
   if(genieFace){const cn=commContextName();
     return `<div class="gswap"><div class="genie-hi mini">${cn||'Workspace'}<div class="gctx">${GFACE_LBL[genieFace]}${cn?' with this record':' across OJO'}</div></div><div class="gcomm">${genieFace==='chat'&&!commHost?msgBody():commBody(genieFace)}</div></div>`;}
@@ -945,15 +941,20 @@ function genieSwapHTML(){
 function genieBody(){const ctx=genieContext();const ask=s=>s.replace(/'/g,"\\'");
   if(genieFace)
     return `<div class="gwrap"><div class="gmsgs" id="gmsgs">${ghActs()}${genieSwapHTML()}</div></div>`;
-  return `<div class="gwrap"><div class="gmsgs" id="gmsgs">${ghActs()}${genieSwapHTML()}</div>
-  <div class="gfoot">${curRoute==='home'?homeGeniePlan():''}<div class="gsugg">
-    ${ctx.suggestions.map(s=>`<button onclick="genieAsk('${ask(s)}')">${s}</button>`).join('')}</div>
-   <div class="gask"><input id="gIn" placeholder="Ask Ojo anything..." onkeydown="if(event.key==='Enter')genieAsk(this.value)">
+  const rg=genieRegen;
+  const hero=rg?`<div class="gswap"><div class="genie-hi">Regenerate ${rg.title}<div class="gctx">Pick a prompt or add your own context — OJO will rebuild the document.</div></div></div>`:genieSwapHTML();
+  const sugg=rg?(DOCPROMPTS[rg.doc]||[]):ctx.suggestions;
+  const ph=rg?'Add context to regenerate…':'Ask Ojo anything...';
+  return `<div class="gwrap"><div class="gmsgs" id="gmsgs">${ghActs()}${hero}</div>
+  <div class="gfoot">${(!rg&&curRoute==='home')?homeGeniePlan():''}<div class="gsugg">
+    ${sugg.map(s=>`<button onclick="genieAsk('${ask(s)}')">${s}</button>`).join('')}</div>
+   <div class="gask"><input id="gIn" placeholder="${ph}" onkeydown="if(event.key==='Enter')genieAsk(this.value)">
      <span class="gic">${svg('<path d="M21.4 11.05 12.05 20.4a5 5 0 0 1-7.07-7.07l9.19-9.19a3 3 0 0 1 4.24 4.24l-9.2 9.19a1 1 0 0 1-1.41-1.41l8.49-8.49"/>',17)}</span>
      <span class="gic">${svg('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',17)}</span>
      <button class="ggo" onclick="genieAsk(document.getElementById('gIn').value)">${svg('<path d="M12 19V5M5 12l7-7 7 7"/>',16)}</button></div>
    <div class="gnote">Ojo Genie can make mistakes. Verify important information before acting on it.</div></div></div>`;}
 function genieAsk(q){if(!q||!q.trim())return;const m=document.getElementById('gmsgs');if(!m)return;m.querySelector('.genie-hi')?.remove();
+  if(genieRegen){const t=genieRegen.title;genieRegen=null;m.insertAdjacentHTML('beforeend',`<div class="gq">${q.trim()}</div><div class="ga">Regenerating the <b>${t.toLowerCase()}</b> with that context — the updated draft is ready in the Deal room. ✓</div>`);const gi=document.getElementById('gIn');if(gi)gi.value='';m.scrollTop=m.scrollHeight;toast('Regenerating '+t.toLowerCase()+'…');return;}
   const ans={'Show My Leads':'You have 12 leads — 3 in Proposal, 2 Qualified, 1 Won. Want me to open the board?','Today\'s calls':'No calls scheduled today. Nova Dental is overdue for a follow-up.','Prioritize tasks for first half':'Top 3 by due date: Wireframes (10 Jun), API integration (2 Jul), QA & testing (15 Jul).'}[q.trim()]||('Here\'s what I found for “'+q.trim()+'”.');
   m.insertAdjacentHTML('beforeend',`<div class="gq">${q.trim()}</div><div class="ga">${ans}</div>`);document.getElementById('gIn').value='';m.scrollTop=m.scrollHeight;}
 

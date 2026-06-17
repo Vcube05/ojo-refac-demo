@@ -1992,14 +1992,5 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .doc-head:hover .dhregen{opacity:1}
 .doc-head .dhm{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--ghost)}
 .doc-head .dhm:hover{background:rgba(0,0,0,.05);color:var(--ink)}
-/* regenerate popover (in #wpal) */
-.wpal .rgnote{display:flex;gap:7px;font-size:12px;color:var(--muted);line-height:1.5;padding:0 4px 10px}.wpal .rgnote svg{color:var(--coral);flex:0 0 auto;margin-top:1px}
-.wpal .rgsugg{display:flex;flex-direction:column;gap:6px;padding:0 2px 10px}
-.wpal .rgsugg button{text-align:left;font-size:12.5px;font-weight:600;color:var(--ink);background:var(--surface-2);border:1px solid var(--line-2);border-radius:9px;padding:8px 11px}
-.wpal .rgsugg button:hover{border-color:var(--coral-line);color:var(--coral-ink)}
-.wpal .rgask{display:flex;gap:7px;padding:2px}
-.wpal .rgask input{flex:1;font:inherit;font-size:13px;border:1px solid var(--line-2);border-radius:9px;padding:8px 10px;outline:none;color:var(--ink)}
-.wpal .rgask input:focus{border-color:var(--coral-line);box-shadow:0 0 0 3px var(--coral-soft)}
-.wpal .rggo{font-size:12.5px;font-weight:700;color:#fff;background:var(--coral);border-radius:9px;padding:8px 14px}
 .wpal .pli.danger .nm{color:var(--coral-ink)}.wpal .pli.danger .ic,.wpal .pli.danger svg{color:var(--coral)}
 .wpal .pli svg{color:var(--muted);flex:0 0 auto}
