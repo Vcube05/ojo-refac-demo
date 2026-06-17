@@ -200,12 +200,15 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 .commpill button svg{width:17px;height:17px}
 .commpill button:hover{background:var(--surface);color:var(--ink);box-shadow:var(--sh-xs)}
 /* overview: OJO insights + score promoted into the main window */
-.proj-ai{display:flex;flex-wrap:wrap;gap:18px 22px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin:4px 0 24px;max-width:940px}
-.pa-score{display:flex;align-items:center;gap:14px;flex:0 0 auto}
-.pa-ring{position:relative;width:72px;height:72px}.pa-ring svg{width:72px;height:72px}.pa-pct{position:absolute;inset:0;display:grid;place-items:center;font-size:17px;font-weight:800;color:var(--navy)}
-.pa-lbl{font-size:15px;font-weight:700;color:var(--navy)}.pa-sub{font-size:12.5px;color:var(--muted);margin-top:3px}
-.pa-ins{flex:1;min-width:260px;border-left:1px solid var(--line);padding-left:22px}
-.proj-ai .ojo-card{border:none;box-shadow:none;padding:0;background:transparent}
+/* OJO Insights — one universal card: header (score · brand · LIVE) → insight list → ask */
+.proj-ai{display:block;margin:4px 0 24px;max-width:940px}
+.proj-ai .ojo-card{padding:0;overflow:hidden}
+.ojo-top{display:flex;align-items:center;gap:16px;padding:16px 20px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.pa-score{display:flex;align-items:center;gap:14px;flex:1;min-width:0}
+.pa-ring{position:relative;width:58px;height:58px;flex:0 0 58px}.pa-ring svg{width:58px;height:58px}.pa-pct{position:absolute;inset:0;display:grid;place-items:center;font-size:15px;font-weight:800;color:var(--navy)}
+.pa-lbl{font-size:16px;font-weight:700;color:var(--navy);letter-spacing:-.01em}.pa-sub{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+.ojo-brand{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--muted);flex:0 0 auto;align-self:flex-start}
+.ojo-brand .ojo-bn{color:var(--ink)}
 /* per-person comm icons (next to names) */
 /* inline property chips under a record title (assignee · status · priority · due · planned) */
 .propchips{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:14px 0 2px}
@@ -1528,17 +1531,16 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .ip-more-b{max-height:0;overflow:hidden;transition:max-height .26s var(--ease)}.ip-more.open .ip-more-b{max-height:360px}
 .ip-more-b .ip-facts{background:none;padding:0}
 /* OJO Insights — the product's intelligence, made visible */
-.ojo-card{border:1px solid var(--line-2);border-radius:16px;padding:15px 16px;background:var(--surface)}
-.ojo-card-h{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:700;color:var(--ink)}
-.ojo-mini{width:22px;height:22px;border-radius:50%;object-fit:cover;background:#0E0E10}
-.ojo-live{margin-left:auto;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ok);display:inline-flex;align-items:center;gap:5px}
+.ojo-card{border:1px solid var(--line);border-radius:18px;background:var(--surface);box-shadow:var(--sh-xs)}
+.ojo-mini{width:24px;height:24px;border-radius:50%;object-fit:cover;background:#0E0E10}
+.ojo-live{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ok);display:inline-flex;align-items:center;gap:5px}
 .ojo-live::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 22%,transparent)}
-.ojo-insights{display:flex;flex-direction:column;gap:13px;margin:14px 0}
-.oi{display:flex;gap:11px;align-items:flex-start}
-.oi-ic{flex:0 0 27px;width:27px;height:27px;border-radius:8px;background:var(--coral-soft);color:var(--coral);display:grid;place-items:center}.oi-ic svg{width:15px;height:15px}
-.oi-t{font-size:12.5px;line-height:1.5;color:var(--muted);padding-top:3px}.oi-t b{color:var(--ink);font-weight:700}
-.oi-t a{color:var(--coral-ink);font-weight:700;text-decoration:underline;cursor:pointer} /* actionable insight links */
-.ojo-ask{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;background:var(--ink-bg);color:#fff;font-size:12.5px;font-weight:600;padding:11px;border-radius:11px;transition:.14s}.ojo-ask:hover{filter:brightness(1.12)}.ojo-ask svg{width:13px;height:13px}
+.ojo-insights{display:flex;flex-direction:column;gap:15px;padding:18px 20px}
+.oi{display:flex;gap:12px;align-items:flex-start}
+.oi-ic{flex:0 0 24px;width:24px;height:24px;border-radius:7px;background:var(--coral-soft);color:var(--coral);display:grid;place-items:center}.oi-ic svg{width:14px;height:14px}
+.oi-t{font-size:13px;line-height:1.55;color:var(--muted);padding-top:2px}.oi-t b{color:var(--ink);font-weight:700}
+.oi-t a{color:var(--coral-ink);font-weight:700;text-decoration:underline;cursor:pointer}
+.ojo-ask{display:flex;align-items:center;justify-content:center;gap:7px;width:calc(100% - 40px);margin:0 20px 18px;background:var(--ink-bg);color:#fff;font-size:13px;font-weight:600;padding:12px;border-radius:12px;transition:.14s}.ojo-ask:hover{filter:brightness(1.12)}.ojo-ask svg{width:13px;height:13px}
 /* always-visible reach-out actions in the record body (work even when panel is hidden) */
 .rec-actions{display:flex;gap:9px;margin:18px 0 6px;flex-wrap:wrap}
 .rec-actions button{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:999px;background:var(--surface-2);color:var(--ink);font-size:13px;font-weight:600;transition:.14s}
