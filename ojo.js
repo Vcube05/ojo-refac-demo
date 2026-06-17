@@ -1597,7 +1597,7 @@ const BRO_EXT_POOL=['Team','Objective','Goal','KPIs','Communication Channels','C
 const SLA_VARS=['client_name','client_contact','client_email','project_title','services_list','start_date','end_date','budget','company_name','current_date','sla_response_time','sla_resolution_time','support_hours','milestone_table'];
 let lsBroDraft=null;
 function lsOpen(kind,id){leadSetDetail={kind,id};
-  if(kind==='bro'){const t=BROTEMPLATES.find(x=>x.id===id);lsBroDraft={name:t?t.name:'',desc:t?t.desc:'',on:new Set(t?t.ext:['Team'])};}
+  if(kind==='bro'){const t=BROTEMPLATES.find(x=>x.id===id);lsBroDraft={name:t?t.name:'',desc:t?t.desc:'',ext:[...(t?t.ext:['Team'])],view:'doc'};}
   mountLeadsSettings();}
 function lsBack(){leadSetDetail=null;lsBroDraft=null;mountLeadsSettings();}
 function lsSave(){const m={bro:'Template',stage:'Stage',service:'Service',sla:'SLA template',package:'Package'}[leadSetDetail.kind];toast(m+' saved (demo)');lsBack();}
@@ -1608,18 +1608,22 @@ function lsEditor(){const k=leadSetDetail.kind,nw=!leadSetDetail.id;
   return `<div class="box"><div class="lsedit"><div class="lsedit-top"><button class="lsback" onclick="lsBack()">${svg(SVS.arrow,18)}</button><h1>${title}</h1></div>
    ${body}
    <div class="lsedit-foot"><button class="lsbtn" onclick="lsBack()">Cancel</button><button class="lsbtn dark" onclick="lsSave()">${svg('<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/>',15)} ${save}</button></div></div></div>`;}
-function lsEditBRO(){const d=lsBroDraft;
-  return `<div class="lssec"><div class="lssec-h">Template Details ${celltag('BROTemplate',leadSetDetail.id||'new')}</div>
-    <div class="lsgrid2"><label class="lsfield"><span>Template Name *</span><input id="lsName" value="${d.name.replace(/"/g,'&quot;')}" placeholder="e.g. Common Default"></label>
-      <label class="lsfield"><span>Description</span><input id="lsDesc" value="${d.desc.replace(/"/g,'&quot;')}" placeholder="What is this template for?"></label></div></div>
-   <div class="lssec"><div class="lssec-h">Core Sections <span class="fixedtag">Fixed</span></div>
-    <div class="lscore">${BRO_CORE.map(c=>`<div class="lscore-cell"><div class="lscore-ph">${c==='Budget'?'₹0':c==='Timeline'?'—':'Items…'}</div><div class="lscore-lbl">${c}</div></div>`).join('')}</div>
-    <div class="cellnote">3 fixed field cells — always collected on every lead</div></div>
-   <div class="lssec"><div class="lssec-h">Extended Sections</div>
-    <div class="lsext">${BRO_EXT_POOL.filter(f=>d.on.has(f)).map(f=>`<div class="lsext-cell"><label class="lsck"><input type="checkbox" checked onclick="lsBroToggle('${f}')"><b>${f}</b></label><input class="lsext-in" placeholder="Enter ${f.toLowerCase()}…"></div>`).join('')||'<div class="muted2" style="padding:4px 0">No extended sections — add from below.</div>'}</div>
-    <div class="lsaddrow">${BRO_EXT_POOL.filter(f=>!d.on.has(f)).map(f=>`<button class="addchip" onclick="lsBroToggle('${f}')">${f} ${svg(SVS.plus,11)}</button>`).join('')}<button class="addchip dark" onclick="toast('Custom field (demo)')">${svg(SVS.plus,12)}</button></div>
-    <div class="cellnote">composes <b>${d.on.size}</b> extended field cells · toggle to bind / unbind · <code>render: form</code></div></div>`;}
-function lsBroToggle(f){const n=document.getElementById('lsName');if(n)lsBroDraft.name=n.value;const ds=document.getElementById('lsDesc');if(ds)lsBroDraft.desc=ds.value;lsBroDraft.on.has(f)?lsBroDraft.on.delete(f):lsBroDraft.on.add(f);mountLeadsSettings();}
+const BRO_PH={Budget:'₹ amount & payment breakdown',Timeline:'start – end · key milestones',Deliverables:'list the deliverables, one per line',Team:'roles & people on the engagement',Objective:'what success looks like',Goal:'the headline goal',KPIs:'metrics you will report on','Communication Channels':'where updates happen (Slack, email…)',Communication:'cadence & points of contact',Requirements:'scope, constraints, must-haves','Target Audience':'who this is for'};
+function broPH(f){return BRO_PH[f]||('notes for '+f.toLowerCase());}
+function broId(f){return 'brb-'+f.replace(/\W/g,'');}
+function broMarkdown(d){const line=f=>'## '+f;
+  return '# '+(d.name||'Untitled template')+'\n'+(d.desc?'\n> '+d.desc+'\n':'')+'\n<!-- Core · always collected -->\n'+BRO_CORE.map(line).join('\n')+'\n\n<!-- Extended · optional -->\n'+(d.ext.length?d.ext.map(line).join('\n'):'(none)')+'\n';}
+function lsBroSync(){const n=document.getElementById('lsName');if(n)lsBroDraft.name=n.value;const ds=document.getElementById('lsDesc');if(ds)lsBroDraft.desc=ds.value;}
+function lsBroView(v){lsBroSync();lsBroDraft.view=v;mountLeadsSettings();}
+function lsBroToggle(f){if(!f)return;lsBroSync();const i=lsBroDraft.ext.indexOf(f);i>=0?lsBroDraft.ext.splice(i,1):lsBroDraft.ext.push(f);mountLeadsSettings();}
+function lsBroScroll(id){const e=document.getElementById(id);if(e)e.scrollIntoView({behavior:'smooth',block:'center'});}
+function lsEditBRO(){const d=lsBroDraft,pool=BRO_EXT_POOL.filter(f=>!d.ext.includes(f));
+  const titleRow='<div class="brtop"><input id="lsName" class="brtitle" value="'+(d.name||'').replace(/"/g,'&quot;')+'" placeholder="Untitled template"><span class="brviewtg"><button class="'+(d.view!=='md'?'on':'')+'" onclick="lsBroView(\'doc\')">Document</button><button class="'+(d.view==='md'?'on':'')+'" onclick="lsBroView(\'md\')">Markdown</button></span></div><input id="lsDesc" class="brdesc" value="'+(d.desc||'').replace(/"/g,'&quot;')+'" placeholder="Describe when this template is used…">';
+  const blk=(f,core)=>'<div class="brblock'+(core?' core':'')+'" id="'+broId(f)+'"><div class="brbh"><span class="brmark">##</span><span class="brh">'+f+'</span>'+(core?'<span class="brcore">'+svg('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',11)+' Core</span>':'<span class="brx" onclick="lsBroToggle(\''+f+'\')" title="Remove section">'+svg(SVS.x,13)+'</span>')+'</div><div class="brph">'+broPH(f)+'</div></div>';
+  const nav='<div class="brnav"><div class="brnav-g">Core · fixed</div>'+BRO_CORE.map(c=>'<button class="brnav-i lock" onclick="lsBroScroll(\''+broId(c)+'\')">'+svg('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',12)+' '+c+'</button>').join('')+'<div class="brnav-g">Extended</div>'+(d.ext.map(f=>'<button class="brnav-i" onclick="lsBroScroll(\''+broId(f)+'\')">'+f+'<span class="brx" onclick="event.stopPropagation();lsBroToggle(\''+f+'\')">'+svg(SVS.x,11)+'</span></button>').join('')||'<div class="brnav-empty">none yet</div>')+(pool.length?'<div class="brnav-g">Add section</div><div class="brnav-add">'+pool.map(f=>'<button class="addchip" onclick="lsBroToggle(\''+f+'\')">'+f+' '+svg(SVS.plus,11)+'</button>').join('')+'<button class="addchip dark" onclick="toast(\'Custom field (demo)\')">'+svg(SVS.plus,12)+'</button></div>':'')+'</div>';
+  const doc='<div class="brdoc">'+BRO_CORE.map(c=>blk(c,true)).join('')+d.ext.map(f=>blk(f,false)).join('')+(pool.length?'<button class="bradd" onclick="lsBroToggle(\''+pool[0]+'\')">'+svg(SVS.plus,14)+' Add section</button>':'')+'</div>';
+  const mdView='<pre class="brmd">'+broMarkdown(d).replace(/</g,'&lt;')+'</pre>';
+  return '<div class="lssec brsec">'+titleRow+'</div><div class="brwrap'+(d.view==='md'?' md':'')+'">'+(d.view==='md'?mdView:nav+doc)+'</div><div class="cellnote">'+celltag('BROTemplate',leadSetDetail.id||'new')+' composes <b>'+(BRO_CORE.length+d.ext.length)+'</b> field cells ('+BRO_CORE.length+' core · '+d.ext.length+' extended) · saved as a cell with <code>links.fields → […]</code></div>';}
 function lsEditStage(){const s=LEADSTAGE_DEF.find(x=>x.id===leadSetDetail.id)||{name:'',desc:'',prop:null};const props=['None','BRO','Agreement','Invoice','Closed'];
   return `<div class="lssec">${celltag('LeadStage',leadSetDetail.id||'new')}
     <label class="lsfield" style="margin-top:14px"><span>Lead Stage Name *</span><input value="${s.name}" placeholder="e.g. Proposal"></label>
