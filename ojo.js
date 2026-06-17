@@ -1561,7 +1561,7 @@ function leadSetBody(){
    +BROTEMPLATES.map(t=>`<div class="tmplcard"><div class="th"><div class="ti">${svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',18)}</div>
       <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:10px"><span class="tn">${t.name}</span>${celltag('BROTemplate',t.id)}</div><div class="tm">Last updated ${t.updated} · Version ${t.ver}</div><div class="td">${t.desc}</div></div>
       <button class="rowmenu" onclick="lsOpen('bro','${t.id}')">${svg(SVS.more,16)}</button></div>
-      ${lsStructRow('Core',t.core.map(f=>({t:f,core:1})))}${lsStructRow('Extended',t.ext.map(f=>({t:f})))}
+      <div class="tagrow">${t.core.map(f=>`<span class="ftag core"><span class="d"></span>${f}</span>`).join('')}${t.ext.map(f=>`<span class="ftag"><span class="d"></span>${f}</span>`).join('')}</div>
       <div class="cellnote">composes <b>${t.core.length+t.ext.length}</b> field cells (${t.core.length} core · ${t.ext.length} extended) · <code>render: form</code></div></div>`).join('');}
 function lsStages(){return lsLegend(`Each <b>lead stage</b> is a cell. Its <code>property</code> links the document cell OJO generates there — Proposal→<b>BRO</b>, SLA→<b>Agreement</b>, Closure→<b>Invoice</b>. The <b>Mark as Won</b> capability only shows on a stage whose property is <code>Closed</code>.`)
    +`<div class="setrowh"><h2 class="set-h">Lead Stages</h2><button class="ojofind" onclick="lsOpen('stage',null)">${svg(SVS.plus,13)} Add new</button></div>`
@@ -1588,7 +1588,7 @@ function lsPricing(){
 function lsSLA(){return lsLegend(`An <b>SLA template</b> is a document cell bound to the <b>SLA stage</b>. The one marked <code>Default</code> is used when a lead reaches that stage.`)
    +`<div class="setrowh"><h2 class="set-h">SLA Templates</h2><button class="ojofind" onclick="lsOpen('sla',null)">${svg(SVS.plus,13)} Add new</button></div>`
    +SLATEMPLATES.map(t=>`<div class="tmplcard"><div class="th"><div class="ti">${svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',18)}</div><div style="flex:1"><div style="display:flex;align-items:center;gap:10px"><span class="tn">${t.name}</span>${t.def?'<span class="ebadge" style="color:var(--ok);background:var(--ok-soft)">Default</span>':''}${celltag('SLATemplate',t.id)}</div><div class="tm">Last updated ${t.updated}</div></div><button class="rowmenu" onclick="lsOpen('sla','${t.id}')">${svg(SVS.pencil,15)}</button></div>
-     ${lsStructRow('Sections',[...SLA_CORE.map(x=>({t:x,core:1})),...SLA_DEF_EXTRA.map(x=>({t:x}))])}
+     <div class="tagrow">${SLA_CORE.map(x=>`<span class="ftag core"><span class="d"></span>${x}</span>`).join('')}${SLA_DEF_EXTRA.map(x=>`<span class="ftag"><span class="d"></span>${x}</span>`).join('')}</div>
      <div class="cellnote">${SLA_CORE.length+SLA_DEF_EXTRA.length} document sections · binds ${SLA_VARS.length} variables · <code>render: document</code> · linked to <b>stage-sla</b></div></div>`).join('');}
 
 /* ---- Lead Settings detail/editor pages (open from Add new / Edit) ---- */

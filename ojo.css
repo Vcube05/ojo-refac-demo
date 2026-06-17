@@ -1975,3 +1975,9 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .brbody{font-size:13px;color:var(--ink);line-height:1.65;margin-top:7px;padding-left:26px}
 .sladoc-title{text-align:center;font-size:17px;font-weight:800;color:var(--navy);margin-bottom:8px}
 .sladoc-hr{border:none;border-top:1px solid var(--line-3);margin:0 0 6px}
+/* clean template-card tags (basic info + tidy dot pills) */
+.tagrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.ftag{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--muted);background:var(--surface-2);border:1px solid var(--line-2);border-radius:999px;padding:5px 12px}
+.ftag .d{width:5px;height:5px;border-radius:50%;background:var(--ghost);flex:0 0 5px}
+.ftag.core{color:var(--coral-ink);background:var(--coral-soft);border-color:var(--coral-line)}
+.ftag.core .d{background:var(--coral)}
