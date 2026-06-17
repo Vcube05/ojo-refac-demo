@@ -713,7 +713,7 @@ function notesFilesTab(){
       :`<div class="nf-empty">${svg(NF_CLIP,22)}<span>No files yet — attach one below.</span></div>`;
     body=`${list}<button class="nf-attach" onclick="nfAttach()">${svg(NF_CLIP,15)} Attach a file</button>`;
   }
-  return `<div class="nf-wrap"><div class="nf-top"><div class="nf-h">Notes &amp; Files <span class="cell-tag" title="UI cell — render:'feed' · bind:'relation:notes'">${svg(SPARK,10)} cell</span></div>${seg}</div>${body}</div>`;
+  return `<div class="nf-wrap"><div class="nf-top">${seg}</div>${body}</div>`;
 }
 function nfTab(k){rec.notesView=k;renderRec();}
 function nfAddNote(){const inp=document.getElementById('nfInput');if(!inp)return;const v=inp.value.trim();if(!v)return;rec.notes.unshift({who:'Vinoth V V',av:'VV',color:'#C92F3A',body:v,at:'just now'});rec.notesView='notes';renderRec();toast('Note added');}

@@ -2096,7 +2096,7 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 }
 /* ===== Notes & Files — cell-structured record tab ===== */
 .nf-wrap{margin-top:8px;max-width:940px}
-.nf-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.nf-top{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
 .nf-h{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);display:inline-flex;align-items:center;gap:8px}
 .nf-seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:3px;gap:2px}
 .nf-seg button{display:inline-flex;align-items:center;gap:7px;padding:6px 15px;border-radius:8px;font-size:13px;font-weight:600;color:var(--muted)}
