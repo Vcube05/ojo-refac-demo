@@ -513,7 +513,7 @@ function toggleDone(id){const t=tasks.find(x=>x.id===id);if(!t)return;t.st=t.st=
 /* ============ RECORD (shared by side-peek + full detail) ============ */
 let rec=null, recMode='peek', detailFace='info', detailTab='Overview', detailCollapsed=true;
 const SCORE={New:[20,'Cold'],Contacted:[35,'Warming'],Qualified:[60,'Average'],Proposal:[72,'Warm'],Won:[95,'Hot'],Lost:[12,'Cold']};
-const TABICON={Overview:'star',Details:'Table',Notes:'notes',Activity:'activity'};
+const TABICON={Overview:'star','Deal room':'List',Details:'Details',Notes:'notes',Activity:'activity'};
 function newRec(type,id){const ent=type==='lead'?leads.find(x=>x.id===id):tasks.find(x=>x.id===id);if(!ent)return null;
   const subs=type==='lead'?[{t:'Confirm budget with client',done:true},{t:'Add target audience',done:false},{t:'Send proposal',done:false}]:[{t:'Define scope',done:true},{t:'Draft',done:false},{t:'Review with PM',done:false}];
   return {type,ent,subs,comments:[]};}
@@ -541,7 +541,8 @@ function mountDetail(){const r=rec,isLead=r.type==='lead',e=r.ent;
       <div class="dnav"><button class="dctl" onclick="detailNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="detailNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div>
     </div>`;
   /* activity lives in the hideable panel (project pattern), so no Activity tab */
-  const viewbar=`<div class="viewbar">${['Overview','Details','Notes'].map(x=>`<button class="vtab ${x===detailTab?'on':''}" onclick="detailSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[TABICON[x]],14)}</span>${x}</button>`).join('')}</div>`;
+  const _tabs=isLead?['Overview','Deal room','Details','Notes']:['Overview','Details','Notes'];
+  const viewbar=`<div class="viewbar">${_tabs.map(x=>`<button class="vtab ${x===detailTab?'on':''}" onclick="detailSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[TABICON[x]],14)}</span>${x}</button>`).join('')}</div>`;
   /* one header cluster for every record: comm pill · history toggle · close — comm faces fit the record */
   const who=isLead?(e.nm||'contact'):(e.asg&&PEOPLE[e.asg]?PEOPLE[e.asg][2]:'assignee');
   const faces=isLead?[['call','Call'],['email','Email'],['chat','Message']]:[['call','Call'],['email','Email'],['video','Meet']];
@@ -659,6 +660,12 @@ function taskActivity(t){const p=PEOPLE[t.asg];const items=[];
   return actRowsHTML(items,`<div class="more"><span class="av">${p?p[0]:'PN'}</span>${p?p[2]:'Priya Nair'} active on this task</div>`);}
 function taskInfo(){return `<div class="ip"><div class="ip-actonly">${taskActivity(rec.ent)}</div></div>`;}
 /* static task data — Details tab, same .pd-grid pattern as the project Details */
+function leadDetailsTab(){const l=rec.ent;const own=l.asg?PEOPLE[l.asg]:null;const c=leadContacts(l)[0];
+  const blk=(h,rows)=>`<div class="pd-block"><div class="pd-h">${h}</div><div class="pd-grid">${rows.map(([k,x])=>`<div class="pd-cell"><div class="pd-k">${k}</div><div class="pd-v">${x}</div></div>`).join('')}</div></div>`;
+  const about=[['Stage',`<span style="color:${(LSTAGES.find(s=>s.k===l.st)||{}).cc||'var(--ink)'};font-weight:700">${l.st}</span>`],['Deal value',fmt(l.val)],['Source',l.src],['Owner',own?own[2]:'—'],['Service type','Meta Ad Campaigns · Ad Creative'],['Created','07 May 2026']];
+  const contact=[['Primary contact',`${l.nm}${pcommMini(l.nm)}`],['Role','POC'],['Email',c?c[2]:'—'],['Phone','+91 98220 41100']];
+  const org=[['Organisation',l.co],['Address','Bengaluru'],['Added by','Vinoth V V'],['Last updated','07 May 2026']];
+  return `<div class="pdetails" style="padding:6px 0 30px">${blk('About this deal',about)}${blk('Client',contact)}${blk('Organisation',org)}</div>`;}
 function taskDetailsTab(){const t=rec.ent;const p=PEOPLE[t.asg];
   const about=[['Status',t.st],['Priority',t.pri],['Due',t.due||'—'],['Estimate',t.est],['Milestone',t.ms],['Created','7 May 2026']];
   const people=[['Assignee',(p?p[2]:'Unassigned')+pcommMini(p?p[2]:'')],['Created by','Priya Nair'+pcommMini('Priya Nair')]];
@@ -669,7 +676,8 @@ function taskDetailsTab(){const t=rec.ent;const p=PEOPLE[t.asg];
 /* ---- shared record body (rows + subtasks + comments) ---- */
 function renderRec(){const inner=document.getElementById('dinner');if(!inner)return;
   if(detailTab==='Overview')inner.innerHTML=(rec.type==='lead'?leadRecHTML():taskRecHTML());
-  else if(detailTab==='Details')inner.innerHTML=rec.type==='lead'?renderDocs(rec.ent):taskDetailsTab();
+  else if(detailTab==='Deal room')inner.innerHTML=renderDocs(rec.ent);
+  else if(detailTab==='Details')inner.innerHTML=rec.type==='lead'?leadDetailsTab():taskDetailsTab();
   else if(detailTab==='Notes')inner.innerHTML=`<div class="rec-block" style="margin-top:6px"><div class="rec-block-h">Notes</div><div class="free notes-free" contenteditable="true" data-ph="Write a note about this ${rec.type}…"></div></div>`;
   else inner.innerHTML=`<div class="placeholder" style="margin-top:30px"><div class="pic">${svg(ICONS.List,28)}</div><h2>${detailTab}</h2><p>This view renders the same cell's data, arranged as ${detailTab}.</p></div>`;
   const ta=document.getElementById('cmt');if(ta){ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();recComment();}});}}
