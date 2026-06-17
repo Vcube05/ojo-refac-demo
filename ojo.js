@@ -663,7 +663,7 @@ function taskInfo(){return `<div class="ip"><div class="ip-actonly">${taskActivi
 function leadDetailsTab(){const l=rec.ent;const own=l.asg?PEOPLE[l.asg]:null;const c=leadContacts(l)[0];
   const blk=(h,rows)=>`<div class="pd-block"><div class="pd-h">${h}</div><div class="pd-grid">${rows.map(([k,x])=>`<div class="pd-cell"><div class="pd-k">${k}</div><div class="pd-v">${x}</div></div>`).join('')}</div></div>`;
   const about=[['Stage',`<span style="color:${(LSTAGES.find(s=>s.k===l.st)||{}).cc||'var(--ink)'};font-weight:700">${l.st}</span>`],['Deal value',fmt(l.val)],['Source',l.src],['Owner',own?own[2]:'—'],['Service type','Meta Ad Campaigns · Ad Creative'],['Created','07 May 2026']];
-  const contact=[['Primary contact',`${l.nm}${pcommMini(l.nm)}`],['Role','POC'],['Email',c?c[2]:'—'],['Phone','+91 98220 41100']];
+  const contact=[['Client contact',`${l.nm}${pcommMini(l.nm)}`],['Role','POC'],['Email',c?c[2]:'—'],['Phone','+91 98220 41100']];
   const org=[['Organisation',l.co],['Address','Bengaluru'],['Added by','Vinoth V V'],['Last updated','07 May 2026']];
   return `<div class="pdetails" style="padding:6px 0 30px">${blk('About this deal',about)}${blk('Client',contact)}${blk('Organisation',org)}</div>`;}
 function taskDetailsTab(){const t=rec.ent;const p=PEOPLE[t.asg];
@@ -727,9 +727,9 @@ function leadRecHTML(){const l=rec.ent;const own=l.asg?PEOPLE[l.asg]:null;
         <div class="mrow"><span class="mk">Tags</span><button class="tag-add2" onclick="toast('Add tag')">${svg('<path d="M12 5v14M5 12h14"/>',12)} Add tag</button></div>
       </div>
     </div>
-    <div class="sec">${contactsListHTML(leadContacts(l),null)}</div>
+    <div class="sec"><div class="sec-h">Client contacts</div>${contactsListHTML(leadContacts(l),null)}</div>
   </div>
-  <div class="ip-more"><button class="ip-more-h" onclick="ipMoreToggle(this)">More information ${svg('<path d="m6 9 6 6 6-6"/>',15)}</button><div class="ip-more-b">${ipRows([['Organisation',l.co],['Role','—'],['Department','—'],['Address','Bengaluru'],['Added by','Vinoth V V'],['Created','07 May 2026']])}</div></div>
+  <button class="rec-morelink" onclick="detailSetTab('Details')">View full details ${svg('<path d="M5 12h14M13 6l6 6-6 6"/>',14)}</button>
   ${commentsHTML('lead')}`;}
 function taskRecHTML(){const t=rec.ent;if(!t.accept)t.accept=[];if(!t.proof)t.proof=[];
   const done=t.st==='Done',pct=trkPct();
@@ -789,17 +789,17 @@ function focusSubAdd(){const a=document.querySelectorAll('.subadd input');a[a.le
 
 /* ============ LEAD DETAILS TAB — BRO → SLA → Invoice as Notion-style cell-documents ============ */
 function makeDocs(l){const co=l.co;return {cur:'SLA',open:true,
-  pipe:[{k:'BRO',label:'BRO',sub:'Complete',pct:100},{k:'SLA',label:'SLA',sub:'Generated',pct:100},{k:'Invoice',label:'Invoice',sub:'Paid',pct:100}],
+  pipe:[{k:'BRO',label:'Proposal (BRO)',sub:'Complete',pct:100},{k:'SLA',label:'Contract (SLA)',sub:'Generated',pct:100},{k:'Invoice',label:'Invoice',sub:'Paid',pct:100}],
   blocks:{
    BRO:[{t:'h1',x:'Business Requirement Overview — '+co},{t:'text',x:'Prepared on: 2026-05-01'},{t:'h2',x:'1. Objective'},{t:'text',x:co+' needs a marketing engagement to build awareness and drive conversions across the pre- and post-launch windows.'},{t:'h2',x:'2. Requirements'},{t:'list',items:['Branding & creative direction','Paid social campaign setup','Weekly performance reporting']},{t:'metric',label:'Estimated Budget',value:fmt(l.val)}],
    SLA:[{t:'h1',x:'Proposal for Movie Marketing Services'},{t:'text',x:'Prepared on: 2026-05-01'},{t:'h2',x:'1. Executive Summary'},{t:'text',x:'This proposal outlines a comprehensive marketing strategy for '+co+" over a duration of 1 month, with a total budget of "+fmt(l.val)+'. The project covers branding and digital marketing across the pre-release and post-release phases.'},{t:'h2',x:'2. Scope of Work'},{t:'h3',x:'2.1 Service 1: Branding'},{t:'list',items:['Budget: ₹3,00,000','Duration: 1 month','Objective: Build awareness and drive theatre attendance across release windows.']},{t:'h3',x:'2.2 Service 2: Digital Marketing'},{t:'list',items:['Budget: ₹80,000','Duration: 1 month','Objective: Drive ticket sales via paid social and search.']}],
    Invoice:[{t:'h1',x:'Invoice — '+co},{t:'text',x:'Invoice #INV-2041 · Paid on 2026-05-12'},{t:'h2',x:'Line items'},{t:'list',items:['Branding — ₹3,00,000','Digital Marketing — ₹80,000']},{t:'metric',label:'Total',value:fmt(l.val)}]
   }};}
-const DOCNAME={BRO:'Business Requirement Overview',SLA:'Service Level Agreement',Invoice:'Invoice'};
+const DOCNAME={BRO:'Proposal (BRO)',SLA:'Contract (SLA)',Invoice:'Invoice'};
 const DOCICON={BRO:'<path d="M9 11l3 3 8-8"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',SLA:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/>',Invoice:'<path d="M12 2v20M7 6h7a3 3 0 0 1 0 6H8a3 3 0 0 0 0 6h8"/>'};
 function curDoc(){return rec.ent.docs;}
 function renderDocs(l){if(!l.docs)l.docs=makeDocs(l);const d=l.docs;
-  return `<div class="docpipe">${d.pipe.map(p=>`<div class="docchip ${p.k===d.cur?'on':''}" onclick="docSelect('${p.k}')"><div class="dci">${svg(DOCICON[p.k],18)}</div><div style="flex:1"><div class="dcn">${p.k}</div><div class="dcs">${p.sub}</div></div><div class="dcr" style="color:${p.pct===100?'var(--ok)':'var(--warn)'}">${p.pct}%</div></div>`).join('')}</div>
+  return `<div class="docpipe">${d.pipe.map(p=>`<div class="docchip ${p.k===d.cur?'on':''}" onclick="docSelect('${p.k}')"><div class="dci">${svg(DOCICON[p.k],18)}</div><div style="flex:1"><div class="dcn">${p.label}</div><div class="dcs">${p.sub}</div></div><div class="dcr" style="color:${p.pct===100?'var(--ok)':'var(--warn)'}">${p.pct}%</div></div>`).join('')}</div>
    <div class="doc"><div class="doc-head" onclick="docToggle()"><span class="dhi">${svg(DOCICON[d.cur],18)}</span><span class="dhn">${DOCNAME[d.cur]}</span><span class="dcs" style="margin-left:6px">${d.pipe.find(p=>p.k===d.cur).sub}</span><span class="dhm">${svg('<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',16)}</span></div>
      ${d.open?`<div class="doc-body" id="docBody">${docBlocksHTML(d)}</div>`:''}</div>
    ${docBar(d)}`;}

@@ -1981,3 +1981,6 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .ftag .d{width:5px;height:5px;border-radius:50%;background:var(--ghost);flex:0 0 5px}
 .ftag.core{color:var(--coral-ink);background:var(--coral-soft);border-color:var(--coral-line)}
 .ftag.core .d{background:var(--coral)}
+/* lead overview → jump to the Details tab for full facts */
+.rec-morelink{display:inline-flex;align-items:center;gap:7px;margin:14px 0 2px;font-size:13px;font-weight:600;color:var(--coral-ink);padding:8px 0}
+.rec-morelink:hover{text-decoration:underline}.rec-morelink svg{color:var(--coral)}
