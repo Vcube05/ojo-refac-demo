@@ -795,13 +795,26 @@ function makeDocs(l){const co=l.co;return {cur:'SLA',open:true,
    Invoice:[{t:'h1',x:'Invoice — '+co},{t:'text',x:'Invoice #INV-2041 · Paid on 2026-05-12'},{t:'h2',x:'Line items'},{t:'list',items:['Branding — ₹3,00,000','Digital Marketing — ₹80,000']},{t:'metric',label:'Total',value:fmt(l.val)}]
   }};}
 const DOCNAME={BRO:'Proposal (BRO)',SLA:'Contract (SLA)',Invoice:'Invoice'};
+const DOCFULL={BRO:'Business requirement overview',SLA:'Service level agreement',Invoice:'Invoice'};
+const LEAD_SVC='Meta Ad Campaigns · Ad Creative';
+const DOCPROMPTS={BRO:['Emphasise the budget breakdown','Add a phased timeline','Expand the deliverables list','Match the client\u2019s brand tone'],SLA:['Add response & resolution SLAs','Include a termination clause','Tighten the payment terms'],Invoice:['Split into milestone invoices','Add a GST line item','Apply the agreed discount']};
+function docRegenOpen(e){e.stopPropagation();const cur=curDoc().cur,m=document.getElementById('wpal');
+  m.innerHTML='<div class="h">Regenerate '+DOCFULL[cur].toLowerCase()+'</div><div class="rgnote">'+svg(SPARK,12)+' Add any extra context for OJO before it regenerates — same prompts you\u2019d ask in the Genie panel.</div><div class="rgsugg">'+(DOCPROMPTS[cur]||[]).map(x=>'<button onclick="docRegenPick(this)">'+x+'</button>').join('')+'</div><div class="rgask"><input id="rgIn" placeholder="Add a prompt…" onkeydown="if(event.key===\'Enter\')docRegenGo()"><button class="rggo" onclick="docRegenGo()">Regenerate</button></div>';
+  const r=e.currentTarget.getBoundingClientRect();m.style.top=Math.min(r.bottom+8,window.innerHeight-320)+'px';m.style.left=Math.max(12,Math.min(r.right-300,window.innerWidth-312))+'px';openPop('wpal');setTimeout(()=>document.getElementById('rgIn')?.focus(),40);}
+function docRegenPick(b){const i=document.getElementById('rgIn');if(i){i.value=(i.value?i.value+'; ':'')+b.textContent;i.focus();}}
+function docRegenGo(){closePops();toast('Regenerating '+DOCFULL[curDoc().cur].toLowerCase()+'\u2026');}
+function docMenuOpen(e){e.stopPropagation();const m=document.getElementById('wpal');
+  m.innerHTML='<button class="pli danger" onclick="docDelete()">'+svg('<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',15)+'<span class="nm">Delete document</span></button>';
+  const r=e.currentTarget.getBoundingClientRect();m.style.top=(r.bottom+6)+'px';m.style.left=Math.max(12,r.right-200)+'px';openPop('wpal');}
+function docDelete(){closePops();toast('Document deleted (demo)');}
 const DOCICON={BRO:'<path d="M9 11l3 3 8-8"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',SLA:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/>',Invoice:'<path d="M12 2v20M7 6h7a3 3 0 0 1 0 6H8a3 3 0 0 0 0 6h8"/>'};
 function curDoc(){return rec.ent.docs;}
 function renderDocs(l){if(!l.docs)l.docs=makeDocs(l);const d=l.docs;
   return `<div class="docpipe">${d.pipe.map(p=>`<div class="docchip ${p.k===d.cur?'on':''}" onclick="docSelect('${p.k}')"><div class="dci">${svg(DOCICON[p.k],18)}</div><div style="flex:1"><div class="dcn">${p.label}</div><div class="dcs">${p.sub}</div></div><div class="dcr" style="color:${p.pct===100?'var(--ok)':'var(--warn)'}">${p.pct}%</div></div>`).join('')}</div>
-   <div class="doc"><div class="doc-head" onclick="docToggle()"><span class="dhi">${svg(DOCICON[d.cur],18)}</span><span class="dhn">${DOCNAME[d.cur]}</span><span class="dcs" style="margin-left:6px">${d.pipe.find(p=>p.k===d.cur).sub}</span><span class="dhm">${svg('<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',16)}</span></div>
+   <div class="doc"><div class="doc-head" onclick="docToggle()"><span class="dhi">${svg(DOCICON[d.cur],18)}</span><span class="dhn">${DOCFULL[d.cur]}</span><span class="dhsvc">for ${LEAD_SVC}</span>
+       <span class="dh-actions"><button class="dhregen" onclick="event.stopPropagation();docRegenOpen(event)">${svg('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',13)} Regenerate</button><button class="dhm" onclick="event.stopPropagation();docMenuOpen(event)">${svg('<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',16)}</button></span></div>
      ${d.open?`<div class="doc-body" id="docBody">${docBlocksHTML(d)}</div>`:''}</div>
-   ${docBar(d)}`;}
+   ${d.open?docBar(d):''}`;}
 function docBlocksHTML(d){const arr=d.blocks[d.cur];return arr.map((b,i)=>docBlockHTML(b,i)).join('')+`<div class="dadd" onclick="docAddOpen(event,${arr.length})">${svg('<path d="M12 5v14M5 12h14"/>',15)} Add a block, or press <b style="font-weight:700;margin:0 2px">/</b> for blocks</div>`;}
 function docGut(i){return `<span class="dgut"><button title="Add" onclick="event.stopPropagation();docAddOpen(event,${i+1})">${svg('<path d="M12 5v14M5 12h14"/>',13)}</button><button title="Remove" onclick="event.stopPropagation();docRemove(${i})">${svg('<path d="M18 6 6 18M6 6l12 12"/>',12)}</button></span>`;}
 function docBlockHTML(b,i){const g=docGut(i);
