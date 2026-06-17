@@ -612,19 +612,25 @@ function oiVar(v){oiVariant=v;if(_oiLast)document.querySelectorAll('.ojr').forEa
 function ojoInsightsCard(items,noun,score){_oiLast={items,noun,score};const sc=score||{pct:null,label:'OJO read',sub:'',color:'var(--coral)',ink:'var(--navy)'};
   const bar=`<div class="ojr-bar" onclick="oiToggle(this)"><span class="ojo-orb"><img class="ojo-mini" src="assets/ojo-logo.png" alt="OJO"></span><span class="ojr-name">OJO read</span><span class="ojo-live">live</span>${sc.pct!=null?`<span class="ojr-chip" style="color:${sc.ink}">${sc.pct}% · ${sc.label}</span>`:''}<span class="ojr-cv">${svg('<path d="m6 9 6 6 6-6"/>',16)}</span></div>`;
   const ask=`<button class="ojo-ask" onclick="event.stopPropagation();openSection('genie')">${svg(SPARK,13)} Ask OJO about this ${noun||'lead'}</button>`;
+  const ic=k=>svg(OI_ICONS[k]||OI_ICONS.target,15);
   let body;
   if(oiVariant==='B'){
+    /* Conversation — OJO says one thing, the rest are follow-up chips */
     const lead=items[0]?items[0][1]:'';
     const chips=items.slice(1).map(i=>`<button class="ojr-cb" onclick="event.stopPropagation();openSection('genie')">${oiBold(i[1])}</button>`).join('');
     body=`<div class="ojr-body"><div class="ojr-say">${lead}</div><div class="ojr-chips">${chips}<button class="ojr-cb primary" onclick="event.stopPropagation();openSection('genie')">${svg(SPARK,12)} Ask OJO</button></div></div>`;
   }else if(oiVariant==='C'){
-    const tiles=items.map(i=>`<div class="ojr-tile"><span class="oi-ic">${svg(OI_ICONS[i[0]]||OI_ICONS.target,14)}</span><div class="ojr-th">${oiBold(i[1])}</div><div class="ojr-ts">${oiRest(i[1])}</div></div>`).join('');
-    const gauge=sc.pct!=null?`<div class="ojr-tile gauge"><div class="ojr-gr">${ring(sc.pct,sc.color,54)}<span class="ojr-gp" style="color:${sc.ink}">${sc.pct}%</span></div><div class="ojr-gl" style="color:${sc.ink}">${sc.label}</div></div>`:'';
-    body=`<div class="ojr-body"><div class="ojr-tiles">${gauge}${tiles}</div>${ask}</div>`;
+    /* Split dashboard — accent score panel on the left, flexible signal list on the right */
+    const lead=items[0],rest=items.slice(1);
+    const aside=`<div class="ojr-aside">${sc.pct!=null?`<div class="ojr-gr">${ring(sc.pct,sc.color,76)}<span class="ojr-gp" style="color:${sc.ink}">${sc.pct}<i>%</i></span></div><div class="ojr-gl" style="color:${sc.ink}">${sc.label}</div>`:''}${lead?`<div class="ojr-lead"><span class="oi-ic">${svg(OI_ICONS[lead[0]]||OI_ICONS.next,13)}</span><span>${lead[1]}</span></div>`:''}</div>`;
+    const sig=rest.map(i=>`<div class="ojr-sig"><span class="oi-ic">${ic(i[0])}</span><div class="ojr-st"><div class="ojr-th">${oiBold(i[1])}</div><div class="ojr-ts">${oiRest(i[1])}</div></div></div>`).join('');
+    body=`<div class="ojr-body"><div class="ojr-split">${aside}<div class="ojr-main">${sig||`<div class="ojr-sig"><span class="oi-ic">${ic('target')}</span><div class="ojr-st"><div class="ojr-th">All clear</div><div class="ojr-ts">No new signals to act on.</div></div></div>`}${ask}</div></div></div>`;
   }else{
+    /* Stacked briefing — confidence meter, then the one action in an accent callout, then supporting reads */
     const meter=sc.pct!=null?`<div class="ojr-meter"><div class="ojr-mtop"><span class="ojr-ml" style="color:${sc.ink}">${sc.label}</span><span class="ojr-mp">${sc.pct}%</span></div><div class="ojr-track"><div class="ojr-fill" style="width:${sc.pct}%;background:${sc.color}"></div></div>${sc.sub?`<div class="ojr-msub">${sc.sub}</div>`:''}</div>`:'';
-    const list=items.map((i,idx)=>`<div class="oi ${idx===0?'lead':''}"><span class="oi-ic">${svg(OI_ICONS[i[0]]||OI_ICONS.target,15)}</span><span class="oi-t">${i[1]}</span></div>`).join('');
-    body=`<div class="ojr-body">${meter}<div class="ojo-insights">${list}</div>${ask}</div>`;
+    const act=items[0]?`<div class="ojr-act"><span class="oi-ic">${svg(OI_ICONS[items[0][0]]||OI_ICONS.next,15)}</span><span class="oi-t">${items[0][1]}</span></div>`:'';
+    const list=items.slice(1).map(i=>`<div class="oi"><span class="oi-ic">${ic(i[0])}</span><span class="oi-t">${i[1]}</span></div>`).join('');
+    body=`<div class="ojr-body">${meter}${act}${list?`<div class="ojo-insights">${list}</div>`:''}${ask}</div>`;
   }
   const sw=`<div class="ojr-switch" title="A/B layout (test)">${['A','B','C'].map(v=>`<button class="${oiVariant===v?'on':''}" onclick="event.stopPropagation();oiVar('${v}')">${v}</button>`).join('')}</div>`;
   return `<div class="ojr v${oiVariant}">${bar}${body}${sw}</div>`;}
