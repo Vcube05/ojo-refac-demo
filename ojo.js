@@ -511,7 +511,7 @@ function toggleDone(id){const t=tasks.find(x=>x.id===id);if(!t)return;t.st=t.st=
 /* ============ RECORD (shared by side-peek + full detail) ============ */
 let rec=null, recMode='peek', detailFace='info', detailTab='Overview', detailCollapsed=true, recWatch=true;
 const SCORE={New:[20,'Cold'],Contacted:[35,'Warming'],Qualified:[60,'Average'],Proposal:[72,'Warm'],Won:[95,'Hot'],Lost:[12,'Cold']};
-const TABICON={Overview:'star','Deal room':'List',Details:'Details',Notes:'notes',Activity:'activity'};
+const TABICON={Overview:'star','Deal room':'List',Details:'Details',Notes:'notes','Notes & Files':'notes',Activity:'activity'};
 function newRec(type,id){const ent=type==='lead'?leads.find(x=>x.id===id):tasks.find(x=>x.id===id);if(!ent)return null;
   const subs=type==='lead'?[{t:'Confirm budget with client',done:true},{t:'Add target audience',done:false},{t:'Send proposal',done:false}]:[{t:'Define scope',done:true},{t:'Draft',done:false},{t:'Review with PM',done:false}];
   const comments=type==='lead'?[{who:'Priya Nair',av:'PN',color:'#7C53E6',body:'Shared the brief with the client — awaiting sign-off on the budget.',at:'2 days ago',react:1,own:false},{who:'Vinoth V V',av:'VV',color:'#C92F3A',body:'Updated the proposal in the Deal room. @Priya can you review the timeline before we send?',at:'yesterday',react:0,own:true}]:[];
@@ -540,7 +540,7 @@ function mountDetail(){const r=rec,isLead=r.type==='lead',e=r.ent;
       <div class="dnav"><button class="dctl" onclick="detailNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="detailNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div>
     </div>`;
   /* activity lives in the hideable panel (project pattern), so no Activity tab */
-  const _tabs=isLead?['Overview','Deal room','Details','Notes']:['Overview','Details','Notes'];
+  const _tabs=isLead?['Overview','Deal room','Details','Notes & Files']:['Overview','Details','Notes & Files'];
   const viewbar=`<div class="viewbar">${_tabs.map(x=>`<button class="vtab ${x===detailTab?'on':''}" onclick="detailSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[TABICON[x]],14)}</span>${x}</button>`).join('')}</div>`;
   /* one header cluster for every record: comm pill · history toggle · close — comm faces fit the record */
   const who=isLead?(e.nm||'contact'):(e.asg&&PEOPLE[e.asg]?PEOPLE[e.asg][2]:'assignee');
@@ -615,10 +615,9 @@ function ojoInsightsCard(items,noun,score){_oiLast={items,noun,score};const sc=s
   const ic=k=>svg(OI_ICONS[k]||OI_ICONS.target,15);
   let body;
   if(oiVariant==='B'){
-    /* Conversation — OJO says one thing, the rest are follow-up chips */
-    const lead=items[0]?items[0][1]:'';
-    const chips=items.slice(1).map(i=>`<button class="ojr-cb" onclick="event.stopPropagation();openSection('genie')">${oiBold(i[1])}</button>`).join('');
-    body=`<div class="ojr-body"><div class="ojr-say">${lead}</div><div class="ojr-chips">${chips}<button class="ojr-cb primary" onclick="event.stopPropagation();openSection('genie')">${svg(SPARK,12)} Ask OJO</button></div></div>`;
+    /* Narrative — OJO reads the deal as a written description, not bullets */
+    const prose=items.map(i=>i[1]).join(' ');
+    body=`<div class="ojr-body"><p class="ojr-prose">${prose}</p>${ask}</div>`;
   }else if(oiVariant==='C'){
     /* Split dashboard — accent score panel on the left, flexible signal list on the right */
     const lead=items[0],rest=items.slice(1);
@@ -697,11 +696,35 @@ function taskDetailsTab(){const t=rec.ent;const p=PEOPLE[t.asg];
   return `<div class="pdetails" style="padding:6px 0 30px">${block('About this task',about)}${block('People',people)}${block('Context',ctx)}</div>`;}
 
 /* ---- shared record body (rows + subtasks + comments) ---- */
+/* Notes & Files — cell-structured record tab (notes feed + files, composer with attach) */
+const NF_CLIP='<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',NF_TRASH='<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>';
+function notesFilesTab(){
+  if(!rec.notesView)rec.notesView='notes';
+  if(!rec.notes)rec.notes=[];
+  if(!rec.files)rec.files=[];
+  const seg=`<div class="nf-seg">${[['notes','Notes',rec.notes.length],['files','Files',rec.files.length]].map(s=>`<button class="${rec.notesView===s[0]?'on':''}" onclick="nfTab('${s[0]}')">${s[1]}${s[2]?`<span class="nf-ct">${s[2]}</span>`:''}</button>`).join('')}</div>`;
+  let body;
+  if(rec.notesView==='notes'){
+    const list=rec.notes.length?`<div class="nf-list">${rec.notes.map((n,i)=>`<div class="nf-note"><span class="av" style="background:${n.color}">${n.av}</span><div class="nf-nbody"><div class="nf-nhd"><b>${n.who}</b><span class="nf-at">${n.at}</span><button class="nf-del" title="Delete note" onclick="nfDelNote(${i})">${svg(NF_TRASH,14)}</button></div><div class="nf-ntext">${n.body}</div></div></div>`).join('')}</div>`
+      :`<div class="nf-empty">${svg(ICONS.notes,22)}<span>No notes yet — be the first.</span></div>`;
+    body=`${list}<div class="nf-composer"><button class="nf-clip" title="Attach a file" onclick="nfAttach()">${svg(NF_CLIP,17)}</button><input id="nfInput" placeholder="Add a note…" onkeydown="if(event.key==='Enter'){event.preventDefault();nfAddNote();}"><button class="nf-send" title="Add note" onclick="nfAddNote()">${svg('<path d=\'M12 19V5M5 12l7-7 7 7\'/>',16)}</button></div>`;
+  }else{
+    const list=rec.files.length?`<div class="nf-files">${rec.files.map((fl,i)=>`<div class="nf-file"><span class="nf-fic">${svg(ICONS.notes,16)}</span><div class="nf-fmeta"><div class="nf-fn">${fl.name}</div><div class="nf-fsub">${fl.size} · ${fl.at}</div></div><button class="nf-del" title="Delete file" onclick="nfDelFile(${i})">${svg(NF_TRASH,14)}</button></div>`).join('')}</div>`
+      :`<div class="nf-empty">${svg(NF_CLIP,22)}<span>No files yet — attach one below.</span></div>`;
+    body=`${list}<button class="nf-attach" onclick="nfAttach()">${svg(NF_CLIP,15)} Attach a file</button>`;
+  }
+  return `<div class="nf-wrap"><div class="nf-top"><div class="nf-h">Notes &amp; Files <span class="cell-tag" title="UI cell — render:'feed' · bind:'relation:notes'">${svg(SPARK,10)} cell</span></div>${seg}</div>${body}</div>`;
+}
+function nfTab(k){rec.notesView=k;renderRec();}
+function nfAddNote(){const inp=document.getElementById('nfInput');if(!inp)return;const v=inp.value.trim();if(!v)return;rec.notes.unshift({who:'Vinoth V V',av:'VV',color:'#C92F3A',body:v,at:'just now'});rec.notesView='notes';renderRec();toast('Note added');}
+function nfAttach(){const n=(rec.files?rec.files.length:0)+1;if(!rec.files)rec.files=[];rec.files.unshift({name:'attachment-'+n+'.pdf',size:(38+n*7)+' KB',at:'just now'});rec.notesView='files';renderRec();toast('File attached (demo)');}
+function nfDelNote(i){rec.notes.splice(i,1);renderRec();toast('Note deleted');}
+function nfDelFile(i){rec.files.splice(i,1);renderRec();toast('File deleted');}
 function renderRec(){const inner=document.getElementById('dinner');if(!inner)return;
   if(detailTab==='Overview')inner.innerHTML=(rec.type==='lead'?leadRecHTML():taskRecHTML());
   else if(detailTab==='Deal room')inner.innerHTML=renderDocs(rec.ent);
   else if(detailTab==='Details')inner.innerHTML=rec.type==='lead'?leadDetailsTab():taskDetailsTab();
-  else if(detailTab==='Notes')inner.innerHTML=`<div class="rec-block" style="margin-top:6px"><div class="rec-block-h">Notes</div><div class="free notes-free" contenteditable="true" data-ph="Write a note about this ${rec.type}…"></div></div>`;
+  else if(detailTab==='Notes & Files')inner.innerHTML=notesFilesTab();
   else inner.innerHTML=`<div class="placeholder" style="margin-top:30px"><div class="pic">${svg(ICONS.List,28)}</div><h2>${detailTab}</h2><p>This view renders the same cell's data, arranged as ${detailTab}.</p></div>`;
   const ta=document.getElementById('cmt');if(ta){ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();recComment();}});}}
 function subsHTML(){return `<div class="subs">${rec.subs.map((s,i)=>`<div class="sub ${s.done?'done':''}"><button class="scheck" onclick="recSub(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></button><span class="txt">${s.t}</span></div>`).join('')}<div class="subadd"><span class="scheck"></span><input placeholder="Add a new subtask" onkeydown="if(event.key==='Enter')recAddSub(this)"></div></div>`;}
