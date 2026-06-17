@@ -1540,10 +1540,11 @@ const SVC_CATALOG=[
 const SVC_PACKAGES=[{id:'pkg-launch',name:'Brand Launch Kit',price:'₹3,40,000',items:['logo design','strategy','SEO']}];
 const SLATEMPLATES=[{id:'sla-std',name:'Standard SLA Template',updated:'05 May 2026',def:true}];
 const RATECLR={'Per unit':'var(--info)','Hourly':'#7C53E6','Monthly retainer':'var(--ok)','Group':'var(--faint)'};
-let leadSetTab='bro',leadSetSub='services';
+let leadSetTab='bro',leadSetSub='services',leadSetDetail=null;
 const LSTABS=[['bro','BRO Templates'],['stages','Pipelines & Lead stages'],['pricing','Service Pricing'],['sla','SLA Template']];
 function celltag(type,id){return `<span class="celltag"><span class="dot"></span>${type}<span class="cid">${id}</span></span>`;}
 function mountLeadsSettings(){
+  if(leadSetDetail){document.getElementById('modcontent').innerHTML=lsEditor();return;}
   document.getElementById('modcontent').innerHTML=`<div class="box"><div class="mc-top"><div class="title-wrap"><div class="picon">${svg('<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',20)}</div><div><h1>Lead Settings</h1><div class="sub">Configure how leads work — every item is a cell</div></div></div><div class="sp"></div><span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span></div>
    <div class="viewbar">${LSTABS.map(t=>`<button class="vtab ${t[0]===leadSetTab?'on':''}" onclick="leadSetSetTab('${t[0]}')">${t[1]}</button>`).join('')}</div>
    <div id="lsBody" style="padding:6px 26px 44px">${leadSetBody()}</div></div>`;}
@@ -1556,39 +1557,98 @@ function leadSetBody(){
   if(leadSetTab==='sla')return lsSLA();
   // BRO Templates
   return lsLegend(`A <b>BRO template</b> is a cell that <b>composes field cells</b> — <code>Core</code> always collected, <code>Extended</code> optional. Leads bind to one when they reach the Proposal stage.`)
-   +`<div class="setrowh"><h2 class="set-h">BRO Templates</h2><button class="ojofind" onclick="toast('New template (demo)')">${svg(SVS.plus,13)} Add new</button></div>`
+   +`<div class="setrowh"><h2 class="set-h">BRO Templates</h2><button class="ojofind" onclick="lsOpen('bro',null)">${svg(SVS.plus,13)} Add new</button></div>`
    +BROTEMPLATES.map(t=>`<div class="tmplcard"><div class="th"><div class="ti">${svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',18)}</div>
       <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:10px"><span class="tn">${t.name}</span>${celltag('BROTemplate',t.id)}</div><div class="tm">Last updated ${t.updated} · Version ${t.ver}</div><div class="td">${t.desc}</div></div>
-      <button class="rowmenu" onclick="toast('Edit ${t.name} (demo)')">${svg(SVS.more,16)}</button></div>
+      <button class="rowmenu" onclick="lsOpen('bro','${t.id}')">${svg(SVS.more,16)}</button></div>
       <div class="fieldrow"><span class="fl">Core</span><div class="fieldchips">${t.core.map(f=>`<span class="fieldchip core"><span class="dot"></span>${f}</span>`).join('')}</div></div>
       <div class="fieldrow"><span class="fl">Extended</span><div class="fieldchips">${t.ext.map(f=>`<span class="fieldchip ext"><span class="dot"></span>${f}</span>`).join('')}</div></div>
       <div class="cellnote">composes <b>${t.core.length+t.ext.length}</b> field cells · <code>render: form · bind: collection:Field</code></div></div>`).join('');}
 function lsStages(){return lsLegend(`Each <b>lead stage</b> is a cell. Its <code>property</code> links the document cell OJO generates there — Proposal→<b>BRO</b>, SLA→<b>Agreement</b>, Closure→<b>Invoice</b>. The <b>Mark as Won</b> capability only shows on a stage whose property is <code>Closed</code>.`)
-   +`<div class="setrowh"><h2 class="set-h">Lead Stages</h2><button class="ojofind" onclick="toast('New stage (demo)')">${svg(SVS.plus,13)} Add new</button></div>`
+   +`<div class="setrowh"><h2 class="set-h">Lead Stages</h2><button class="ojofind" onclick="lsOpen('stage',null)">${svg(SVS.plus,13)} Add new</button></div>`
    +`<div class="stagepipe">${LEADSTAGE_DEF.map((s,i)=>`<div class="sp-node ${i===0?'first':''}"><span class="sp-bar" style="background:${s.cc}"></span><span class="sp-lbl">${s.name}${s.prop?` ${svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',11)}`:''}</span></div>`).join('')}</div>
    <div class="tablewrap" style="max-width:920px"><table><thead><tr><th style="width:30px"></th><th>Lead stage</th><th>Description</th><th>Property (links a doc cell)</th><th>Cell</th><th style="width:30px"></th></tr></thead><tbody>
    ${LEADSTAGE_DEF.map(s=>`<tr><td style="color:var(--ghost);cursor:grab">${svg('<circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/>',15)}</td>
      <td><b style="color:var(--navy)">${s.name}</b></td><td class="co">${s.desc}</td>
      <td>${s.prop?`<span class="vchip" style="color:${STAGE_PROP[s.prop]};border-color:color-mix(in srgb,${STAGE_PROP[s.prop]} 35%,transparent);background:color-mix(in srgb,${STAGE_PROP[s.prop]} 8%,transparent)">${s.prop}</span>`:'<span class="co">—</span>'}</td>
      <td><span class="celltag"><span class="dot"></span>LeadStage<span class="cid">${s.id}</span></span></td>
-     <td><button class="rowmenu" onclick="toast('Edit ${s.name} (demo)')">${svg(SVS.more,16)}</button></td></tr>`).join('')}</tbody></table></div>`;}
+     <td><button class="rowmenu" onclick="lsOpen('stage','${s.id}')">${svg(SVS.more,16)}</button></td></tr>`).join('')}</tbody></table></div>`;}
 function lsPricing(){
   const sub=`<div class="lssub"><button class="${leadSetSub==='packages'?'on':''}" onclick="leadSetSub_('packages')">Packages</button><button class="${leadSetSub==='services'?'on':''}" onclick="leadSetSub_('services')">Services</button></div>`;
   if(leadSetSub==='packages'){
     return lsLegend(`A <b>package</b> is a cell that <b>bundles service cells</b> via links — the clearest cell composition. Price rolls up from its members.`)
-     +`<div class="setrowh"><h2 class="set-h">Services &amp; Packages</h2><button class="ojofind" onclick="toast('Create package (demo)')">${svg(SVS.plus,13)} Create package</button></div>`+sub
+     +`<div class="setrowh"><h2 class="set-h">Services &amp; Packages</h2><button class="ojofind" onclick="lsOpen('package',null)">${svg(SVS.plus,13)} Create package</button></div>`+sub
      +`<div style="margin-top:14px">${SVC_PACKAGES.map(p=>`<div class="tmplcard"><div class="th"><div class="ti">${svg('<path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/>',18)}</div><div style="flex:1"><div style="display:flex;align-items:center;gap:10px"><span class="tn">${p.name}</span>${celltag('Package',p.id)}</div><div class="tm">${p.price} · bundles ${p.items.length} service cells</div></div><button class="rowmenu" onclick="toast('Edit (demo)')">${svg(SVS.more,16)}</button></div>
        <div class="fieldrow"><span class="fl">Services</span><div class="fieldchips">${p.items.map(s=>`<span class="fieldchip core"><span class="dot"></span>${s}</span>`).join('')}</div></div>
        <div class="cellnote"><code>links.members → [Service]</code> · price rolls up</div></div>`).join('')}</div>`;}
   return lsLegend(`Each <b>service</b> is a domain cell with a <code>rate model</code> and <code>price</code>. Grouped by category; bind these into packages or quote them straight on a proposal.`)
-   +`<div class="setrowh"><h2 class="set-h">Services &amp; Packages</h2><button class="ojofind" onclick="toast('Add service (demo)')">${svg(SVS.plus,13)} Add service</button></div>`+sub
+   +`<div class="setrowh"><h2 class="set-h">Services &amp; Packages</h2><button class="ojofind" onclick="lsOpen('service',null)">${svg(SVS.plus,13)} Add service</button></div>`+sub
    +`<div class="tablewrap" style="max-width:920px;margin-top:14px"><table><thead><tr><th>Service</th><th>Rate model</th><th class="num">Price</th><th style="width:30px"></th></tr></thead><tbody>
    ${SVC_CATALOG.map(g=>`<tr class="svcgrp"><td><b style="color:var(--navy)">${g.group}</b></td><td>${g.rate==='Group'?'<span class="co">Group</span>':`<span class="ratechip" style="color:${RATECLR[g.rate]}">${g.rate}</span>`}</td><td class="num">${g.price}</td><td></td></tr>
-     ${g.items.map(it=>`<tr><td style="padding-left:30px">${it[0]}<div style="font-size:11.5px;color:var(--faint)">Under ${g.group}</div></td><td><span class="ratechip" style="color:${RATECLR[it[1]]}">${it[1]}</span></td><td class="num">${it[2]}</td><td><button class="rowmenu" onclick="event.stopPropagation();toast('Edit ${it[0]} (demo)')">${svg(SVS.pencil,14)}</button></td></tr>`).join('')}`).join('')}</tbody></table></div>`;}
+     ${g.items.map(it=>`<tr><td style="padding-left:30px">${it[0]}<div style="font-size:11.5px;color:var(--faint)">Under ${g.group}</div></td><td><span class="ratechip" style="color:${RATECLR[it[1]]}">${it[1]}</span></td><td class="num">${it[2]}</td><td><button class="rowmenu" onclick="event.stopPropagation();lsOpen('service','${it[0].replace(/'/g,"")}')">${svg(SVS.pencil,14)}</button></td></tr>`).join('')}`).join('')}</tbody></table></div>`;}
 function lsSLA(){return lsLegend(`An <b>SLA template</b> is a document cell bound to the <b>SLA stage</b>. The one marked <code>Default</code> is used when a lead reaches that stage.`)
-   +`<div class="setrowh"><h2 class="set-h">SLA Templates</h2><button class="ojofind" onclick="toast('New SLA (demo)')">${svg(SVS.plus,13)} Add new</button></div>`
-   +SLATEMPLATES.map(t=>`<div class="tmplcard"><div class="th"><div class="ti">${svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',18)}</div><div style="flex:1"><div style="display:flex;align-items:center;gap:10px"><span class="tn">${t.name}</span>${t.def?'<span class="ebadge" style="color:var(--ok);background:var(--ok-soft)">Default</span>':''}${celltag('SLATemplate',t.id)}</div><div class="tm">Last updated ${t.updated}</div></div><button class="rowmenu" onclick="toast('Edit (demo)')">${svg(SVS.pencil,15)}</button></div>
+   +`<div class="setrowh"><h2 class="set-h">SLA Templates</h2><button class="ojofind" onclick="lsOpen('sla',null)">${svg(SVS.plus,13)} Add new</button></div>`
+   +SLATEMPLATES.map(t=>`<div class="tmplcard"><div class="th"><div class="ti">${svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',18)}</div><div style="flex:1"><div style="display:flex;align-items:center;gap:10px"><span class="tn">${t.name}</span>${t.def?'<span class="ebadge" style="color:var(--ok);background:var(--ok-soft)">Default</span>':''}${celltag('SLATemplate',t.id)}</div><div class="tm">Last updated ${t.updated}</div></div><button class="rowmenu" onclick="lsOpen('sla','${t.id}')">${svg(SVS.pencil,15)}</button></div>
      <div class="cellnote"><code>render: document · bind: cell:${t.id}</code> · linked to <b>stage-sla</b></div></div>`).join('');}
+
+/* ---- Lead Settings detail/editor pages (open from Add new / Edit) ---- */
+const BRO_CORE=['Budget','Timeline','Deliverables'];
+const BRO_EXT_POOL=['Team','Objective','Goal','KPIs','Communication Channels','Communication','Requirements','Target Audience'];
+const SLA_VARS=['client_name','client_contact','client_email','project_title','services_list','start_date','end_date','budget','company_name','current_date','sla_response_time','sla_resolution_time','support_hours','milestone_table'];
+let lsBroDraft=null;
+function lsOpen(kind,id){leadSetDetail={kind,id};
+  if(kind==='bro'){const t=BROTEMPLATES.find(x=>x.id===id);lsBroDraft={name:t?t.name:'',desc:t?t.desc:'',on:new Set(t?t.ext:['Team'])};}
+  mountLeadsSettings();}
+function lsBack(){leadSetDetail=null;lsBroDraft=null;mountLeadsSettings();}
+function lsSave(){const m={bro:'Template',stage:'Stage',service:'Service',sla:'SLA template',package:'Package'}[leadSetDetail.kind];toast(m+' saved (demo)');lsBack();}
+function lsEditor(){const k=leadSetDetail.kind,nw=!leadSetDetail.id;
+  const title={bro:(nw?'New':'Edit')+' BRO Template',stage:(nw?'New':'Edit')+' Lead Stage',service:(nw?'New':'Edit')+' Service',sla:(nw?'New':'Edit')+' SLA Template',package:'New Package'}[k];
+  const save={bro:nw?'Create template':'Update template',stage:nw?'Add stage':'Update stage',service:'Save service',sla:'Save template',package:'Create package'}[k];
+  const body=k==='bro'?lsEditBRO():k==='stage'?lsEditStage():k==='service'?lsEditService():k==='package'?lsEditPackage():lsEditSLA();
+  return `<div class="box"><div class="lsedit"><div class="lsedit-top"><button class="lsback" onclick="lsBack()">${svg(SVS.arrow,18)}</button><h1>${title}</h1></div>
+   ${body}
+   <div class="lsedit-foot"><button class="lsbtn" onclick="lsBack()">Cancel</button><button class="lsbtn dark" onclick="lsSave()">${svg('<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/>',15)} ${save}</button></div></div></div>`;}
+function lsEditBRO(){const d=lsBroDraft;
+  return `<div class="lssec"><div class="lssec-h">Template Details ${celltag('BROTemplate',leadSetDetail.id||'new')}</div>
+    <div class="lsgrid2"><label class="lsfield"><span>Template Name *</span><input id="lsName" value="${d.name.replace(/"/g,'&quot;')}" placeholder="e.g. Common Default"></label>
+      <label class="lsfield"><span>Description</span><input id="lsDesc" value="${d.desc.replace(/"/g,'&quot;')}" placeholder="What is this template for?"></label></div></div>
+   <div class="lssec"><div class="lssec-h">Core Sections <span class="fixedtag">Fixed</span></div>
+    <div class="lscore">${BRO_CORE.map(c=>`<div class="lscore-cell"><div class="lscore-ph">${c==='Budget'?'₹0':c==='Timeline'?'—':'Items…'}</div><div class="lscore-lbl">${c}</div></div>`).join('')}</div>
+    <div class="cellnote">3 fixed field cells — always collected on every lead</div></div>
+   <div class="lssec"><div class="lssec-h">Extended Sections</div>
+    <div class="lsext">${BRO_EXT_POOL.filter(f=>d.on.has(f)).map(f=>`<div class="lsext-cell"><label class="lsck"><input type="checkbox" checked onclick="lsBroToggle('${f}')"><b>${f}</b></label><input class="lsext-in" placeholder="Enter ${f.toLowerCase()}…"></div>`).join('')||'<div class="muted2" style="padding:4px 0">No extended sections — add from below.</div>'}</div>
+    <div class="lsaddrow">${BRO_EXT_POOL.filter(f=>!d.on.has(f)).map(f=>`<button class="addchip" onclick="lsBroToggle('${f}')">${f} ${svg(SVS.plus,11)}</button>`).join('')}<button class="addchip dark" onclick="toast('Custom field (demo)')">${svg(SVS.plus,12)}</button></div>
+    <div class="cellnote">composes <b>${d.on.size}</b> extended field cells · toggle to bind / unbind · <code>render: form</code></div></div>`;}
+function lsBroToggle(f){const n=document.getElementById('lsName');if(n)lsBroDraft.name=n.value;const ds=document.getElementById('lsDesc');if(ds)lsBroDraft.desc=ds.value;lsBroDraft.on.has(f)?lsBroDraft.on.delete(f):lsBroDraft.on.add(f);mountLeadsSettings();}
+function lsEditStage(){const s=LEADSTAGE_DEF.find(x=>x.id===leadSetDetail.id)||{name:'',desc:'',prop:null};const props=['None','BRO','Agreement','Invoice','Closed'];
+  return `<div class="lssec">${celltag('LeadStage',leadSetDetail.id||'new')}
+    <label class="lsfield" style="margin-top:14px"><span>Lead Stage Name *</span><input value="${s.name}" placeholder="e.g. Proposal"></label>
+    <label class="lsfield"><span>Description *</span><textarea rows="3" placeholder="What happens at this stage?">${s.desc==='Lead captured'||s.desc==='won & invoiced'?'':s.desc}</textarea></label>
+    <label class="lsfield"><span>Property *</span><select>${props.map(p=>`<option ${p===(s.prop||'None')?'selected':''}>${p}</option>`).join('')}</select></label>
+    <div class="lshint">${svg('<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',14)} Only stages with the <b>Closed</b> property can show the “Mark as Won” action.</div>
+    <div class="cellnote">the <code>property</code> links the document cell OJO generates at this stage</div></div>`;}
+function lsEditService(){
+  return `<div class="lssec">${celltag('Service',leadSetDetail.id||'new')}
+    <label class="lsfield" style="margin-top:14px"><span>Service Name *</span><input value="${leadSetDetail.id||''}" placeholder="e.g. UI/UX Design"></label>
+    <label class="lsfield"><span>Pricing Model *</span><select id="lsRate" onchange="lsSvcRate(this.value)"><option>Per unit</option><option selected>Hourly</option><option>Monthly retainer</option></select></label>
+    <label class="lsfield"><span id="lsPriceLbl">Price / Hr *</span><div class="lsprice"><span>₹</span><input placeholder="1500" inputmode="numeric"></div></label>
+    <div class="cellnote">a domain cell · <code>values: { rate, price }</code> · bind into packages or quote on a proposal</div></div>`;}
+function lsSvcRate(v){const l=document.getElementById('lsPriceLbl');if(l)l.textContent=v==='Per unit'?'Price / unit *':v==='Monthly retainer'?'Price / mo *':'Price / Hr *';}
+function lsEditPackage(){const svcs=SVC_CATALOG.flatMap(g=>g.items.map(i=>i[0]));
+  return `<div class="lssec">${celltag('Package','new')}
+    <label class="lsfield" style="margin-top:14px"><span>Package Name *</span><input placeholder="e.g. Brand Launch Kit"></label>
+    <div class="lssec-h" style="margin-top:6px">Bundle services</div>
+    <div class="lsaddrow">${svcs.map(s=>`<button class="addchip" onclick="this.classList.toggle('on')">${s}</button>`).join('')}</div>
+    <div class="cellnote">a package cell <b>bundles service cells</b> via <code>links.members</code> · price rolls up</div></div>`;}
+function lsEditSLA(){const t=SLATEMPLATES.find(x=>x.id===leadSetDetail.id)||{name:'',def:false};
+  return `<div class="lssec"><div class="lsgrid2"><label class="lsfield"><span>Template Name *</span><input value="${t.name}" placeholder="Standard SLA Template"></label>
+     <label class="lsfield"><span>Service Type</span><select><option>All Services (Generic)</option><option>Branding</option><option>Development</option><option>Digital marketing</option></select></label></div>
+    <label class="lstoggle"><input type="checkbox" ${t.def?'checked':''}> Set as default SLA template</label>
+    <div class="slavars"><div class="slavars-h">${svg(SPARK,12)} Available Variables</div><div class="slavars-chips">${SLA_VARS.map(v=>`<button class="varchip" onclick="toast('Inserted {{${v}}}')">{{${v}}}</button>`).join('')}</div><div class="slavars-note">Click a variable to insert it — replaced with real values when generating SLAs.</div></div>
+    <div class="lssec-h" style="margin-top:18px;display:flex;align-items:center">Template Content *<button class="addchip" style="margin-left:auto" onclick="toast('Upload document (demo)')">${svg('<path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/>',12)} Upload</button></div>
+    <div class="slaeditor"><div class="slatoolbar"><b>B</b><i>I</i><u>U</u><span class="sep"></span>Paragraph<span class="sep"></span>${svg('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',14)}${svg('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>',14)}${svg('<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>',14)}</div>
+      <div class="sladoc"><h2>Service Agreement (SLA)</h2><hr><p><b>Date:</b> <span class="var">{{current_date}}</span><br><b>Provider:</b> <span class="var">{{company_name}}</span><br><b>Client:</b> <span class="var">{{client_name}}</span><br><b>Contact:</b> <span class="var">{{client_contact}}</span> (<span class="var">{{client_email}}</span>)</p><h3>1. Project Overview</h3><p>This Service Level Agreement outlines the terms between <span class="var">{{company_name}}</span> (“Provider”) and <span class="var">{{client_name}}</span> (“Client”) for <b><span class="var">{{project_title}}</span></b>.</p><h3>1.1 Services</h3><p><span class="var">{{services_list}}</span></p></div></div>
+    <div class="cellnote"><code>render: document · bind: cell tokens</code> · linked to <b>stage-sla</b></div></div>`;}
 
 /* ============ CONTACTS MODULE — every person you do business with. One simple list,
    a prominent profile record on the locked system, links into leads/vendors/employees. ============ */
@@ -1810,8 +1870,8 @@ function mountAccounts(){acctDoc=null;document.getElementById('screen').innerHTM
 function acctNavToggle(){acctNavCollapsed=!acctNavCollapsed;document.getElementById('acctbox').classList.toggle('navcollapsed',acctNavCollapsed);}
 function acctSet(p){acctPage=p;acctDoc=null;acctTab={overview:'pl',accounting:'journals',bills:'bills',settings:'fy'}[p]||null;document.querySelectorAll('#acctbox .hrnav a').forEach((a,i)=>a.classList.toggle('on',ACCNAV[i]&&ACCNAV[i][0]===p));renderAcct();}
 function acctTabSet(t){acctTab=t;renderAcct();}
-function acctOpen(kind,id){acctDoc={kind,id};renderAcct();}
-function acctBack(){acctDoc=null;renderAcct();}
+function acctOpen(kind,id){acctDoc={kind,id};mountAcctDoc();}
+function acctBack(){acctDoc=null;mountAccounts();}
 function renderAcct(){const el=document.getElementById('acctmain');if(!el)return;
   if(acctDoc){el.innerHTML=acctDetail();return;}
   const p=acctPage;
@@ -1828,12 +1888,18 @@ function acctCustomers(){coll='account';const c=COLL.account,rows=c.data();
    <div class="work" style="padding-top:8px">${work}</div>`;}
 function acctCustV(v){collView=v;renderAcct();}
 function acctTasks(){taskModule='account';taskScope='account';taskContainer='acctmain';return tasksListHTML('account');}
+/* Finance pages share the master listing header (icon · title · sub · tools · New · ★ view-tabs)
+   — identical grammar to Leads / Vendors / Contacts / Customers. */
+const FINICON={overview:'<path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/>',accounting:'<path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M9 3v18"/>',invoice:'<path d="M5 3v18l2-1 2 1 2-1 2 1 2-1 2 1V3l-2 1-2-1-2 1-2-1-2 1z"/><path d="M8 8h8M8 13h6"/>',bills:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/>',payroll:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 14h2"/>',settings:'<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>'};
+function acctNew(label,action){return `<div class="newbtn"><button class="a" onclick="${action}">${label}</button><span class="b" onclick="${action}">${svg(SVS.caret,11)}</span></div>`;}
+function acctTopTools(newLabel,newAction){return `<span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span>${newLabel?acctNew(newLabel,newAction):''}`;}
+function acctHead(page,title,sub,tabs,active,right){return `<div class="mc-top"><div class="title-wrap"><div class="picon">${svg(FINICON[page],20)}</div><div><h1>${title}</h1><div class="sub">${sub}</div></div></div><div class="sp"></div>${right||''}</div>${tabs&&tabs.length?listVTabs(tabs,active):''}`;}
 /* ---- Overview: P&L / Balance Sheet ---- */
 function acctOverview(){const tab=acctTab||'pl';
-  const tabs=`<div class="atabs"><button class="atab ${tab==='pl'?'on':''}" onclick="acctTabSet('pl')">Profit &amp; Loss Statement</button><button class="atab ${tab==='bs'?'on':''}" onclick="acctTabSet('bs')">Balance Sheet</button></div>`;
-  if(tab==='bs')return tabs+pageHeader('Balance Sheet','As on 30 Jun 2026')+`<div class="tablewrap"><table><thead><tr><th>Account</th><th class="num">Total (INR)</th></tr></thead><tbody><tr><td><b>Assets</b></td><td class="num">₹0</td></tr><tr><td>Current Assets</td><td class="num">₹0</td></tr><tr><td>Fixed Assets</td><td class="num">₹0</td></tr><tr><td><b>Liabilities</b></td><td class="num">₹0</td></tr><tr><td>Current Liabilities</td><td class="num">₹0</td></tr><tr><td><b>Equity</b></td><td class="num">₹0</td></tr></tbody></table></div>`;
-  return tabs
-   +`<div class="phead2" style="align-items:flex-start"><div><div class="pht">Profit &amp; Loss</div><div class="phs">From 01/06/2026 To 30/06/2026</div></div><div style="margin-left:auto;display:flex;gap:8px;align-items:center"><button class="back" onclick="toast('Share')">${svg('<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>',16)}</button><button class="manual" onclick="toast('Export')">Export ${svg(SVS.caret,11)}</button></div></div>`
+  const tabs=[['Profit & Loss','star',"acctTabSet('pl')"],['Balance Sheet','Table',"acctTabSet('bs')"]];
+  const head=acctHead('overview','Overview','Financial statements · FY 2026-27',tabs,tab==='bs'?'Balance Sheet':'Profit & Loss',`<button class="manual" onclick="toast('Export')">${svg('<path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/>',15)} Export</button>`);
+  if(tab==='bs')return head+`<div class="selrow" style="margin-top:14px"><div class="selfield"><div class="k">As on</div><button class="manual" style="width:100%;justify-content:space-between" onclick="toast('Date')">30 Jun 2026 ${svg(SVS.caret,12)}</button></div></div><div class="tablewrap"><table><thead><tr><th>Account</th><th class="num">Total (INR)</th></tr></thead><tbody><tr><td><b>Assets</b></td><td class="num">₹0</td></tr><tr><td>Current Assets</td><td class="num">₹0</td></tr><tr><td>Fixed Assets</td><td class="num">₹0</td></tr><tr><td><b>Liabilities</b></td><td class="num">₹0</td></tr><tr><td>Current Liabilities</td><td class="num">₹0</td></tr><tr><td><b>Equity</b></td><td class="num">₹0</td></tr></tbody></table></div>`;
+  return head
    +`<div class="hstats"><div class="hstat"><div class="v" style="color:#2F6FED">₹0</div><div class="l">Total Income this month</div></div><div class="hstat"><div class="v" style="color:var(--coral-ink)">₹0</div><div class="l">Total Expense this month</div></div><div class="hstat"><div class="v" style="color:var(--ok)">₹0</div><div class="l">Total Profit this month</div></div></div>`
    +`<div class="ojorev"><div class="ic">✦</div><div style="flex:1"><div class="oh">OJO review</div><div style="font-weight:700;color:var(--navy);margin-top:6px">Click refresh to get AI-powered insights.</div><div class="ot">OJO will analyze your financial data and provide actionable recommendations.</div><div class="note">${svg('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',12)} Only aggregated totals are analyzed. No transaction details or names are shared.</div></div><button class="reload" onclick="toast('Analyzing…')">${svg('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',16)}</button><div class="sc"><div class="v">-/100</div><div class="l">Health Score</div></div></div>`
    +`<div class="selrow"><div class="selfield"><div class="k">Fiscal Year</div><button class="manual" style="width:100%;justify-content:space-between" onclick="toast('FY')">FY 2026-27 ${svg(SVS.caret,12)}</button></div><div class="selfield"><div class="k">Date range</div><button class="manual" style="width:100%;justify-content:space-between" onclick="toast('Range')">This Month ${svg(SVS.caret,12)}</button></div><div class="selfield"><div class="k">Profit View</div><button class="manual" style="width:100%;justify-content:space-between" onclick="toast('View')">Absolute (₹) ${svg(SVS.caret,12)}</button></div></div>`
@@ -1847,39 +1913,39 @@ function acctOverview(){const tab=acctTab||'pl';
      <tr><td class="co">7</td><td><b>Net Profit</b></td><td class="num">₹0</td></tr></tbody></table></div>`;}
 /* ---- Accounting: Journals / Trial Balance ---- */
 function acctAccounting(){const tab=acctTab||'journals';
-  const tabs=`<div class="atabs"><button class="atab ${tab==='journals'?'on':''}" onclick="acctTabSet('journals')">Journals</button><button class="atab ${tab==='tb'?'on':''}" onclick="acctTabSet('tb')">Trial Balance</button></div>`;
-  if(tab==='tb')return tabs+pageHeader('Trial Balance','As on 30 Jun 2026')+`<div class="tablewrap"><table><thead><tr><th>Account</th><th class="num">Debit (INR)</th><th class="num">Credit (INR)</th></tr></thead><tbody>${COA.map(a=>`<tr><td><b style="color:var(--navy)">${a[0]}</b> · ${a[1]}</td><td class="num">₹0</td><td class="num">₹0</td></tr>`).join('')}<tr style="background:var(--surface-2)"><td><b>Total</b></td><td class="num"><b>₹0</b></td><td class="num"><b>₹0</b></td></tr></tbody></table></div>`;
-  return tabs+pageHeader('Accounting','Journal entries · double-entry ledger')
-   +`<div style="font-weight:700;color:var(--navy);margin:6px 0 10px">New Entry</div>`
+  const tabs=[['Journals','star',"acctTabSet('journals')"],['Trial Balance','List',"acctTabSet('tb')"]];
+  const head=acctHead('accounting','Accounting','Journal entries · double-entry ledger',tabs,tab==='tb'?'Trial Balance':'Journals',acctTopTools('Manual Entry',"toast('Manual entry')"));
+  if(tab==='tb')return head+`<div class="tablewrap" style="margin-top:14px"><table><thead><tr><th>Account</th><th class="num">Debit (INR)</th><th class="num">Credit (INR)</th></tr></thead><tbody>${COA.map(a=>`<tr><td><b style="color:var(--navy)">${a[0]}</b> · ${a[1]}</td><td class="num">₹0</td><td class="num">₹0</td></tr>`).join('')}<tr style="background:var(--surface-2)"><td><b>Total</b></td><td class="num"><b>₹0</b></td><td class="num"><b>₹0</b></td></tr></tbody></table></div>`;
+  return head
+   +`<div style="font-weight:700;color:var(--navy);margin:14px 0 10px">New Entry</div>`
    +`<div class="newentry"><div class="inp"><span>Describe the transaction... e.g., Paid ₹12,500 to Sharma Travels for client visit to Mumbai</span><button class="send">${svg(SVS.up,15)}</button></div><button class="manual">${svg(SVS.plus,15)} Manual Entry</button></div>`
    +`<div class="muted2" style="margin:-12px 0 18px">OJO will identify the accounts, taxes, and journal structure for you.</div>`
    +`<div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:10px">${acctTools()}</div>`
    +`<div class="tablewrap"><table><thead><tr><th>Entry ID</th><th>Date &amp; Time</th><th>Type</th><th>Narration</th><th class="num">Debit (INR)</th><th class="num">Credit (INR)</th><th>Status</th></tr></thead><tbody>
      ${JOURNALS.map(j=>`<tr onclick="acctOpen('journal','${j.id}')"><td><b style="color:var(--navy)">${j.id}</b></td><td class="co">${j.dt}</td><td>${j.type}</td><td>${j.narr.length>34?j.narr.slice(0,34)+'…':j.narr}</td><td class="num">${fmt(j.dr)}</td><td class="num">${fmt(j.cr)}</td><td>${apill(j.status)}</td></tr>`).join('')}</tbody></table></div>`;}
 /* ---- Invoice / Sales ---- */
-function acctInvoice(){return pageHeader('Invoices','Sales invoices & receivables')
+function acctInvoice(){return acctHead('invoice','Invoice / Sales','Sales invoices & receivables',[['All Invoices','star',"toast('All invoices')"]],'All Invoices',acctTopTools('New',"toast('New invoice')"))
    +metricsBar('invoices')
-   +`<div class="viewbar" style="padding:6px 0 12px"><div class="hsearch" style="max-width:260px">${svg(SVS.search,15)} Search invoices</div><div style="margin-left:auto;display:flex;gap:8px;align-items:center">${acctTools()}<div class="newbtn"><button class="a" onclick="toast('New invoice')">New</button><span class="b">${svg(SVS.caret,11)}</span></div></div></div>`
-   +`<div class="tablewrap"><table><thead><tr><th>Invoice</th><th>Client</th><th>Project</th><th class="num">Amount</th><th>Due Date</th><th>Status</th></tr></thead><tbody>
+   +`<div class="tablewrap" style="margin-top:6px"><table><thead><tr><th>Invoice</th><th>Client</th><th>Project</th><th class="num">Amount</th><th>Due Date</th><th>Status</th></tr></thead><tbody>
      ${INVOICES.map(i=>`<tr onclick="acctOpen('invoice','${i.id}')"><td><b style="color:var(--navy)">${i.id}</b></td><td><span class="owncell"><span class="eav" style="background:${i.color};width:26px;height:26px;font-size:10px">${i.av}</span>${i.client}</span></td><td class="co">${i.project}</td><td class="num">INR ${nf(i.amount)}</td><td class="co">${i.due}</td><td>${apill(i.status)}</td></tr>`).join('')}</tbody></table></div>`;}
 /* ---- Bills / Purchases ---- */
 function acctBills(){const tab=acctTab||'bills';
-  const tabs=`<div class="atabs"><button class="atab ${tab==='bills'?'on':''}" onclick="acctTabSet('bills')">Bills</button><button class="atab ${tab==='items'?'on':''}" onclick="acctTabSet('items')">Items</button></div>`;
-  if(tab==='items')return tabs+pageHeader('Items','Purchasable items &amp; services')+`<div class="emp-sec"><div class="muted2">No items configured yet. (Demo)</div></div>`;
-  return tabs+pageHeader('Bills &amp; Purchases','Vendor bills &amp; payables')
+  const tabs=[['Bills','star',"acctTabSet('bills')"],['Items','List',"acctTabSet('items')"]];
+  const head=acctHead('bills','Bills / Purchases','Vendor bills & payables',tabs,tab==='items'?'Items':'Bills',acctTopTools('New Bill',"toast('New bill')"));
+  if(tab==='items')return head+`<div class="emp-sec" style="margin-top:14px"><div class="muted2">No items configured yet. (Demo)</div></div>`;
+  return head
    +metricsBar('bills')
-   +`<div class="viewbar" style="padding:6px 0 12px"><div style="margin-left:auto;display:flex;gap:8px;align-items:center">${acctTools()}<button class="manual">All Types ${svg(SVS.caret,11)}</button><div class="newbtn"><button class="a" onclick="toast('New bill')">＋ New Bill</button></div></div></div>`
-   +`<div class="tablewrap"><table><thead><tr><th>Bill ID</th><th>Date</th><th>Vendor</th><th>Ref No.</th><th class="num">Amount</th><th class="num">Balance</th><th>Due Date</th><th>Status</th></tr></thead><tbody>
+   +`<div class="tablewrap" style="margin-top:6px"><table><thead><tr><th>Bill ID</th><th>Date</th><th>Vendor</th><th>Ref No.</th><th class="num">Amount</th><th class="num">Balance</th><th>Due Date</th><th>Status</th></tr></thead><tbody>
      ${BILLS.map(b=>`<tr onclick="acctOpen('bill','${b.id}')"><td><b style="color:var(--navy)">${b.id}</b></td><td class="co">${b.date}</td><td>${b.vendor}</td><td class="co">${b.ref}</td><td class="num">${inr(b.amount)}</td><td class="num">${inr(b.balance)}</td><td class="co">${b.due}</td><td>${apill(b.status)}</td></tr>`).join('')}</tbody></table></div>`;}
 /* ---- Payroll ---- */
-function acctPayroll(){return pageHeader('Payroll','Pay runs &amp; salary disbursements')
-   +`<div class="viewbar" style="padding:6px 0 14px"><button class="manual">All Types ${svg(SVS.caret,11)}</button><div style="margin-left:auto;display:flex;gap:8px;align-items:center">${acctTools()}<div class="hsearch" style="max-width:240px">${svg(SVS.search,15)} Search</div></div></div>`
-   +PAYRUNS.map(p=>`<div class="payrun-card" onclick="acctOpen('payrun','${p.id}')"><div class="pc-h">${p.title} ${apill(p.status)}</div><div class="pc-i"><div class="l">Employees' Net Pay</div><div class="v">${fmt(p.net)}</div></div><div class="pc-i"><div class="l">Payment Date</div><div class="v">${p.payDate}</div></div><div class="pc-i"><div class="l">Pay days</div><div class="v">${p.payDays}</div></div><div class="pc-i"><div class="l">No. of Employees</div><div class="v">${p.emps}</div></div><div class="pc-i"><div class="l">Created Date</div><div class="v">${p.created}</div></div></div>`).join('');}
+function acctPayroll(){return acctHead('payroll','Payroll','Pay runs & salary disbursements',[['Pay Runs','star',"toast('All pay runs')"]],'Pay Runs',acctTopTools('New pay run',"toast('New pay run')"))
+   +`<div style="margin-top:14px">`+PAYRUNS.map(p=>`<div class="payrun-card" onclick="acctOpen('payrun','${p.id}')"><div class="pc-h">${p.title} ${apill(p.status)}</div><div class="pc-i"><div class="l">Employees' Net Pay</div><div class="v">${fmt(p.net)}</div></div><div class="pc-i"><div class="l">Payment Date</div><div class="v">${p.payDate}</div></div><div class="pc-i"><div class="l">Pay days</div><div class="v">${p.payDays}</div></div><div class="pc-i"><div class="l">No. of Employees</div><div class="v">${p.emps}</div></div><div class="pc-i"><div class="l">Created Date</div><div class="v">${p.created}</div></div></div>`).join('')+`</div>`;}
 /* ---- Settings: Fiscal Years / Chart of Accounts ---- */
 function acctSettings(){const tab=acctTab||'fy';
-  const tabs=`<div class="atabs"><button class="atab ${tab==='fy'?'on':''}" onclick="acctTabSet('fy')">Fiscal Years</button><button class="atab ${tab==='coa'?'on':''}" onclick="acctTabSet('coa')">Chart of Accounts</button></div>`;
-  if(tab==='coa')return tabs+pageHeader('Chart of Accounts','Your ledger account structure')+`<div class="tablewrap"><table><thead><tr><th>Code</th><th>Account</th><th>Type</th></tr></thead><tbody>${COA.map(a=>`<tr><td><b style="color:var(--navy)">${a[0]}</b></td><td>${a[1]}</td><td class="co">${a[2]}</td></tr>`).join('')}</tbody></table></div>`;
-  return tabs+pageHeader('Settings','Fiscal years &amp; organization configuration')
+  const tabs=[['Fiscal Years','star',"acctTabSet('fy')"],['Chart of Accounts','List',"acctTabSet('coa')"]];
+  const head=acctHead('settings','Settings','Fiscal years & organization configuration',tabs,tab==='coa'?'Chart of Accounts':'Fiscal Years',acctTopTools('New Fiscal Year',"toast('New Fiscal Year')"));
+  if(tab==='coa')return head+`<div class="tablewrap" style="margin-top:14px"><table><thead><tr><th>Code</th><th>Account</th><th>Type</th></tr></thead><tbody>${COA.map(a=>`<tr><td><b style="color:var(--navy)">${a[0]}</b></td><td>${a[1]}</td><td class="co">${a[2]}</td></tr>`).join('')}</tbody></table></div>`;
+  return head
    +`<div style="display:flex;align-items:flex-start;margin:6px 0 12px"><div><div style="font-weight:700;color:var(--navy);font-size:16px">Fiscal Years ${svg('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',13)}</div><div class="muted2">Manage your organization's financial years</div></div><div style="margin-left:auto"><button class="abtn dark" style="padding:9px 16px;border-radius:10px;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:7px;background:var(--navy);color:#fff" onclick="toast('New Fiscal Year')">${svg(SVS.plus,14)} New Fiscal Year</button></div></div>`
    +`<div class="tablewrap"><table><thead><tr><th>Name</th><th>Start Date</th><th>End Date</th><th>Status</th><th>Actions</th></tr></thead><tbody>${FISCAL.map(f=>`<tr><td><b style="color:var(--navy)">${f[0]}</b> ${f[4]?apill('Current'):''}</td><td class="co">${f[1]}</td><td class="co">${f[2]}</td><td>${apill(f[3])}</td><td>${f[4]?`<button class="iconedit">${svg(SVS.more,15)}</button>`:''}</td></tr>`).join('')}</tbody></table></div>`
    +`<div class="aboutcard"><div class="t">About Fiscal Years</div><ul><li>Only one fiscal year can be <b>Active</b> at a time</li><li><b>Active</b>: Allows recording transactions</li><li><b>Closed</b>: Year-end closing completed, no new transactions</li><li><b>Locked</b>: Permanently sealed, no modifications allowed</li></ul></div>`
