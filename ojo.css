@@ -2033,3 +2033,51 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .doc-head .dhm:hover{background:rgba(0,0,0,.05);color:var(--ink)}
 .wpal .pli.danger .nm{color:var(--coral-ink)}.wpal .pli.danger .ic,.wpal .pli.danger svg{color:var(--coral)}
 .wpal .pli svg{color:var(--muted);flex:0 0 auto}
+/* ===== OJO read — signature insight element (A/B/C layouts, mobile-scalable) ===== */
+.ojr{max-width:940px;border:1px solid var(--line);border-left:3px solid var(--coral);border-radius:14px;background:var(--surface);box-shadow:var(--sh-xs);overflow:hidden}
+.ojr-bar{display:flex;align-items:center;gap:9px;padding:12px 16px;cursor:pointer;transition:background .14s}
+.ojr:not(.collapsed) .ojr-bar{border-bottom:1px solid var(--line)}
+.ojr-bar:hover{background:var(--surface-2)}
+.ojo-orb{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#0E0E10;box-shadow:0 0 0 3px var(--coral-soft);flex:0 0 26px}
+.ojo-orb .ojo-mini{width:18px;height:18px;border-radius:50%;object-fit:cover;display:block}
+.ojr-name{font-size:13px;font-weight:800;color:var(--ink);letter-spacing:-.01em}
+.ojr-chip{margin-left:auto;font-size:12.5px;font-weight:700}
+.ojr-cv{width:24px;height:24px;display:grid;place-items:center;color:var(--ghost);flex:0 0 24px;transition:transform .22s var(--ease)}
+.ojr-bar .ojo-live{flex:0 0 auto}
+.ojr-chip+.ojr-cv{margin-left:8px}
+.ojr:not(:has(.ojr-chip)) .ojo-live{margin-left:auto}
+.ojr.collapsed .ojr-cv{transform:rotate(-90deg)}
+.ojr.collapsed .ojr-body,.ojr.collapsed .ojr-switch{display:none}
+.ojr-body{padding:16px 18px 6px}
+.ojr .ojo-ask{margin:8px 0 14px}
+/* A — confidence meter + emphasised lead action */
+.ojr-meter{margin-bottom:16px}
+.ojr-mtop{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:7px}
+.ojr-ml{font-size:15px;font-weight:700}.ojr-mp{font-size:13px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.ojr-track{height:7px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.ojr-fill{height:100%;border-radius:999px;transition:width .5s var(--ease)}
+.ojr-msub{font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.45}
+.ojr .ojo-insights{display:flex;flex-direction:column;gap:14px;padding:0}
+.ojr .oi.lead{background:var(--coral-soft);border:1px solid var(--coral-line);border-radius:11px;padding:11px 12px;margin:0 -2px 2px}
+.ojr .oi.lead .oi-ic{background:var(--coral);color:#fff}
+/* B — OJO conversation */
+.ojr-say{font-size:15px;line-height:1.55;color:var(--ink)}.ojr-say b{font-weight:700}
+.ojr-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.ojr-cb{font-size:12.5px;font-weight:600;color:var(--ink);background:var(--surface-2);border:1px solid var(--line-2);border-radius:999px;padding:7px 13px}
+.ojr-cb:hover{border-color:var(--coral-line);color:var(--coral-ink)}
+.ojr-cb.primary{display:inline-flex;align-items:center;gap:6px;background:var(--ink-bg);color:#fff;border-color:transparent}.ojr-cb.primary svg{width:12px;height:12px}
+.ojr.vB .ojr-body{padding-bottom:16px}
+/* C — signal tiles */
+.ojr-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:11px;margin-bottom:6px}
+.ojr-tile{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
+.ojr-tile .oi-ic{margin-bottom:9px}
+.ojr-th{font-size:13px;font-weight:700;color:var(--navy);line-height:1.3}
+.ojr-ts{font-size:12px;color:var(--muted);line-height:1.45;margin-top:4px}
+.ojr-tile.gauge{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:var(--surface);gap:6px}
+.ojr-gr{position:relative;width:54px;height:54px}.ojr-gr svg{width:54px;height:54px}.ojr-gp{position:absolute;inset:0;display:grid;place-items:center;font-size:14px;font-weight:800}
+.ojr-gl{font-size:12.5px;font-weight:700}
+/* test switcher */
+.ojr-switch{display:flex;justify-content:flex-end;gap:3px;padding:0 14px 12px}
+.ojr-switch button{width:24px;height:22px;border-radius:6px;font-size:11px;font-weight:700;color:var(--faint);background:var(--surface-2)}
+.ojr-switch button.on{background:var(--ink-bg);color:#fff}
+@media(max-width:640px){.ojr-tiles{grid-template-columns:1fr 1fr}.ojr-chip{font-size:11.5px}}

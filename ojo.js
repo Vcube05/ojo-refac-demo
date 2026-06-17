@@ -460,7 +460,7 @@ function actRowsHTML(items,more){return `<div class="bact">${items.map(i=>`<div 
 function bActivity(){const items=[['#E0A21E','msg','Jun 5','Priya Nair','commented on','Wireframes'],['#15A06A','done','Jun 4','Mei Lin','completed a to-do:','Competitive audit'],['#2F6FED','msg','Jun 3','Victor Cooper','commented on','Project Kickoff']];
   return actRowsHTML(items,`<div class="more"><span class="av">VK</span>1 person active in the last 7 days · <a onclick="setView('All Tasks')">View all activity…</a></div>`);}
 function projTopInsights(){const a=projScore();const done=tasks.filter(t=>t.st==='Done').length;const total=tasks.length||1;
-  return `<div class="proj-ai">${ojoInsightsCard(projInsights(),'project',`<div class="pa-score"><div class="pa-ring">${ring(a[0],a[0]>=70?'var(--ok)':a[0]>=40?'var(--warn)':'var(--coral)',72)}<span class="pa-pct">${a[0]}%</span></div><div class="pa-meta"><div class="pa-lbl">${a[1]}</div><div class="pa-sub">${done}/${total} tasks done · 4 milestones</div></div></div>`)}</div>`;}
+  return `<div class="proj-ai">${ojoInsightsCard(projInsights(),'project',{pct:a[0],color:a[0]>=70?'var(--ok)':a[0]>=40?'var(--warn)':'var(--coral)',ink:'var(--navy)',label:`${a[1]}`,sub:`${done}/${total} tasks done · 4 milestones`})}</div>`;}
 function projOverview(){return `<div class="bhome">
   ${projTopInsights()}
   <div class="bgrid">${pjWidgets.map(widgetCard).join('')}
@@ -604,11 +604,30 @@ function leadInsights(l){const sc=(SCORE[l.st]||[40])[0];const out=[];
   out.push(['cash',l.val<120000?`<b>Budget ${fmt(l.val)} is on the low side</b> for ${l.src} deals — room to upsell the Ad Creative add-on.`:`<b>Budget ${fmt(l.val)} is healthy</b> for a ${l.src} deal at this stage.`]);
   return out;}
 /* shared building blocks — reused by the right panel (A/B) and the full board (C) */
-function ojoInsightsCard(items,noun,scoreHTML){return `<div class="ojo-card">
-  <div class="ojo-top" onclick="oiToggle(this)">${scoreHTML||''}<div class="ojo-brand"><span class="ojo-orb"><img class="ojo-mini" src="assets/ojo-logo.png" alt="OJO"></span><span class="ojo-bn">OJO read</span><span class="ojo-live">live</span></div><span class="ojo-collapse">${svg('<path d="m6 9 6 6 6-6"/>',16)}</span></div>
-  <div class="ojo-body"><div class="ojo-insights">${items.map(i=>`<div class="oi"><span class="oi-ic">${svg(OI_ICONS[i[0]]||OI_ICONS.target,15)}</span><span class="oi-t">${i[1]}</span></div>`).join('')}</div>
-  <button class="ojo-ask" onclick="event.stopPropagation();openSection('genie')">${svg(SPARK,13)} Ask OJO about this ${noun||'lead'}</button></div></div>`;}
-function oiToggle(el){const c=el.closest('.ojo-card');if(c)c.classList.toggle('collapsed');}
+function oiBold(t){const m=t.match(/<b>(.*?)<\/b>/);return m?m[1].replace(/[.:]$/,''):t.replace(/<[^>]+>/g,'').slice(0,26);}
+function oiRest(t){return t.replace(/<b>.*?<\/b>\s*/,'');}
+let oiVariant='A',_oiLast=null;
+function oiToggle(el){const c=el.closest('.ojr');if(c)c.classList.toggle('collapsed');}
+function oiVar(v){oiVariant=v;if(_oiLast)document.querySelectorAll('.ojr').forEach(el=>{el.outerHTML=ojoInsightsCard(_oiLast.items,_oiLast.noun,_oiLast.score);});}
+function ojoInsightsCard(items,noun,score){_oiLast={items,noun,score};const sc=score||{pct:null,label:'OJO read',sub:'',color:'var(--coral)',ink:'var(--navy)'};
+  const bar=`<div class="ojr-bar" onclick="oiToggle(this)"><span class="ojo-orb"><img class="ojo-mini" src="assets/ojo-logo.png" alt="OJO"></span><span class="ojr-name">OJO read</span><span class="ojo-live">live</span>${sc.pct!=null?`<span class="ojr-chip" style="color:${sc.ink}">${sc.pct}% · ${sc.label}</span>`:''}<span class="ojr-cv">${svg('<path d="m6 9 6 6 6-6"/>',16)}</span></div>`;
+  const ask=`<button class="ojo-ask" onclick="event.stopPropagation();openSection('genie')">${svg(SPARK,13)} Ask OJO about this ${noun||'lead'}</button>`;
+  let body;
+  if(oiVariant==='B'){
+    const lead=items[0]?items[0][1]:'';
+    const chips=items.slice(1).map(i=>`<button class="ojr-cb" onclick="event.stopPropagation();openSection('genie')">${oiBold(i[1])}</button>`).join('');
+    body=`<div class="ojr-body"><div class="ojr-say">${lead}</div><div class="ojr-chips">${chips}<button class="ojr-cb primary" onclick="event.stopPropagation();openSection('genie')">${svg(SPARK,12)} Ask OJO</button></div></div>`;
+  }else if(oiVariant==='C'){
+    const tiles=items.map(i=>`<div class="ojr-tile"><span class="oi-ic">${svg(OI_ICONS[i[0]]||OI_ICONS.target,14)}</span><div class="ojr-th">${oiBold(i[1])}</div><div class="ojr-ts">${oiRest(i[1])}</div></div>`).join('');
+    const gauge=sc.pct!=null?`<div class="ojr-tile gauge"><div class="ojr-gr">${ring(sc.pct,sc.color,54)}<span class="ojr-gp" style="color:${sc.ink}">${sc.pct}%</span></div><div class="ojr-gl" style="color:${sc.ink}">${sc.label}</div></div>`:'';
+    body=`<div class="ojr-body"><div class="ojr-tiles">${gauge}${tiles}</div>${ask}</div>`;
+  }else{
+    const meter=sc.pct!=null?`<div class="ojr-meter"><div class="ojr-mtop"><span class="ojr-ml" style="color:${sc.ink}">${sc.label}</span><span class="ojr-mp">${sc.pct}%</span></div><div class="ojr-track"><div class="ojr-fill" style="width:${sc.pct}%;background:${sc.color}"></div></div>${sc.sub?`<div class="ojr-msub">${sc.sub}</div>`:''}</div>`:'';
+    const list=items.map((i,idx)=>`<div class="oi ${idx===0?'lead':''}"><span class="oi-ic">${svg(OI_ICONS[i[0]]||OI_ICONS.target,15)}</span><span class="oi-t">${i[1]}</span></div>`).join('');
+    body=`<div class="ojr-body">${meter}<div class="ojo-insights">${list}</div>${ask}</div>`;
+  }
+  const sw=`<div class="ojr-switch" title="A/B layout (test)">${['A','B','C'].map(v=>`<button class="${oiVariant===v?'on':''}" onclick="event.stopPropagation();oiVar('${v}')">${v}</button>`).join('')}</div>`;
+  return `<div class="ojr v${oiVariant}">${bar}${body}${sw}</div>`;}
 function leadContacts(l){const first=(l.nm||'contact').split(' ')[0].toLowerCase();const org=l.co.toLowerCase().replace(/[^a-z]/g,'')||'co';
   return [[l.nm,'Primary contact',`${first}@${org}.com`,'#7C53E6',true],['Rohit Mehra','Finance · Decision maker',`rohit@${org}.com`,'#2F6FED',false]];}
 function contactsListHTML(list,addLabel){const add=addLabel===null?'':`<button class="contact-add" onclick="toast('${addLabel||'Add a contact'}')">${svg('<path d="M12 5v14M5 12h14"/>',13)} ${addLabel||'Add a contact'}</button>`;
@@ -619,7 +638,7 @@ function contactsListHTML(list,addLabel){const add=addLabel===null?'':`<button c
    The next-best-action lives INSIDE the insights; acting on it happens in the Genie panel (Ask OJO). */
 function leadTopInsights(l){const sc=SCORE[l.st]||[40,'Average'];const t=scoreColors(sc[0]);const ai=leadAI(l);
   const items=[['next',`<b>Next best action.</b> ${ai.label}`],...leadInsights(l)];
-  return `<div class="proj-ai">${ojoInsightsCard(items,'lead',`<div class="pa-score"><div class="pa-ring">${ring(sc[0],t[0],72)}<span class="pa-pct" style="color:${t[1]}">${sc[0]}%</span></div><div class="pa-meta"><div class="pa-lbl" style="color:${t[1]}">${sc[1]}</div><div class="pa-sub">${ai.reason}</div></div></div>`)}</div>`;}
+  return `<div class="proj-ai">${ojoInsightsCard(items,'lead',{pct:sc[0],color:t[0],ink:t[1],label:`${sc[1]}`,sub:`${ai.reason}`})}</div>`;}
 /* the lead's recent history — lives in the hideable panel, derived from the lead cell */
 function leadActivity(l){const items=[];
   if(leadClosed(l.st))items.push([l.st==='Won'?'#15A06A':'#8B93A1','done','Jun 8','Priya Nair','closed this lead as',l.st]);
@@ -647,7 +666,7 @@ function taskInsights(t){const out=[];
   return out;}
 /* task header card — score + OJO Insights promoted into the main body (same .proj-ai pattern as the project Overview) */
 function taskTopInsights(t){const its=tasks.filter(x=>x.ms===t.ms);const done=its.filter(x=>x.st==='Done').length;const pct=its.length?Math.round(done/its.length*100):0;
-  return `<div class="proj-ai">${ojoInsightsCard(taskInsights(t),'task',`<div class="pa-score"><div class="pa-ring">${ring(pct,pct>=70?'var(--ok)':pct>=40?'var(--warn)':'var(--coral)',72)}<span class="pa-pct">${pct}%</span></div><div class="pa-meta"><div class="pa-lbl">${t.st}</div><div class="pa-sub">${t.ms} milestone · ${done}/${its.length} tasks done</div></div></div>`)}</div>`;}
+  return `<div class="proj-ai">${ojoInsightsCard(taskInsights(t),'task',{pct:pct,color:pct>=70?'var(--ok)':pct>=40?'var(--warn)':'var(--coral)',ink:'var(--navy)',label:`${t.st}`,sub:`${t.ms} milestone · ${done}/${its.length} tasks done`})}</div>`;}
 /* the task's recent history — lives in the hideable panel (project pattern), derived from the task cell */
 function taskActivity(t){const p=PEOPLE[t.asg];const items=[];
   if(t.st==='Done')items.push(['#15A06A','done',t.due||'',p?p[2]:'Someone','completed',t.t]);
@@ -1074,7 +1093,7 @@ function empInsights(e){const onboarding=e.status!=='Active';const out=[];
 function empScore(e){return ({REL0006:62,REL0005:40,REL0003:78,REL0004:85,REL0001:90,REL0002:30}[e.code])||60;}
 /* OJO read at the top of the overview — same .proj-ai card as lead/task/vendor/project */
 function empTopInsights(e){const sc=empScore(e),lbl=sc>=80?'Strong':sc>=50?'Average':'Needs focus';const t=scoreColors(sc);
-  return `<div class="proj-ai">${ojoInsightsCard(empInsights(e),'profile',`<div class="pa-score"><div class="pa-ring">${ring(sc,t[0],72)}<span class="pa-pct" style="color:${t[1]}">${sc}%</span></div><div class="pa-meta"><div class="pa-lbl" style="color:${t[1]}">${lbl}</div><div class="pa-sub">Performance this quarter · ${e.role} · OJO read</div></div></div>`)}</div>`;}
+  return `<div class="proj-ai">${ojoInsightsCard(empInsights(e),'profile',{pct:sc,color:t[0],ink:t[1],label:`${lbl}`,sub:`Performance this quarter · ${e.role} · OJO read`})}</div>`;}
 /* the employee's recent history — hideable panel, activity only */
 function empActivity(e){const items=[];
   if(e.status==='Onboarding')items.push(['#2F6FED','msg','Jun 10','OJO','flagged incomplete onboarding for',e.name]);
@@ -1331,7 +1350,7 @@ function acctRecInsights(a){const util=a.limit?Math.round(a.balance/a.limit*100)
   out.push([util>=80?'flame':'clock',`<b>${a.terms} terms · ${a.status}.</b> ${util>=80?'Near the credit limit — review before extending more.':'Healthy utilisation.'}`]);
   return out;}
 function acctTopInsights(a){const sc=acctRecScore(a),t=scoreColors(sc),lbl=sc>=80?'Healthy':sc>=55?'Watch':'At risk';
-  return `<div class="proj-ai">${ojoInsightsCard(acctRecInsights(a),'account',`<div class="pa-score"><div class="pa-ring">${ring(sc,t[0],72)}<span class="pa-pct" style="color:${t[1]}">${sc}%</span></div><div class="pa-meta"><div class="pa-lbl" style="color:${t[1]}">${lbl}</div><div class="pa-sub">Account health · ${a.type} · OJO read</div></div></div>`)}</div>`;}
+  return `<div class="proj-ai">${ojoInsightsCard(acctRecInsights(a),'account',{pct:sc,color:t[0],ink:t[1],label:`${lbl}`,sub:`Account health · ${a.type} · OJO read`})}</div>`;}
 function mountCollRecord(){const c=curColl(),r=curRec();collFace='info';collColl=true;
   document.getElementById('screen').innerHTML=`<div class="dwrap"><div class="dside"><div class="dnav"><button class="dctl" onclick="collNav(-1)" title="Previous (↑)">${svg('<path d="M18 15l-6-6-6 6"/>',21)}</button><button class="dctl" onclick="collNav(1)" title="Next (↓)">${svg('<path d="M6 9l6 6 6-6"/>',21)}</button></div></div>
    <div class="dbox ${collColl?'collapsed':''}" id="cbox"><div class="dmain">
@@ -1400,7 +1419,7 @@ function vnInsights(v){const sc=vnScore(v);const wr=vnWinRate(v);const avg=vnAvg
   out.push(['clock',`<b>${sc.onTime}% on-time delivery · ${wr[2]}% RFQ win rate.</b> ${sc.onTime>=80?'No client escalations in the last 12 months.':'1 client escalation in 12 months — monitor closely.'}`]);
   return out;}
 function vnTopInsights(v){const sc=vnScore(v);const t=scoreColors(sc.pct);
-  return `<div class="proj-ai">${ojoInsightsCard(vnInsights(v),'vendor',`<div class="pa-score"><div class="pa-ring">${ring(sc.pct,t[0],72)}<span class="pa-pct" style="color:${t[1]}">${sc.pct}%</span></div><div class="pa-meta"><div class="pa-lbl" style="color:${t[1]}">${sc.label}</div><div class="pa-sub">${sc.onTime}% on-time · ${sc.qual}% quality · OJO vendor score</div></div></div>`)}</div>`;}
+  return `<div class="proj-ai">${ojoInsightsCard(vnInsights(v),'vendor',{pct:sc.pct,color:t[0],ink:t[1],label:`${sc.label}`,sub:`${sc.onTime}% on-time · ${sc.qual}% quality · OJO vendor score`})}</div>`;}
 /* tiny bar chart for widget cells */
 function vnBars(vals,color,w,h){const max=Math.max(...vals,1);const n=vals.length,bw=Math.floor(w/n)-6;
   return `<svg width="${w}" height="${h}" style="display:block">${vals.map((x,i)=>{const bh=Math.max(3,Math.round(x/max*(h-6)));return `<rect x="${i*(bw+6)}" y="${h-bh}" width="${bw}" height="${bh}" rx="3" fill="${color}" opacity="${(0.35+0.65*(x/max)).toFixed(2)}"/>`;}).join('')}</svg>`;}
@@ -1760,7 +1779,7 @@ function ctInsights(c){const out=[];const ln=ctLinkName(c);
   out.push(['cash',`<b>Added ${c.added}</b> via ${c.src} by ${c.by}.`]);
   return out;}
 function ctTopInsights(c){const sc=ctScore(c),t=scoreColors(sc),lbl=sc>=80?'Strong tie':sc>=55?'Warm':'Cold';
-  return `<div class="proj-ai">${ojoInsightsCard(ctInsights(c),'contact',`<div class="pa-score"><div class="pa-ring">${ring(sc,t[0],72)}<span class="pa-pct" style="color:${t[1]}">${sc}%</span></div><div class="pa-meta"><div class="pa-lbl" style="color:${t[1]}">${lbl}</div><div class="pa-sub">Relationship strength · ${c.type} · OJO read</div></div></div>`)}</div>`;}
+  return `<div class="proj-ai">${ojoInsightsCard(ctInsights(c),'contact',{pct:sc,color:t[0],ink:t[1],label:`${lbl}`,sub:`Relationship strength · ${c.type} · OJO read`})}</div>`;}
 function ctBody(){const c=curCt();
   const head=`<div class="lead-head"><div class="lh-id"><h1>${c.name}</h1>
     <div class="byline"><span class="eav" style="background:${c.color};width:26px;height:26px;font-size:10px">${c.av}</span> ${ctBadge(c.type)} <span class="dotsep">·</span> <b>${c.org}</b>${c.role?` <span class="dotsep">·</span> ${c.role}`:''} <span class="dotsep">·</span> added ${c.added}</div></div></div>`;
@@ -2188,7 +2207,7 @@ function tTopInsights(t){const idx=TSTAGES.indexOf(t.status);const done=t.status
     ['target',`<b>Linked to ${t.link}.</b> Completing it updates that ${sm[0]} record.`]];
   if(!done)items.push(['next',`<b>Close it to earn ${t.pts} XP.</b> <a onclick="tMove('Done')">Mark it done</a>${t.est?'':` or <a onclick="tFocusJump()">create an OJO focus block</a> — 25 min, +5 XP bonus`}.`]);
   items.push(['flame',t.est?`<b>Estimated ${t.est}.</b> ${t.focusMin?`${t.focusMin}m focused so far.`:'No focus logged yet.'}`:`<b>No duration set.</b> An OJO focus block (25 min) is a good default.`]);
-  return `<div class="proj-ai">${ojoInsightsCard(items,'task',`<div class="pa-score"><div class="pa-ring">${ring(pct,done?'var(--ok)':pct>=40?'var(--warn)':'var(--coral)',72)}<span class="pa-pct">${pct}%</span></div><div class="pa-meta"><div class="pa-lbl">${t.status}</div><div class="pa-sub">★ ${t.pts} XP on completion · ${sm[0]}</div></div></div>`)}</div>`;}
+  return `<div class="proj-ai">${ojoInsightsCard(items,'task',{pct:pct,color:done?'var(--ok)':pct>=40?'var(--warn)':'var(--coral)',ink:'var(--navy)',label:`${t.status}`,sub:`★ ${t.pts} XP on completion · ${sm[0]}`})}</div>`;}
 function tBody(){const t=tRec,p=PEOPLE[t.asg];
   return `<h1>${t.title}</h1>
    <div class="byline"><span class="av" style="background:${p[1]}">${p[0]}</span> ${p[2]} · linked to <b>${t.link}</b></div>
