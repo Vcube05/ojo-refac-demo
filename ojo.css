@@ -2162,3 +2162,8 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .gnotif .nfoot{color:rgba(255,255,255,.55)}
 /* keep the collapsed topbar Genie pill at the same x as the open in-panel pill */
 #tbOjo .paneltabs{padding-left:59px}
+/* collapsed topbar: comm face icons sit to the right of the Ojo Genie pill (mirrors the open panel) */
+.paneltabs .pt-faces{margin-left:auto;display:flex;align-items:center;gap:16px;padding-right:9px}
+.paneltabs .pt-faces .ptf{width:36px;height:36px;flex:0 0 36px;background:var(--ink-bg);border:none;color:rgba(255,255,255,.9)}
+.paneltabs .pt-faces .ptf:hover{background:var(--ink-bg);color:#fff;filter:brightness(1.25)}
+.paneltabs .pt-faces .ptf svg{width:16px;height:16px;color:currentColor}

@@ -295,7 +295,8 @@ function renderDock(){
    panel is open, because the live cluster sits in the panel's notch at the same height. */
 function renderPanelTabs(){
   const el=document.getElementById('panelTabs'); if(!el)return;
-  el.innerHTML=`<button class="gtab on genie" onclick="genieToggle()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span>Ojo Genie</span></button>`;
+  const faces=GH_FACES.map(f=>`<button class="gtab ptf" onclick="genieSel('${f}')" title="${GFACE_LBL[f]}">${svg(DOCK_ICONS[f],16)}</button>`).join('');
+  el.innerHTML=`<button class="gtab on genie" onclick="genieToggle()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span>Ojo Genie</span></button><span class="pt-faces">${faces}</span>`;
 }
 /* FIXED-POSITION cluster: the pill and the four circles never move (one mental model —
    the same control always lives in the same place). The NOTCH travels: the dark cut
