@@ -318,9 +318,13 @@ function gnotchSync(){
   n.innerHTML=genieFace?`<span class="gh-nlab">${GFACE_TAB[genieFace]}</span>`:'';
   b.querySelectorAll('.gha').forEach(x=>{x.style.transform='';});
   let left=tr.left-hr.left-14,width=tr.width+28;
-  /* the sheet's corner shoulder yields when the head hugs that corner */
-  const band=b.querySelector('.gh-band'),hwc=host.clientWidth;
-  if(band){band.classList.toggle('noL',left<26);band.classList.toggle('noR',left+width>hwc-26);}
+  /* when the head hugs an edge, clamp it to the card edge, drop that fillet and square that
+     card corner so the notch merges into the rounded panel instead of overhanging it */
+  const hwc=host.clientWidth, noL=left<22, noR=left+width>hwc-22;
+  if(noL){width+=left;left=0;}
+  if(noR){width=hwc-left;}
+  n.classList.toggle('noL',noL);n.classList.toggle('noR',noR);
+  b.classList.toggle('gh-sqL',noL);b.classList.toggle('gh-sqR',noR);
   const apply=()=>{n.style.left=left+'px';n.style.width=width+'px';};
   if(gnPrev){n.style.left=gnPrev.left+'px';n.style.width=gnPrev.width+'px';
     requestAnimationFrame(()=>requestAnimationFrame(apply));}

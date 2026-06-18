@@ -1069,10 +1069,11 @@ td .nm,td .tt{font-weight:var(--weight-semibold);color:var(--navy)}td .co{color:
 .uava{width:34px;height:34px;border-radius:50%;background:#7C53E6;color:#fff;display:grid;place-items:center;font-size:var(--size-caption);font-weight:var(--weight-semibold)}
 .flyout{position:relative;flex:0 0 0;width:0;min-width:0;margin:0;background:var(--surface);border:none;border-radius:0;box-shadow:none;opacity:0;pointer-events:none;transition:flex-basis .26s var(--ease),width .26s var(--ease),opacity .18s;z-index:45;display:flex;flex-direction:column;overflow:hidden;will-change:flex-basis,width}
 .shell-connected .flyout{border-left:1px solid var(--line-2)}
-.fly-body.genie{overflow:hidden;padding:0;position:relative}
-/* the red is a BODY layer that starts below the 64px icon strip, with a rounded notched top.
-   the strip above stays transparent so the page shows through and the red notch pokes up. */
-.fly-body.genie::before{content:'';position:absolute;left:0;right:0;top:64px;bottom:0;background:linear-gradient(178deg,var(--elec) 0%,#EE414E 46%,#D03A47 100%);border-radius:22px 22px 0 0;z-index:0}
+.fly-body.genie{overflow:visible;padding:0;position:relative}
+/* the red is a floating CARD layer that starts below the 64px icon strip. It carries the
+   shadow itself (not the outer frame), so the shadow hugs only the red panel + its notch.
+   The strip above stays transparent so the page shows through and the red notch pokes up. */
+.fly-body.genie::before{content:'';position:absolute;left:0;right:0;top:64px;bottom:0;background:linear-gradient(178deg,var(--elec) 0%,#EE414E 46%,#D03A47 100%);border-radius:24px 24px 0 0;box-shadow:var(--sh-lg);z-index:0}
 .flyout.genie .gwrap{position:relative;z-index:1}
 .flyout.show{opacity:1;pointer-events:auto}
 /* ===== Genie = the brand surface. Always-dark card (both themes) in the Stockify language:
@@ -1093,21 +1094,21 @@ td .nm,td .tt{font-weight:var(--weight-semibold);color:var(--navy)}td .co{color:
 }
 /* mobile drawer keeps the full red fill; desktop flyout is transparent (red is the ::before body) */
 #drawer.genie{background:linear-gradient(178deg,var(--elec) 0%,#EE414E 46%,#D03A47 100%)}
-.flyout.genie{background:transparent}
+.flyout.genie{background:transparent;overflow:visible}
 #drawer.genie .dw-top,#drawer.genie .dw-pills{display:none}
 /* While Genie is open, the panel RISES into the topbar band so its notch row sits
    adjacent to the notification bell; the topbar yields the panel's width and its
    opener pill hides (the live pill is in the panel's notch). */
 body:has(#flyout.genie.show) #tbOjo{display:none}
 @media(min-width:701px){
-  body:has(#flyout.genie.show) .topbar{padding-right:calc(var(--flyw,0px) + 10px)}
+  body:has(#flyout.genie.show) .topbar{padding-right:calc(var(--flyw,0px) + 32px)}
   body:has(#flyout.genie.show) .appbody{overflow:visible}
   .shell-connected .rdock:has(.flyout.genie.show){margin-top:-58px;z-index:43}
   .shell-carded .rdock:has(.flyout.genie.show),.shell-hybrid .rdock:has(.flyout.genie.show),.shell-merged .rdock:has(.flyout.genie.show){margin-top:-52px;z-index:43}
 }
 /* the genie card: rounder than every other panel, BORDERLESS — the red meets the canvas
    clean (a border would trace a pink line across the notch cut) */
-.shell-carded .rdock:has(.flyout.genie.show),.shell-hybrid .rdock:has(.flyout.genie.show),.shell-merged .rdock:has(.flyout.genie.show){border-radius:26px;border-color:transparent;background:transparent;box-shadow:var(--sh-lg)}
+.shell-carded .rdock:has(.flyout.genie.show),.shell-hybrid .rdock:has(.flyout.genie.show),.shell-merged .rdock:has(.flyout.genie.show){border-radius:26px;border-color:transparent;background:transparent;box-shadow:none;overflow:visible}
 .shell-connected .flyout.genie{border-left-color:transparent}
 /* no standard head row — the hero card's notch controls replace it */
 .flyout.genie .fly-head{display:none}
@@ -1179,6 +1180,11 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .gh-notch{position:absolute;top:4px;left:0;width:0;height:60px;z-index:1;background:var(--elec);border-radius:34px 34px 0 0;transition:left .32s var(--ease),width .32s var(--ease)}
 .gh-notch::before{content:'';position:absolute;bottom:0;right:100%;width:22px;height:22px;background:radial-gradient(circle 22px at 0 0,transparent 21px,var(--elec) 21.8px)}
 .gh-notch::after{content:'';position:absolute;bottom:0;left:100%;width:22px;height:22px;background:radial-gradient(circle 22px at 100% 0,transparent 21px,var(--elec) 21.8px)}
+/* edge-hugging: drop the outer fillet and square that card corner so the notch fuses with the panel edge */
+.gh-notch.noL::before{display:none}
+.gh-notch.noR::after{display:none}
+.fly-body.genie.gh-sqL::before{border-top-left-radius:0}
+.fly-body.genie.gh-sqR::before{border-top-right-radius:0}
 .gh-nlab{position:absolute;left:0;right:0;bottom:4px;text-align:center;font-size:var(--size-caption);font-weight:var(--weight-semibold);color:#fff;white-space:nowrap}
 /* no mouse focus rings on the head controls (keyboard focus keeps its ring) */
 .gha:focus:not(:focus-visible),.gpill:focus:not(:focus-visible),.gtab:focus:not(:focus-visible){outline:none}
@@ -1188,7 +1194,7 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .gha.glogo{background:var(--ink-bg);border-color:transparent;animation:gswapin .24s var(--ease)}
 .gha.glogo .ojo-logo{width:28px;height:28px;border-radius:50%;object-fit:cover;display:block}
 /* the anchor pill — placed so its head's left flare flows off the panel edge */
-.gh-pill{position:absolute;top:12px;left:34px;z-index:2;animation:gswapin .24s var(--ease)}
+.gh-pill{position:absolute;top:12px;left:66px;z-index:2;animation:gswapin .24s var(--ease)}
 .gpill{display:inline-flex;align-items:center;gap:8px;height:36px;background:rgba(24,12,14,.62);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fff;border-radius:999px;padding:0 15px 0 12px;font-size:var(--size-body);font-weight:var(--weight-semibold)}
 .gpill .ojo-logo{width:28px;height:28px;border-radius:50%;flex:0 0 28px;object-fit:cover;display:block;margin-left:-8px}
 .gpill:hover{filter:brightness(1.15)}
