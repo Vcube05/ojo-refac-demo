@@ -98,7 +98,7 @@ input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
 /* connected: AI region is a flush, left-bordered strip aligned to the sheet below */
 .shell-connected .tb-ojo{height:100%;border-left:1px solid var(--line-2);padding:0 12px}
 /* carded: AI region is a floating frosted-glass pill-card */
-.shell-carded .tb-ojo,.shell-hybrid .tb-ojo{height:46px;background:var(--glass-strong);border:1px solid var(--glass-border);border-radius:14px;box-shadow:var(--sh-sm);padding:0 7px 0 5px;backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5)}
+.shell-carded .tb-ojo,.shell-hybrid .tb-ojo{height:46px;background:transparent;border:none;box-shadow:none;padding:0 7px 0 5px}
 /* hybrid: thin divider between the notification icon and the comm/Genie pill —
    anchored to the pill's left edge so it glides along as the pill resizes */
 .shell-hybrid .tb-ojo{position:relative}
