@@ -552,6 +552,7 @@ function mountDetail(){const r=rec,isLead=r.type==='lead',e=r.ent;
     <div class="dbox ${detailCollapsed?'collapsed':''}" id="dbox">
       <div class="dmain">
         <div class="dtop"><div class="crumbs">${crumb}</div><div class="sp"></div>${cluster}</div>
+        <div class="rec-head-slot">${isLead?leadHead(e):taskHead(e)}</div>
         ${viewbar}
         <div class="dcenter"><div class="inner" id="dinner"></div></div>
       </div>
@@ -603,36 +604,21 @@ function leadInsights(l){const sc=(SCORE[l.st]||[40])[0];const out=[];
   out.push(['target',`<b>${l.src} leads close ~2× more often</b> than average. Worth prioritising this one.`]);
   out.push(['cash',l.val<120000?`<b>Budget ${fmt(l.val)} is on the low side</b> for ${l.src} deals — room to upsell the Ad Creative add-on.`:`<b>Budget ${fmt(l.val)} is healthy</b> for a ${l.src} deal at this stage.`]);
   return out;}
-/* shared building blocks — reused by the right panel (A/B) and the full board (C) */
+/* OJO read — the signature insight element. FROZEN as the split dashboard (was the A/B/C test) */
 function oiBold(t){const m=t.match(/<b>(.*?)<\/b>/);return m?m[1].replace(/[.:]$/,''):t.replace(/<[^>]+>/g,'').slice(0,26);}
 function oiRest(t){return t.replace(/<b>.*?<\/b>\s*/,'');}
-let oiVariant='A',_oiLast=null;
 function oiToggle(el){const c=el.closest('.ojr');if(c)c.classList.toggle('collapsed');}
-function oiVar(v){oiVariant=v;if(_oiLast)document.querySelectorAll('.ojr').forEach(el=>{el.outerHTML=ojoInsightsCard(_oiLast.items,_oiLast.noun,_oiLast.score);});}
-function ojoInsightsCard(items,noun,score){_oiLast={items,noun,score};const sc=score||{pct:null,label:'OJO read',sub:'',color:'var(--coral)',ink:'var(--navy)'};
+function ojoInsightsCard(items,noun,score){const sc=score||{pct:null,label:'OJO read',sub:'',color:'var(--coral)',ink:'var(--navy)'};
   const bar=`<div class="ojr-bar" onclick="oiToggle(this)"><span class="ojo-orb"><img class="ojo-mini" src="assets/ojo-logo.png" alt="OJO"></span><span class="ojr-name">OJO read</span><span class="ojo-live">live</span>${sc.pct!=null?`<span class="ojr-chip" style="color:${sc.ink}">${sc.pct}% · ${sc.label}</span>`:''}<span class="ojr-cv">${svg('<path d="m6 9 6 6 6-6"/>',16)}</span></div>`;
   const ask=`<button class="ojo-ask" onclick="event.stopPropagation();openSection('genie')">${svg(SPARK,13)} Ask OJO about this ${noun||'lead'}</button>`;
   const ic=k=>svg(OI_ICONS[k]||OI_ICONS.target,15);
-  let body;
-  if(oiVariant==='B'){
-    /* Narrative — OJO reads the deal as a written description, not bullets */
-    const prose=items.map(i=>i[1]).join(' ');
-    body=`<div class="ojr-body"><p class="ojr-prose">${prose}</p>${ask}</div>`;
-  }else if(oiVariant==='C'){
-    /* Split dashboard — accent score panel on the left, flexible signal list on the right */
-    const lead=items[0],rest=items.slice(1);
-    const aside=`<div class="ojr-aside">${sc.pct!=null?`<div class="ojr-gr">${ring(sc.pct,sc.color,76)}<span class="ojr-gp" style="color:${sc.ink}">${sc.pct}<i>%</i></span></div><div class="ojr-gl" style="color:${sc.ink}">${sc.label}</div>`:''}${lead?`<div class="ojr-lead"><span class="oi-ic">${svg(OI_ICONS[lead[0]]||OI_ICONS.next,13)}</span><span>${lead[1]}</span></div>`:''}</div>`;
-    const sig=rest.map(i=>`<div class="ojr-sig"><span class="oi-ic">${ic(i[0])}</span><div class="ojr-st"><div class="ojr-th">${oiBold(i[1])}</div><div class="ojr-ts">${oiRest(i[1])}</div></div></div>`).join('');
-    body=`<div class="ojr-body"><div class="ojr-split">${aside}<div class="ojr-main">${sig||`<div class="ojr-sig"><span class="oi-ic">${ic('target')}</span><div class="ojr-st"><div class="ojr-th">All clear</div><div class="ojr-ts">No new signals to act on.</div></div></div>`}${ask}</div></div></div>`;
-  }else{
-    /* Stacked briefing — confidence meter, then the one action in an accent callout, then supporting reads */
-    const meter=sc.pct!=null?`<div class="ojr-meter"><div class="ojr-mtop"><span class="ojr-ml" style="color:${sc.ink}">${sc.label}</span><span class="ojr-mp">${sc.pct}%</span></div><div class="ojr-track"><div class="ojr-fill" style="width:${sc.pct}%;background:${sc.color}"></div></div>${sc.sub?`<div class="ojr-msub">${sc.sub}</div>`:''}</div>`:'';
-    const act=items[0]?`<div class="ojr-act"><span class="oi-ic">${svg(OI_ICONS[items[0][0]]||OI_ICONS.next,15)}</span><span class="oi-t">${items[0][1]}</span></div>`:'';
-    const list=items.slice(1).map(i=>`<div class="oi"><span class="oi-ic">${ic(i[0])}</span><span class="oi-t">${i[1]}</span></div>`).join('');
-    body=`<div class="ojr-body">${meter}${act}${list?`<div class="ojo-insights">${list}</div>`:''}${ask}</div>`;
-  }
-  const sw=`<div class="ojr-switch" title="A/B layout (test)">${['A','B','C'].map(v=>`<button class="${oiVariant===v?'on':''}" onclick="event.stopPropagation();oiVar('${v}')">${v}</button>`).join('')}</div>`;
-  return `<div class="ojr v${oiVariant}">${bar}${body}${sw}</div>`;}
+  /* left: just the score (breathing space) · right: next-best-action callout, then signals, then ask */
+  const lead=items[0],rest=items.slice(1);
+  const aside=`<div class="ojr-aside">${sc.pct!=null?`<div class="ojr-gr">${ring(sc.pct,sc.color,84)}<span class="ojr-gp" style="color:${sc.ink}">${sc.pct}<i>%</i></span></div><div class="ojr-gl" style="color:${sc.ink}">${sc.label}</div>`:`<div class="ojr-gl" style="color:${sc.ink}">OJO read</div>`}</div>`;
+  const act=lead?`<div class="ojr-act"><span class="oi-ic">${svg(OI_ICONS[lead[0]]||OI_ICONS.next,15)}</span><span class="oi-t">${lead[1]}</span></div>`:'';
+  const sig=rest.map(i=>`<div class="ojr-sig"><span class="oi-ic">${ic(i[0])}</span><div class="ojr-st"><div class="ojr-th">${oiBold(i[1])}</div><div class="ojr-ts">${oiRest(i[1])}</div></div></div>`).join('');
+  const body=`<div class="ojr-body"><div class="ojr-split">${aside}<div class="ojr-main">${act}${sig}${ask}</div></div></div>`;
+  return `<div class="ojr vC">${bar}${body}</div>`;}
 function leadContacts(l){const first=(l.nm||'contact').split(' ')[0].toLowerCase();const org=l.co.toLowerCase().replace(/[^a-z]/g,'')||'co';
   return [[l.nm,'Primary contact',`${first}@${org}.com`,'#7C53E6',true],['Rohit Mehra','Finance · Decision maker',`rohit@${org}.com`,'#2F6FED',false]];}
 function contactsListHTML(list,addLabel){const add=addLabel===null?'':`<button class="contact-add" onclick="toast('${addLabel||'Add a contact'}')">${svg('<path d="M12 5v14M5 12h14"/>',13)} ${addLabel||'Add a contact'}</button>`;
@@ -681,13 +667,12 @@ function taskActivity(t){const p=PEOPLE[t.asg];const items=[];
   return actRowsHTML(items,`<div class="more"><span class="av">${p?p[0]:'PN'}</span>${p?p[2]:'Priya Nair'} active on this task</div>`);}
 function taskInfo(){return `<div class="ip"><div class="ip-actonly">${taskActivity(rec.ent)}</div></div>`;}
 /* static task data — Details tab, same .pd-grid pattern as the project Details */
-function leadDetailsTab(){const l=rec.ent;const own=l.asg?PEOPLE[l.asg]:null;const c=leadContacts(l)[0];
+function leadDetailsTab(){const l=rec.ent;const own=l.asg?PEOPLE[l.asg]:null;
   const blk=(h,rows)=>`<div class="pd-block"><div class="pd-h">${h}</div><div class="pd-grid">${rows.map(([k,x])=>`<div class="pd-cell"><div class="pd-k">${k}</div><div class="pd-v">${x}</div></div>`).join('')}</div></div>`;
   const about=[['Stage',`<span style="color:${(LSTAGES.find(s=>s.k===l.st)||{}).cc||'var(--ink)'};font-weight:700">${l.st}</span>`],['Deal value',fmt(l.val)],['Source',l.src],['Owner',own?own[2]:'—'],['Service type','Meta Ad Campaigns · Ad Creative'],['Created','07 May 2026']];
-  const contact=[['Client contact',`${l.nm}${pcommMini(l.nm)}`],['Role','POC'],['Email',c?c[2]:'—'],['Phone','+91 98220 41100']];
   const org=[['Organisation',l.co],['Address','Bengaluru'],['Added by','Vinoth V V'],['Last updated','07 May 2026']];
   const notif=[['Watchers',`<span class="wpills"><span class="pp">VV</span><span class="pp" style="background:#3B6FED">SV</span></span><button class="vlink" style="margin-left:8px" onclick="toast('Add / remove people (demo)')">Add / remove people</button>`],['On new comment','Everyone watching is emailed'],['Notify me',`<label class="lstoggle" style="margin:0;font-weight:600"><input type="checkbox" checked> Email me on replies & @mentions</label>`]];
-  return `<div class="pdetails" style="padding:6px 0 30px">${blk('About this deal',about)}${blk('Client',contact)}${blk('Organisation',org)}${blk('Notifications',notif)}</div>`;}
+  return `<div class="pdetails" style="padding:6px 0 30px">${blk('About this deal',about)}<div class="pd-block"><div class="pd-h">Client contacts</div>${contactsListHTML(leadContacts(l),null)}</div>${blk('Organisation',org)}${blk('Notifications',notif)}</div>`;}
 function taskDetailsTab(){const t=rec.ent;const p=PEOPLE[t.asg];
   const about=[['Status',t.st],['Priority',t.pri],['Due',t.due||'—'],['Estimate',t.est],['Milestone',t.ms],['Created','7 May 2026']];
   const people=[['Assignee',(p?p[2]:'Unassigned')+pcommMini(p?p[2]:'')],['Created by','Priya Nair'+pcommMini('Priya Nair')]];
@@ -765,17 +750,17 @@ function scoreColors(pct){return pct>=70?['var(--ok)','#0C6B47']:pct>=45?['var(-
 /* keep the body's Call/Email/Message buttons in sync with the open comm channel */
 function syncCommActive(){const ch=(section&&section.indexOf('comm-')===0)?section.slice(5):null;document.querySelectorAll('.commbtn').forEach(b=>b.classList.toggle('on',b.dataset.f===ch));}
 function stageAiCard(ai){return `<div class="stage-ai"><div class="sa-h">${svg(SPARK,13)} OJO · how to move this lead</div><div class="sa-b">${ai.label}</div><button class="sa-cta" onclick="toast('${ai.cta.replace(/'/g,"\\'")}')">${ai.cta} ${svg('<path d="M5 12h14M13 6l6 6-6 6"/>',14)}</button></div>`;}
+/* record title now lives in the header slot above the tabs (reference layout) */
+function leadHead(l){return `<div class="lead-head"><div class="lh-id"><h1>${l.co}</h1></div></div>`;}
+function taskHead(t){return `<div class="lead-head"><div class="lh-id"><h1>${t.t}</h1><div class="byline"><span class="av" style="background:${PEOPLE[t.asg][1]}">${PEOPLE[t.asg][0]}</span> in <b>${PROJECT}</b> · ${t.ms}</div></div></div>`;}
 function leadRecHTML(){const l=rec.ent;const own=l.asg?PEOPLE[l.asg]:null;
   const owner=own?`<span class="ip-owner"><span class="av" style="background:${own[1]}">${own[0]}</span>${own[2]}</span>`
     :`<button class="ip-assign" onclick="toast('Assign owner')">${svg('<path d="M12 5v14M5 12h14"/>',12)} Assign</button>`;
   return `
-  <div class="lead-head">
-    <div class="lh-id"><h1>${l.co}</h1></div>
-  </div>
-  ${leadTopInsights(l)}
   <div class="sec"><div class="sec-h">Pipeline</div>
     ${leadStepper(l)}${leadGate(l)}
   </div>
+  ${leadTopInsights(l)}
   <div class="rec-desc">${l.co} is undertaking the ${l.nm} engagement to address a clear business need. The solution leverages OJO's delivery workflow to take this from brief to launch, with the deliverables, timeline and budget tracked as cells. Source: ${l.src}.</div>
   <div class="board-grid">
     <div class="sec"><div class="sec-h">About this deal</div>
@@ -795,8 +780,7 @@ function taskRecHTML(){const t=rec.ent;if(!t.accept)t.accept=[];if(!t.proof)t.pr
   const done=t.st==='Done',pct=trkPct();
   const I={plus:'<path d="M12 5v14M5 12h14"/>',clip:'<path d="m21 8-9.5 9.5a4 4 0 0 1-5.7-5.7L14 4a2.6 2.6 0 0 1 3.7 3.7L9.2 16.2"/>',up:'<path d="M12 15V3M7 8l5-5 5 5M5 21h14"/>',link:'<path d="M10 13a4 4 0 0 0 6 0l3-3a4 4 0 1 0-6-6l-1 1M14 11a4 4 0 0 0-6 0l-3 3a4 4 0 1 0 6 6l1-1"/>',file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',star:'<path d="M12 3l2 5.5L20 9l-4.5 3.7L17 19l-5-3.2L7 19l1.5-6.3L4 9l6-.5z"/>',reload:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',play:'<path d="M6 4l14 8-14 8z"/>',check:'<path d="M20 6 9 17l-5-5"/>',chev:'<path d="m6 9 6 6 6-6"/>'};
   const PCH={person:'<path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M4 21a8 8 0 0 1 16 0"/>',playc:'<circle cx="12" cy="12" r="9"/><path d="M10 9l5 3-5 3z"/>',bars:'<path d="M3 21h18M7 21V11M12 21V5M17 21v-8"/>',clk:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'};
-  return `<h1>${t.t}</h1><div class="byline"><span class="av" style="background:${PEOPLE[t.asg][1]}">${PEOPLE[t.asg][0]}</span> in <b>${PROJECT}</b> · ${t.ms}</div>
-  <div class="propchips">
+  return `<div class="propchips">
     <span class="pchip">${svg(PCH.person,14)} ${PEOPLE[t.asg][2]}</span>
     <label class="pchip sel" title="Move along to…">${svg(PCH.playc,14)}<select onchange="recMove(this.value)">${STATUSES.map(s=>`<option ${s.k===t.st?'selected':''}>${s.k}</option>`).join('')}</select>${svg(SVS.caret,11)}</label>
     <span class="pchip">${svg(PCH.bars,14)} ${t.pri}</span>
@@ -1097,6 +1081,7 @@ function mountEmpRecord(){const e=hrEmp;empPanelCollapsed=true;
       <div class="commpill">${[['call','Call'],['email','Email'],['chat','Message']].map(([f,l])=>`<button title="${l} ${e.name}" onclick="openComm('${f}')">${faceIcon(f)}</button>`).join('')}</div>
       <button class="ptog-ic ${empPanelCollapsed?'':'on'}" id="empPtogBtn" onclick="empToggle()" title="Show activity">${svg('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',17)}</button>
       <button class="mtool hdr-x" onclick="empClose()" title="Close">${svg(SVS.x,18)}</button></div>
+    <div class="rec-head-slot">${empHead(e)}</div>
     <div class="viewbar">${EMPTABS.map(x=>`<button class="vtab ${x===hrEmpTab?'on':''}" onclick="hrEmpSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[EMPTABICON[x]],14)}</span>${x}</button>`).join('')}</div>
     <div class="dcenter"><div class="inner" id="empBody">${empRecBody(e)}</div></div></div>
    <aside class="dpanel" id="emppanel"><div class="dpanel-head"><span class="nm">Recent activity</span></div><div class="dpanel-body" id="emppanelbody"></div></aside></div></div>`;
@@ -1104,9 +1089,9 @@ function mountEmpRecord(){const e=hrEmp;empPanelCollapsed=true;
   commSetHost({getFace:()=>empFace,setFace:empSetFace,content:commEmpContent});syncCommActive();}
 function empClose(){go('hr');}
 function empNav(dir){const i=EMP.findIndex(x=>x.code===hrEmp.code);if(i<0)return;const n=(i+dir+EMP.length)%EMP.length;hrEmp=EMP[n];empFace='info';xpClose();mountEmpRecord();}
-function empRecBody(e){const head=`<div class="lead-head"><div class="lh-id"><h1>${e.name}</h1>
-    <div class="byline">${eav(e,26)} <b>${e.role}</b> <span class="dotsep">·</span> <span style="color:${EST[e.status]||'var(--muted)'};font-weight:700">${e.status}</span>${e.dept!=='—'?` <span class="dotsep">·</span> ${e.dept} team`:''}${e.mgr!=='—'?` <span class="dotsep">·</span> reports to ${e.mgr}`:''} <span class="dotsep">·</span> joined ${e.join}</div></div></div>`;
-  return head+hrEmpBody(e);}
+function empHead(e){return `<div class="lead-head"><div class="lh-id"><h1>${e.name}</h1>
+    <div class="byline">${eav(e,26)} <b>${e.role}</b> <span class="dotsep">·</span> <span style="color:${EST[e.status]||'var(--muted)'};font-weight:700">${e.status}</span>${e.dept!=='—'?` <span class="dotsep">·</span> ${e.dept} team`:''}${e.mgr!=='—'?` <span class="dotsep">·</span> reports to ${e.mgr}`:''} <span class="dotsep">·</span> joined ${e.join}</div></div></div>`;}
+function empRecBody(e){return hrEmpBody(e);}
 function hrEmpSetTab(t){hrEmpTab=t;const b=document.getElementById('empBody');if(b)b.innerHTML=empRecBody(hrEmp);
   document.querySelectorAll('#empbox .viewbar .vtab').forEach(x=>x.classList.toggle('on',x.textContent.trim()===t));
   const c=document.getElementById('empCrumbTab');if(c)c.textContent=t;}
@@ -1387,6 +1372,7 @@ function mountCollRecord(){const c=curColl(),r=curRec();collFace='info';collColl
       <div class="commpill">${[['call','Call'],['email','Email'],['chat','Message']].map(([f,l])=>`<button title="${l} ${r.name}" onclick="openComm('${f}')">${faceIcon(f)}</button>`).join('')}</div>
       <button class="ptog-ic ${collColl?'':'on'}" id="cPtogBtn" onclick="collToggle()" title="Show activity">${svg('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',17)}</button>
       <button class="mtool hdr-x" onclick="collBackTo()" title="Close">${svg(SVS.x,18)}</button></div>
+    <div class="rec-head-slot">${collHead(r)}</div>
     <div class="viewbar">${ACCTABS.map(x=>`<button class="vtab ${x===collTab?'on':''}" onclick="collSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[ACCTABICON[x]],14)}</span>${x}</button>`).join('')}</div>
     <div class="dcenter"><div class="inner" id="cinner">${collBody(c,r)}</div></div></div>
    <aside class="dpanel"><div class="dpanel-head"><span class="nm">Recent activity</span></div><div class="dpanel-body">${collInfo()}</div></aside></div></div>`;
@@ -1396,9 +1382,10 @@ function collClose(){collBackTo();}
 function collNav(dir){const rows=curColl().data();const i=rows.findIndex(x=>x.id===collRec);if(i<0)return;const n=(i+dir+rows.length)%rows.length;collRec=rows[n].id;xpClose();mountCollRecord();}
 function collSetTab(t){collTab=t;const b=document.getElementById('cinner');if(b)b.innerHTML=collBody(curColl(),curRec());document.querySelectorAll('#cbox .viewbar .vtab').forEach(x=>x.classList.toggle('on',x.textContent.trim()===t));const cr=document.getElementById('cCrumbTab');if(cr)cr.textContent=t;}
 function collToggle(){collColl=!collColl;document.getElementById('cbox').classList.toggle('collapsed',collColl);const b=document.getElementById('cPtogBtn');if(b){b.classList.toggle('on',!collColl);b.title=collColl?'Show activity':'Hide activity';}}
+function collHead(r){return `<div class="lead-head"><div class="lh-id"><h1>${r.name}</h1>
+    <div class="byline"><span class="eav" style="background:${r.color};width:26px;height:26px;font-size:10px">${r.av}</span> <b>${r.type}</b> <span class="dotsep">·</span> <span style="color:${stColor(r.status)};font-weight:700">${r.status}</span> <span class="dotsep">·</span> owner ${r.owner} <span class="dotsep">·</span> ${r.terms}</div></div></div>`;}
 function collBody(c,r){
-  const head=`<div class="lead-head"><div class="lh-id"><h1>${r.name}</h1>
-    <div class="byline"><span class="eav" style="background:${r.color};width:26px;height:26px;font-size:10px">${r.av}</span> <b>${r.type}</b> <span class="dotsep">·</span> <span style="color:${stColor(r.status)};font-weight:700">${r.status}</span> <span class="dotsep">·</span> owner ${r.owner} <span class="dotsep">·</span> ${r.terms}</div></div></div>`;
+  const head='';
   if(collTab==='Transactions')return head+`<div class="tablewrap" style="margin-top:6px"><table><thead><tr><th>Reference</th><th>Date</th><th class="num">Amount</th><th>Status</th></tr></thead><tbody>${acctTxns(r).map(t=>`<tr onclick="toast('Open ${t.id} (demo)')"><td><b style="color:var(--navy)">${t.id}</b></td><td class="co">${t.date}</td><td class="num">${fmt(t.amt)}</td><td>${acctTxnPill(t.status)}</td></tr>`).join('')}</tbody></table></div>`;
   if(collTab==='Details'){const blk=(h,rows)=>`<div class="pd-block"><div class="pd-h">${h}</div><div class="pd-grid">${rows.map(([k,x])=>`<div class="pd-cell"><div class="pd-k">${k}</div><div class="pd-v">${x}</div></div>`).join('')}</div></div>`;
     return head+`<div class="pdetails" style="padding:6px 0 30px">${c.groups.map(g=>blk(g[0],g[1].map(f=>[f[0],f[2]==='money'?fmt(r[f[1]]):(f[1]==='status'?`<span style="color:${stColor(r[f[1]])}">${r[f[1]]}</span>`:r[f[1]])]))).join('')}</div>`;}
@@ -1485,6 +1472,8 @@ function vnInfo(){const v=curVn();return `<div class="ip"><div class="ip-actonly
 function commVendorContent(f){const v=curVn();return f==='info'?vnInfo():commChannel(f,v?v.poc:'this vendor');}
 const VNTABICON={Overview:'star',Projects:'Board',RFQs:'List',Bills:'Table',Details:'Details','Notes & Files':'notes'};
 function vnStatusPill(s){const c={Accepted:'var(--ok)',Paid:'var(--ok)',Sent:'var(--info)',Pending:'#9A6B12',Overdue:'var(--coral-ink)'}[s]||'var(--muted)';return `<span style="color:${c};font-weight:600">${s}</span>`;}
+function vnHead(v){return `<div class="lead-head"><div class="lh-id"><h1>${v.name}</h1>
+    <div class="byline"><span class="av" style="background:${v.color}">${v.av}</span> <b>${v.type}</b> <span class="dotsep">·</span> <span style="color:${stColor(v.status)};font-weight:700">${v.status}</span> <span class="dotsep">·</span> owner ${v.owner}</div></div></div>`;}
 function vnBody(){const v=curVn();
   /* head chips = the vendor's onboarding profile, always in view on every tab */
   const chips=`<div class="propchips">
@@ -1493,8 +1482,7 @@ function vnBody(){const v=curVn();
     <button class="pchip lnk" onclick="toast('Open ${v.site} (demo)')" title="Website">${svg('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',13)} ${v.site}</button>
     <button class="pchip lnk" onclick="toast('Open LinkedIn (demo)')" title="${v.li}">${svg('<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 11v5M8 8v.01M12 16v-5m0 2a2.5 2.5 0 0 1 5 0v3"/>',13)} LinkedIn</button>
     <button class="pchip lnk" onclick="toast('Open ${v.portfolio} (demo)')" title="${v.portfolio}">${svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 15 5-5 4 4 3-3 6 6"/><circle cx="9" cy="9" r="1.2"/>',13)} Portfolio</button></div>`;
-  const head=`<div class="lead-head"><div class="lh-id"><h1>${v.name}</h1>
-    <div class="byline"><span class="av" style="background:${v.color}">${v.av}</span> <b>${v.type}</b> <span class="dotsep">·</span> <span style="color:${stColor(v.status)};font-weight:700">${v.status}</span> <span class="dotsep">·</span> owner ${v.owner}</div>${chips}</div></div>`;
+  const head=chips;
   if(vnTab==='Projects')return head+((v.projects||[]).length
     ?`<div class="tablewrap" style="margin-top:6px"><table><thead><tr><th>Project</th><th class="num">Budget</th><th>Created on</th><th>Project score</th><th>Status</th><th>BRO</th></tr></thead><tbody>${v.projects.map(p=>`<tr onclick="toast('Open ${p.name} (demo)')"><td><b style="color:var(--navy)">${p.name}</b></td><td class="num">${fmt(p.bud)}</td><td class="co">${p.created}</td><td>${vnScorePill(p.score)}</td><td><span style="color:${VNPSTC[p.status]||'var(--muted)'};font-weight:600">${p.status}</span></td><td><a class="vlink" onclick="event.stopPropagation();toast('Open ${p.bro} (demo)')">${p.bro} ↗</a></td></tr>`).join('')}</tbody></table></div>`
     :`<div class="tp-empty" style="margin-top:20px"><div class="tp-empty-ic">${svg(ICONS.Board,26)}</div><h3>No projects yet</h3><p>Sub-contract a project to start building this vendor's track record.</p></div>`);
@@ -1589,6 +1577,7 @@ function mountVendor(){const v=curVn();
       <div class="commpill">${[['call','Call'],['email','Email'],['chat','Message']].map(([f,l])=>`<button title="${l} ${v.poc}" onclick="openComm('${f}')">${faceIcon(f)}</button>`).join('')}</div>
       <button class="ptog-ic ${vnColl?'':'on'}" id="vnPtogBtn" onclick="vnToggle()" title="${vnColl?'Show activity':'Hide activity'}">${svg('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',17)}</button>
       <button class="mtool hdr-x" onclick="go('vendor')" title="Close">${svg(SVS.x,18)}</button></div>
+    <div class="rec-head-slot">${vnHead(v)}</div>
     <div class="viewbar">${['Overview','Projects','RFQs','Bills','Details','Notes & Files'].map(x=>`<button class="vtab ${x===vnTab?'on':''}" onclick="vnSetTab('${x}')"><span class="${x==='Overview'?'star':''}">${svg(ICONS[VNTABICON[x]],14)}</span>${x}</button>`).join('')}</div>
     <div class="dcenter"><div class="inner" id="vninner">${vnBody()}</div></div></div>
    <aside class="dpanel"><div class="dpanel-head"><span class="nm">Recent activity</span></div><div class="dpanel-body" id="vnpanelbody">${vnInfo()}</div></aside></div></div>`;
@@ -1617,8 +1606,8 @@ const SVC_CATALOG=[
 const SVC_PACKAGES=[{id:'pkg-launch',name:'Brand Launch Kit',price:'₹3,40,000',items:['logo design','strategy','SEO']}];
 const SLATEMPLATES=[{id:'sla-std',name:'Standard SLA Template',updated:'05 May 2026',def:true}];
 const RATECLR={'Per unit':'var(--info)','Hourly':'#7C53E6','Monthly retainer':'var(--ok)','Group':'var(--faint)'};
-let leadSetTab='bro',leadSetSub='services',leadSetDetail=null;
-const LSTABS=[['bro','BRO Templates'],['stages','Pipelines & Lead stages'],['pricing','Service Pricing'],['sla','SLA Template']];
+let leadSetTab='stages',leadSetSub='services',leadSetDetail=null;
+const LSTABS=[['stages','Lead Pipeline'],['pricing','Service Pricing'],['bro','Proposal Template'],['sla','Contract Template']];
 function celltag(type,id){return `<span class="celltag"><span class="dot"></span>${type}<span class="cid">${id}</span></span>`;}
 function mountLeadsSettings(){
   if(leadSetDetail){document.getElementById('modcontent').innerHTML=lsEditor();return;}
@@ -1634,7 +1623,7 @@ function leadSetBody(){
   if(leadSetTab==='sla')return lsSLA();
   // BRO Templates
   return lsLegend(`A <b>BRO template</b> is a cell that <b>composes field cells</b> — <code>Core</code> always collected, <code>Extended</code> optional. Leads bind to one when they reach the Proposal stage.`)
-   +`<div class="setrowh"><h2 class="set-h">BRO Templates</h2><button class="ojofind" onclick="lsOpen('bro',null)">${svg(SVS.plus,13)} Add new</button></div>`
+   +`<div class="setrowh"><h2 class="set-h">Proposal Templates</h2><button class="ojofind" onclick="lsOpen('bro',null)">${svg(SVS.plus,13)} Add new</button></div>`
    +BROTEMPLATES.map(t=>`<div class="tmplcard"><div class="th"><div class="ti">${svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',18)}</div>
       <div style="flex:1;min-width:0"><span class="tn">${t.name}</span><div class="tm">Last updated ${t.updated} · Version ${t.ver}</div><div class="td">${t.desc}</div></div>
       <button class="rowmenu" onclick="lsOpen('bro','${t.id}')">${svg(SVS.more,16)}</button></div>
@@ -1662,7 +1651,7 @@ function lsPricing(){
    ${SVC_CATALOG.map(g=>`<tr class="svcgrp"><td><b style="color:var(--navy)">${g.group}</b></td><td>${g.rate==='Group'?'<span class="co">Group</span>':`<span class="ratechip" style="color:${RATECLR[g.rate]}">${g.rate}</span>`}</td><td class="num">${g.price}</td><td></td></tr>
      ${g.items.map(it=>`<tr><td style="padding-left:30px">${it[0]}<div style="font-size:11.5px;color:var(--faint)">Under ${g.group}</div></td><td><span class="ratechip" style="color:${RATECLR[it[1]]}">${it[1]}</span></td><td class="num">${it[2]}</td><td><button class="rowmenu" onclick="event.stopPropagation();lsOpen('service','${it[0].replace(/'/g,"")}')">${svg(SVS.pencil,14)}</button></td></tr>`).join('')}`).join('')}</tbody></table></div>`;}
 function lsSLA(){return lsLegend(`An <b>SLA template</b> is a document cell bound to the <b>SLA stage</b>. The one marked <code>Default</code> is used when a lead reaches that stage.`)
-   +`<div class="setrowh"><h2 class="set-h">SLA Templates</h2><button class="ojofind" onclick="lsOpen('sla',null)">${svg(SVS.plus,13)} Add new</button></div>`
+   +`<div class="setrowh"><h2 class="set-h">Contract Templates</h2><button class="ojofind" onclick="lsOpen('sla',null)">${svg(SVS.plus,13)} Add new</button></div>`
    +SLATEMPLATES.map(t=>`<div class="tmplcard"><div class="th"><div class="ti">${svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',18)}</div><div style="flex:1"><div style="display:flex;align-items:center;gap:10px"><span class="tn">${t.name}</span>${t.def?'<span class="ebadge" style="color:var(--ok);background:var(--ok-soft)">Default</span>':''}</div><div class="tm">Last updated ${t.updated}</div></div><button class="rowmenu" onclick="lsOpen('sla','${t.id}')">${svg(SVS.pencil,15)}</button></div>
      <div class="tagrow">${SLA_CORE.map(x=>`<span class="ftag core"><span class="d"></span>${x}</span>`).join('')}${SLA_DEF_EXTRA.map(x=>`<span class="ftag"><span class="d"></span>${x}</span>`).join('')}</div>
      </div>`).join('');}
@@ -1694,7 +1683,7 @@ function lsOpen(kind,id){leadSetDetail={kind,id};
 function lsBack(){leadSetDetail=null;lsBroDraft=null;mountLeadsSettings();}
 function lsSave(){const m={bro:'Template',stage:'Stage',service:'Service',sla:'SLA template',package:'Package'}[leadSetDetail.kind];toast(m+' saved (demo)');lsBack();}
 function lsEditor(){const k=leadSetDetail.kind,nw=!leadSetDetail.id;
-  const title={bro:(nw?'New':'Edit')+' BRO Template',stage:(nw?'New':'Edit')+' Lead Stage',service:(nw?'New':'Edit')+' Service',sla:(nw?'New':'Edit')+' SLA Template',package:'New Package'}[k];
+  const title={bro:(nw?'New':'Edit')+' Proposal Template',stage:(nw?'New':'Edit')+' Lead Stage',service:(nw?'New':'Edit')+' Service',sla:(nw?'New':'Edit')+' Contract Template',package:'New Package'}[k];
   const save={bro:nw?'Create template':'Update template',stage:nw?'Add stage':'Update stage',service:'Save service',sla:'Save template',package:'Create package'}[k];
   const body=k==='bro'?lsEditBRO():k==='stage'?lsEditStage():k==='service'?lsEditService():k==='package'?lsEditPackage():lsEditSLA();
   return `<div class="box"><div class="lsedit"><div class="lsedit-top"><button class="lsback" onclick="lsBack()">${svg(SVS.arrow,18)}</button><h1>${title}</h1></div>
