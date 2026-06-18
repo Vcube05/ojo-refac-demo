@@ -169,7 +169,7 @@ function mountModule(){const c=cm();
   }
   document.getElementById('modcontent').innerHTML=`<div class="box">
     <div class="mc-top"><div class="title-wrap"><div class="picon">${svg(c.icon||'<path d="M3 17 9 11l4 3 7-8"/><path d="M21 6v5M16 6h5"/>',20)}</div>
-        <div><h1>${c.title}</h1><div class="sub">${c.sub}</div></div></div>
+        <div><h1>${c.title}</h1></div></div>
       <div class="sp"></div><span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span>${modNew()}</div>
     ${modViewbar()}
     <div id="metricsBar" class="metrics" style="padding-left:22px;padding-right:22px"></div>
@@ -254,8 +254,8 @@ const DOCK_ICONS={
 let genieFace=null,genieRegen=null;
 const GFACES=['chat','call','video','email'];
 const GFACE_LBL={chat:'Messages',call:'Calls',video:'Meetings',email:'Email',notif:'Notifications'};
-const GH_FACES=['chat','call','video','email','notif'];
-let notifRead=false;function notifUnread(){return notifRead?0:3;}
+const GH_FACES=['chat','call','video','email'];
+let notifRead=false,genieNotif=false;function notifUnread(){return notifRead?0:3;}
 /* short labels for the traveling tab — they ride beside the icon, room is tight */
 const GFACE_TAB={chat:'Chat',call:'Calls',video:'Meet',email:'Mail',notif:'Alerts'};
 /* Single-sheet tabs: comm channels + Genie. (Search lives on Home, Notifications in the rail.) */
@@ -303,10 +303,10 @@ function renderPanelTabs(){
 function ghActs(){
   return `<span class="gh-band"></span><span class="gh-notch"></span>`+
     `<span class="gh-pill"><button class="gpill" onclick="geniePill()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span>Ojo Genie</span></button></span>`+
-    `<span class="gh-acts">`+GH_FACES.map(f=>`<button class="gha ${f==='notif'?'alert':''} ${genieFace===f?'on':''}" data-face="${f}" onclick="genieSel('${f}')" title="${GFACE_LBL[f]}">${svg(f==='notif'?DOCK_ICONS.bell:DOCK_ICONS[f],16)}${f==='notif'&&notifUnread()?`<span class="gha-badge">${notifUnread()}</span>`:''}</button>`).join('')+`</span>`;
+    `<span class="gh-acts">`+GH_FACES.map(f=>`<button class="gha ${genieFace===f?'on':''}" data-face="${f}" onclick="genieSel('${f}')" title="${GFACE_LBL[f]}">${svg(DOCK_ICONS[f],16)}</button>`).join('')+`</span>`;
 }
 /* pill = home base: from a face it returns to the Genie chat; from the chat it puts the panel away */
-function geniePill(){if(genieFace)genieHome();else genieToggle();}
+function geniePill(){if(genieFace||genieNotif)genieHome();else genieToggle();}
 /* place the traveling tab under the active item (with its label); slides from its previous spot */
 let gnPrev=null;
 function gnotchSync(){
@@ -933,7 +933,7 @@ function collapsePanel(){closeSection();}
 function reopenPanel(){openSection('genie');}
 /* the active topbar pill is the open/close anchor: tap to open, tap again to put it away */
 function genieToggle(){const f=document.getElementById('flyout');
-  if(section==='genie'&&f&&f.classList.contains('show'))collapsePanel();else openSection('genie');
+  if(section==='genie'&&f&&f.classList.contains('show'))collapsePanel();else{genieNotif=false;openSection('genie');}
   renderPanelTabs();}
 
 /* ===== MOBILE shell: bottom tab bar + bottom sheets (Apps launcher, Ask Ojo, comms) ===== */
@@ -956,7 +956,7 @@ function homeGeniePlan(){if(typeof homeStats!=='function')return '';const st=hom
     <button class="g-plan-cta" onclick="tFocusMode()">${svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',14)} Start focus block</button></div>`;}
 /* Comm faces inside the Genie surface: the topbar cluster is the switcher. genieFace=null → chat. */
 function genieSel(f){
-  genieFace=f;
+  genieNotif=false;genieFace=f;
   const fly=document.getElementById('flyout');
   const b=document.getElementById('flyBody');
   /* keep the cluster DOM stable so the tab + circles TRANSITION instead of re-mounting */
@@ -967,16 +967,30 @@ function genieSel(f){
   }else openSection('genie');
   gnotchSync();renderPanelTabs();
 }
-function genieHome(){genieFace=null;genieRegen=null;openSection('genie');}
+function genieHome(){genieFace=null;genieRegen=null;genieNotif=false;openSection('genie');}
+/* Notifications open the Genie red panel as their OWN view — NOT a comm face. Notch stays under the Ojo Genie pill. */
+function notifSwapHTML(){
+  return `<div class="gswap"><div class="genie-hi mini">Notifications<div class="gctx">Updates across your workspace · <a class="gnotif-mark" onclick="event.stopPropagation();markAllRead()">Mark all read</a></div></div><div class="gnotif">${notifBody()}</div></div>`;
+}
+function openNotif(){
+  genieNotif=true;genieFace=null;
+  const fly=document.getElementById('flyout'),b=document.getElementById('flyBody');
+  if(section==='genie'&&fly&&fly.classList.contains('show')&&b&&b.querySelector('.gh-band')){
+    b.querySelectorAll('.gha').forEach(x=>x.classList.remove('on'));
+    const sw=b.querySelector('.gswap');if(sw)sw.outerHTML=notifSwapHTML();
+    b.querySelector('.gfoot')?.remove();
+  }else openSection('genie');
+  gnotchSync();renderPanelTabs();
+}
 function genieSwapHTML(){
-  if(genieFace==='notif')
-    return `<div class="gswap"><div class="genie-hi mini">Notifications<div class="gctx">Updates across your workspace · <a class="gnotif-mark" onclick="event.stopPropagation();markAllRead()">Mark all read</a></div></div><div class="gnotif">${notifBody()}</div></div>`;
   if(genieFace){const cn=commContextName();
     return `<div class="gswap"><div class="genie-hi mini">${cn||'Workspace'}<div class="gctx">${GFACE_LBL[genieFace]}${cn?' with this record':' across OJO'}</div></div><div class="gcomm">${genieFace==='chat'&&!commHost?msgBody():commBody(genieFace)}</div></div>`;}
   const ctx=genieContext();
   return `<div class="gswap"><div class="genie-hi">Hello, Vinoth<div class="gctx">${ctx.who?`Ask me anything about <b>${ctx.who}</b>`:'How can I help you today?'}</div></div></div>`;
 }
 function genieBody(){const ctx=genieContext();const ask=s=>s.replace(/'/g,"\\'");
+  if(genieNotif)
+    return `<div class="gwrap"><div class="gmsgs" id="gmsgs">${ghActs()}${notifSwapHTML()}</div></div>`;
   if(genieFace)
     return `<div class="gwrap"><div class="gmsgs" id="gmsgs">${ghActs()}${genieSwapHTML()}</div></div>`;
   const rg=genieRegen;
@@ -999,7 +1013,7 @@ function genieAsk(q){if(!q||!q.trim())return;const m=document.getElementById('gm
 function nIcon(t){const m={bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>',people:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6"/>',check:'<circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',brief:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',person:'<circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/>'};return svg(m[t]||m.bell,17);}
 function notifBody(){const N=[['bell','New Message','You have a new message','8 hours ago',1],['people','Employee Updated','Employee information has been updated','14 hours ago',1],['check','Comment Resolved','Vinotham resolved a comment on BRO: “i will…”','1 day ago',1],['clock','Checked In','You checked in at 10:42 AM','4 days ago',0],['brief','Project Created Successfully','Your project is ready for review.','5 days ago',0],['brief','Project Generation In Progress','Generating project: 35% complete','5 days ago',0],['doc','Requirements Generated','Requirements have been generated for a lead','5 days ago',0],['person','Lead Updated','Lead has been updated','5 days ago',0]];
   return `<div class="notif-ai">${svg(SPARK,12)} OJO can turn any update into a task — just hit <b>+ Task</b>.</div>`+N.map(n=>`<div class="nrow ${n[4]?'unread':''}"><div class="nic">${nIcon(n[0])}</div><div style="flex:1;min-width:0"><div class="nt">${n[1]}</div><div class="ns">${n[2]}</div><div class="nm">${n[3]}</div></div><button class="nrow-task" onclick="notifTask(event,'${n[1].replace(/'/g,"")}')" title="Add as task">${svg('<path d="M12 5v14M5 12h14"/>',13)} Task</button>${n[4]?'<span class="ndot"></span>':''}</div>`).join('')+`<div class="nfoot">Showing ${N.length} of ${N.length}</div>`;}
-function markAllRead(){notifRead=true;document.querySelectorAll('#flyBody .nrow').forEach(r=>{r.classList.remove('unread');r.querySelector('.ndot')?.remove();});document.querySelector('#u-notif .ubadge')?.remove();document.querySelector('.tb-badge')?.remove();document.querySelectorAll('.gha-badge').forEach(x=>x.remove());toast('All marked read');}
+function markAllRead(){notifRead=true;document.querySelectorAll('#flyBody .nrow').forEach(r=>{r.classList.remove('unread');r.querySelector('.ndot')?.remove();});document.querySelector('#u-notif .ubadge')?.remove();document.querySelector('.tb-badge')?.remove();toast('All marked read');}
 
 function msgBody(){const F=['All','Unread','DMs','Groups','Leads','Projects','Vendors','Clients'];
   const C=[['AB','#7C53E6','Apparel Brand Launch','lead','10:59 AM','hi'],['AM','#E08A1E','Amanuay','dm','Tue','ojo-meet://join/81715855-b0bb-498…'],['MM','#7C53E6','move marketing — Brand','vendor','12 May','what about marketing.'],['RE','#2F6FED','Real estate Performance','vendor','04 May','jhfhj'],['PA','#15A06A','Palpxvinoth','dm','03 May','cool'],['RF','#7C53E6','requirement for fuel app','lead','01 May','whatsup? are we doing this today?'],['LG','#7C53E6','legal req to trade mark','lead','28 Apr','whatsup']];

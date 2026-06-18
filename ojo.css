@@ -2144,16 +2144,15 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .ojr-prose{font-size:var(--size-body);line-height:1.65;color:var(--ink);margin:2px 0 2px}
 .ojr-prose b{font-weight:var(--weight-semibold);color:var(--navy)}
 /* ===== Notifications as a Genie face — dark-on-red, mirrors .gcomm theming ===== */
-.gha.alert{overflow:visible}
-.gha-badge{position:absolute;top:-3px;right:-3px;min-width:16px;height:16px;border-radius:999px;background:#fff;color:var(--elec-ink);font-size:var(--size-caption);font-weight:var(--weight-bold);display:grid;place-items:center;padding:0 4px;border:2px solid var(--elec);line-height:1}
 .gnotif-mark{color:#fff;font-weight:var(--weight-semibold);text-decoration:underline;cursor:pointer}
-.gnotif{margin-bottom:14px}
-.gnotif .notif-ai{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.9)}
+.gnotif{display:flex;flex-direction:column;gap:9px;margin-bottom:14px}
+.gnotif .notif-ai{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.9);margin:0}
 .gnotif .notif-ai b,.gnotif .notif-ai svg{color:#fff}
-.gnotif .nrow{border-bottom-color:rgba(0,0,0,.18)}
-.gnotif .nrow:hover{background:rgba(0,0,0,.10)}
-.gnotif .nrow.unread{background:rgba(0,0,0,.12)}
-.gnotif .nrow .nic{background:rgba(255,255,255,.10);color:rgba(255,255,255,.85)}
+/* notifications = solid black boxes, same look as the chat/call cells (.gcomm .ccell) */
+.gnotif .nrow{background:#17181C;border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:13px 14px}
+.gnotif .nrow:hover{background:#1F2127;border-color:rgba(255,255,255,.2)}
+.gnotif .nrow.unread{background:#1F2127}
+.gnotif .nrow .nic{background:rgba(255,255,255,.08);color:rgba(255,255,255,.85)}
 .gnotif .nt{color:#fff}
 .gnotif .ns{color:rgba(255,255,255,.72)}
 .gnotif .nm{color:rgba(255,255,255,.52)}
