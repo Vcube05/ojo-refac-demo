@@ -253,9 +253,11 @@ const DOCK_ICONS={
 /* Genie's comm faces — selected via the topbar cluster; null = the Genie chat itself */
 let genieFace=null,genieRegen=null;
 const GFACES=['chat','call','video','email'];
-const GFACE_LBL={chat:'Messages',call:'Calls',video:'Meetings',email:'Email'};
+const GFACE_LBL={chat:'Messages',call:'Calls',video:'Meetings',email:'Email',notif:'Notifications'};
+const GH_FACES=['chat','call','video','email','notif'];
+let notifRead=false;function notifUnread(){return notifRead?0:3;}
 /* short labels for the traveling tab — they ride beside the icon, room is tight */
-const GFACE_TAB={chat:'Chat',call:'Calls',video:'Meet',email:'Mail'};
+const GFACE_TAB={chat:'Chat',call:'Calls',video:'Meet',email:'Mail',notif:'Alerts'};
 /* Single-sheet tabs: comm channels + Genie. (Search lives on Home, Notifications in the rail.) */
 const DOCK_CELLS=[
   {id:'ui-dock-genie',  type:'UICell', owner:'ui-dock', group:'assist', values:{name:'Ojo Genie', render:'anchor', bind:'capability:genie',    click:'open', icon:'genie'}, links:{target:'genie'}},
@@ -301,7 +303,7 @@ function renderPanelTabs(){
 function ghActs(){
   return `<span class="gh-band"></span><span class="gh-notch"></span>`+
     `<span class="gh-pill"><button class="gpill" onclick="geniePill()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span>Ojo Genie</span></button></span>`+
-    `<span class="gh-acts">`+GFACES.map(f=>`<button class="gha ${genieFace===f?'on':''}" onclick="genieSel('${f}')" title="${GFACE_LBL[f]}">${svg(DOCK_ICONS[f],16)}</button>`).join('')+`</span>`;
+    `<span class="gh-acts">`+GH_FACES.map(f=>`<button class="gha ${f==='notif'?'alert':''} ${genieFace===f?'on':''}" data-face="${f}" onclick="genieSel('${f}')" title="${GFACE_LBL[f]}">${svg(f==='notif'?DOCK_ICONS.bell:DOCK_ICONS[f],16)}${f==='notif'&&notifUnread()?`<span class="gha-badge">${notifUnread()}</span>`:''}</button>`).join('')+`</span>`;
 }
 /* pill = home base: from a face it returns to the Genie chat; from the chat it puts the panel away */
 function geniePill(){if(genieFace)genieHome();else genieToggle();}
@@ -887,7 +889,9 @@ const TAB_WIDE=540; /* panel width past which the comm tabs reveal their labels 
 function flySize(px){const f=document.getElementById('flyout');if(!f)return;f.style.flexBasis=px+'px';f.style.width=px+'px';
   document.documentElement.style.setProperty('--flyw',px+'px');
   const o=document.getElementById('tbOjo');
-  if(o&&shellMode!=='merged'){if(px>0){o.style.width=px+'px';o.style.flexBasis=px+'px';}else{o.style.width='';o.style.flexBasis='';}}
+  /* keep #tbOjo spanning the panel width even when collapsed, so the Ojo Genie pill
+     stays at the SAME position whether the panel is open or closed (no jump) */
+  if(o&&shellMode!=='merged'){const w=(px>0?px:flyW)+'px';o.style.width=w;o.style.flexBasis=w;}
   const t=document.getElementById('panelTabs');if(t)t.classList.toggle('wide',px>=TAB_WIDE);}
 /* drag-to-resize the push panel */
 (function(){let rz=false;
@@ -957,7 +961,7 @@ function genieSel(f){
   const b=document.getElementById('flyBody');
   /* keep the cluster DOM stable so the tab + circles TRANSITION instead of re-mounting */
   if(section==='genie'&&fly&&fly.classList.contains('show')&&b&&b.querySelector('.gh-band')){
-    b.querySelectorAll('.gha').forEach((x,i)=>x.classList.toggle('on',GFACES[i]===f));
+    b.querySelectorAll('.gha').forEach(x=>x.classList.toggle('on',x.dataset.face===f));
     const sw=b.querySelector('.gswap');if(sw)sw.outerHTML=genieSwapHTML();
     b.querySelector('.gfoot')?.remove();
   }else openSection('genie');
@@ -965,6 +969,8 @@ function genieSel(f){
 }
 function genieHome(){genieFace=null;genieRegen=null;openSection('genie');}
 function genieSwapHTML(){
+  if(genieFace==='notif')
+    return `<div class="gswap"><div class="genie-hi mini">Notifications<div class="gctx">Updates across your workspace · <a class="gnotif-mark" onclick="event.stopPropagation();markAllRead()">Mark all read</a></div></div><div class="gnotif">${notifBody()}</div></div>`;
   if(genieFace){const cn=commContextName();
     return `<div class="gswap"><div class="genie-hi mini">${cn||'Workspace'}<div class="gctx">${GFACE_LBL[genieFace]}${cn?' with this record':' across OJO'}</div></div><div class="gcomm">${genieFace==='chat'&&!commHost?msgBody():commBody(genieFace)}</div></div>`;}
   const ctx=genieContext();
@@ -993,7 +999,7 @@ function genieAsk(q){if(!q||!q.trim())return;const m=document.getElementById('gm
 function nIcon(t){const m={bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>',people:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6"/>',check:'<circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',brief:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',person:'<circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/>'};return svg(m[t]||m.bell,17);}
 function notifBody(){const N=[['bell','New Message','You have a new message','8 hours ago',1],['people','Employee Updated','Employee information has been updated','14 hours ago',1],['check','Comment Resolved','Vinotham resolved a comment on BRO: “i will…”','1 day ago',1],['clock','Checked In','You checked in at 10:42 AM','4 days ago',0],['brief','Project Created Successfully','Your project is ready for review.','5 days ago',0],['brief','Project Generation In Progress','Generating project: 35% complete','5 days ago',0],['doc','Requirements Generated','Requirements have been generated for a lead','5 days ago',0],['person','Lead Updated','Lead has been updated','5 days ago',0]];
   return `<div class="notif-ai">${svg(SPARK,12)} OJO can turn any update into a task — just hit <b>+ Task</b>.</div>`+N.map(n=>`<div class="nrow ${n[4]?'unread':''}"><div class="nic">${nIcon(n[0])}</div><div style="flex:1;min-width:0"><div class="nt">${n[1]}</div><div class="ns">${n[2]}</div><div class="nm">${n[3]}</div></div><button class="nrow-task" onclick="notifTask(event,'${n[1].replace(/'/g,"")}')" title="Add as task">${svg('<path d="M12 5v14M5 12h14"/>',13)} Task</button>${n[4]?'<span class="ndot"></span>':''}</div>`).join('')+`<div class="nfoot">Showing ${N.length} of ${N.length}</div>`;}
-function markAllRead(){document.querySelectorAll('#flyBody .nrow').forEach(r=>{r.classList.remove('unread');r.querySelector('.ndot')?.remove();});document.querySelector('#u-notif .ubadge')?.remove();toast('All marked read');}
+function markAllRead(){notifRead=true;document.querySelectorAll('#flyBody .nrow').forEach(r=>{r.classList.remove('unread');r.querySelector('.ndot')?.remove();});document.querySelector('#u-notif .ubadge')?.remove();document.querySelector('.tb-badge')?.remove();document.querySelectorAll('.gha-badge').forEach(x=>x.remove());toast('All marked read');}
 
 function msgBody(){const F=['All','Unread','DMs','Groups','Leads','Projects','Vendors','Clients'];
   const C=[['AB','#7C53E6','Apparel Brand Launch','lead','10:59 AM','hi'],['AM','#E08A1E','Amanuay','dm','Tue','ojo-meet://join/81715855-b0bb-498…'],['MM','#7C53E6','move marketing — Brand','vendor','12 May','what about marketing.'],['RE','#2F6FED','Real estate Performance','vendor','04 May','jhfhj'],['PA','#15A06A','Palpxvinoth','dm','03 May','cool'],['RF','#7C53E6','requirement for fuel app','lead','01 May','whatsup? are we doing this today?'],['LG','#7C53E6','legal req to trade mark','lead','28 Apr','whatsup']];
