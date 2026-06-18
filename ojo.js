@@ -424,7 +424,10 @@ function lBoard(){const c=cm();return `<div class="board ${c.color?'color':''} $
       <button class="col-add" onclick="toast('New lead')">${svg('<path d="M12 5v14M5 12h14"/>',14)} New lead</button></div></div>`;}).join('')+`</div>`;}
 function lTable(){let h='<div class="tablewrap"><table><thead><tr><th>Lead</th><th>Company</th><th class="num">Value</th><th>Source</th><th>Owner</th><th>Stage</th></tr></thead><tbody>';
   leads.forEach(l=>{h+=`<tr onclick="openPeek('${l.id}')"><td><span class="nm">${l.nm}</span></td><td class="co">${l.co}</td><td class="num">${fmt(l.val)}</td><td><span class="src">${l.src}</span></td><td><span class="owncell">${av(l.asg)}${l.asg?PEOPLE[l.asg][2]:'Unassigned'}</span></td><td><span class="badge"><span class="dot" style="background:${lcc(l.st)}"></span>${l.st}</span></td></tr>`;});return h+'</tbody></table></div>';}
-function lList(){let h='';LSTAGES.forEach(s=>{const items=leads.filter(l=>l.st===s.k);if(!items.length)return;h+=`<div class="lg"><div class="lg-head"><span class="pill"><span class="dot" style="background:${s.cc}"></span>${s.k}</span><span class="ct">${items.length}</span></div>`;items.forEach(l=>{h+=`<div class="lrow" onclick="openPeek('${l.id}')">${av(l.asg)}<span class="nm">${l.co}</span><span class="co">${l.nm} · ${l.src}</span><span class="val">${fmt(l.val)}</span></div>`;});h+='</div>';});return h;}
+function lList(){let h='';LSTAGES.forEach(s=>{const items=leads.filter(l=>l.st===s.k);if(!items.length)return;const sum=items.reduce((a,l)=>a+l.val,0);
+  h+=`<div class="lg"><div class="lg-head"><span class="pill"><span class="dot" style="background:${s.cc}"></span>${s.k}</span><span class="ct">${items.length}</span><span class="sum">${sum?fmt(sum):''}</span></div><div class="llist">`;
+  items.forEach(l=>{h+=`<div class="lrow" onclick="openPeek('${l.id}')"><span class="nm">${l.co}</span><span class="co">${l.nm}</span><span class="src">${l.src}</span><span class="val">${fmt(l.val)}</span>${av(l.asg)}</div>`;});
+  h+='</div></div>';});return h;}
 
 /* ============ PROJECT RENDER ============ */
 function renderProjWork(type){const el=document.getElementById('work');
