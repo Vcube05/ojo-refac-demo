@@ -220,23 +220,13 @@ function buildDockComm(){const el=document.getElementById('dockComm'),dv=documen
   const h=commHost,on=!!h&&(h.visible?h.visible():true),cur=on&&h.getFace?h.getFace():'chat';
   el.style.display=on?'flex':'none';if(dv)dv.style.display=on?'block':'none';
   el.innerHTML=on?DOCK_COMMFACES.map(f=>`<button class="di dcf ${(section==='comm'&&f===cur)?'on':''}" data-face="${f}" onclick="openCommFace('${f}')" title="${COMMFACE_LABEL[f]}">${faceIcon(f)}</button>`).join(''):'';}
-function openCommFace(f){const h=commHost;if(!h)return;
-  if(section==='comm'&&(h.getFace?h.getFace():'info')===f){closeSection();return;}
-  section='comm';if(h.setFace)h.setFace(f);
-  document.querySelectorAll('.dock .di').forEach(b=>b.classList.remove('on'));
-  document.querySelectorAll('#dockComm .dcf').forEach(b=>b.classList.toggle('on',b.dataset.face===f));
-  const fly=document.getElementById('flyout');fly.classList.remove('genie');
-  document.getElementById('flyTitle').textContent=COMMFACE_LABEL[f]||'Info';
-  document.getElementById('flyExtra').innerHTML='';
-  const body=document.getElementById('flyBody');body.className='fly-body';body.innerHTML=h.content(f);
-  flySize(flyW);fly.classList.add('show');closeApps();mScrim(true);}
+function openCommFace(f){f=GFACES.includes(f)?f:'chat';
+  const shown=section==='genie'&&document.getElementById('flyout')?.classList.contains('show');
+  if(shown&&genieFace===f){collapsePanel();return;}
+  genieSel(f);}
 function hideCommDock(){commHost=null;const el=document.getElementById('commdock');if(el){el.classList.remove('show');el.innerHTML='';}document.body.classList.remove('comm-host');closeCommSheet();if(section&&section.indexOf('comm-')===0&&document.getElementById('flyout')?.classList.contains('show')){document.getElementById('flyBody').innerHTML=commBody(section.slice(5));}buildDockComm();}
-function commTap(f){const h=commHost;if(!h)return;
-  if(h.setFace)h.setFace(f);
-  document.querySelectorAll('#commdock .cdf').forEach(b=>b.classList.toggle('on',b.dataset.face===f));
-  const t=document.getElementById('commSheetTitle');if(t)t.textContent=COMMFACE_LABEL[f]||'Info';
-  const b=document.getElementById('commSheetBody');if(b)b.innerHTML=h.content(f);
-  document.getElementById('commSheet')?.classList.add('show');mScrim(true);}
+function commTap(f){/* mobile comm dock also opens the electric-red Genie surface */
+  openComm(f);}
 function closeCommSheet(){document.getElementById('commSheet')?.classList.remove('show');mScrim(false);}
 /* per-page content renderers: info reuses the side-panel body; the comm channels show that record's own history */
 function commProjectContent(f){return f==='info'?projInfoBody():commChannel(f,'Rajeeshlal');}
@@ -926,16 +916,8 @@ function openSection(s){section=s; /* persistent context window — re-clicking 
   if(s==='genie'){gnotchSync();setTimeout(()=>{gnPrev=null;gnotchSync();},340);}}
 /* contextual communication (call / video / email) — a tab in the single panel; shows the active record's content or a generic empty state */
 function commBody(f){return commHost?commHost.content(f):commChannel(f,'');}
-function openComm(f){const sid='comm-'+f;section=sid; /* persistent — re-clicking a comm tab never collapses */
-  panelTabsClear();
-  document.getElementById('d-'+f)?.classList.add('on');
-  const fly=document.getElementById('flyout');fly.classList.remove('genie');
-  const cn=commContextName();
-  document.getElementById('flyTitle').textContent=(COMMFACE_LABEL[f]||'')+(cn?' · '+cn:'');
-  document.getElementById('flyExtra').innerHTML='';
-  const body=document.getElementById('flyBody');body.className='fly-body';body.innerHTML=commBody(f);
-  document.body.classList.remove('panel-collapsed');
-  flySize(flyW);document.getElementById('rdock')?.classList.add('open');fly.classList.add('show');closeApps();mScrim(true);mbarActive(null);syncCommActive();}
+function openComm(f){/* comm channels live INSIDE the electric-red Genie surface — one panel, one design */
+  genieSel(GFACES.includes(f)?f:'chat');}
 function closeSection(){section=null;const fly=document.getElementById('flyout');fly.classList.remove('show');document.getElementById('rdock')?.classList.remove('open');flySize(0);panelTabsClear();document.body.classList.add('panel-collapsed');mScrim(false);mbarActive(null);syncCommActive();}
 function closeDrawer(){closeSection();}
 /* collapse the whole single sheet to reclaim the workspace; reopen via the floating Genie button */
