@@ -746,7 +746,7 @@ function leadSugg(l){const sc=(SCORE[l.st]||[43,'High'])[0];return `<div class="
    <li>Service “Meta Ad Campaigns” is 10/14 fields complete — add Goal, Effort Hours and Target Audience to strengthen the proposal.</li>
    <li>Lead score is ${sc} — improve it by logging client activities, adding notes, and filling service details to show stronger engagement.</li></ul>
    <div class="lpri">${svg('<path d="M3 3v18h18M7 14l3-3 3 2 4-5"/>',14)} High priority</div></div>`;}
-function scoreColors(pct){return pct>=70?['var(--ok)','#0C6B47']:pct>=45?['var(--warn)','#8A5A14']:['var(--coral)','var(--coral-ink)'];}
+function scoreColors(pct){return pct>=70?['var(--ok)','#0C6B47']:pct>=45?['var(--warn)','var(--warn-ink)']:['var(--error)','#8A1A14'];}
 /* keep the body's Call/Email/Message buttons in sync with the open comm channel */
 function syncCommActive(){const ch=(section&&section.indexOf('comm-')===0)?section.slice(5):null;document.querySelectorAll('.commbtn').forEach(b=>b.classList.toggle('on',b.dataset.f===ch));}
 function stageAiCard(ai){return `<div class="stage-ai"><div class="sa-h">${svg(SPARK,13)} OJO · how to move this lead</div><div class="sa-b">${ai.label}</div><button class="sa-cta" onclick="toast('${ai.cta.replace(/'/g,"\\'")}')">${ai.cta} ${svg('<path d="M5 12h14M13 6l6 6-6 6"/>',14)}</button></div>`;}
@@ -1042,7 +1042,7 @@ const EMP=[
  {code:'REL0004',name:'Palpxvinoth',role:'Org Admin',dept:'—',mgr:'—',created:'01 Apr 2026',status:'Active',av:'P',color:'#2F6FED',phone:'—',email:'palpx@reliance.co',join:'01 Apr 2026'},
  {code:'REL0001',name:'Vinoth V V',role:'Org Admin',dept:'—',mgr:'—',created:'25 Feb 2026',status:'Active',av:'VV',color:'#C92F3A',phone:'9769011309',email:'vinotham@gmail.com',join:'25 Feb 2026'},
  {code:'REL0002',name:'Rajesh Kumar',role:'Project Admin',dept:'projects',mgr:'Vinoth V V',created:'27 Feb 2026',status:'Inactive',av:'RK',color:'#15A06A',phone:'+91 98220 45621',email:'rajesh@reliance.co',join:'27 Feb 2026'}];
-const EST={Active:'var(--ok)','Onboarding':'var(--info)','Invitation Sent':'#9A6B12',Inactive:'var(--coral-ink)'};
+const EST={Active:'var(--ok)','Onboarding':'var(--info)','Invitation Sent':'var(--warn-ink)',Inactive:'var(--faint)'};
 function eav(e,s){s=s||26;return `<span class="eav" style="background:${e.color};width:${s}px;height:${s}px;font-size:${Math.round(s/2.5)}px">${e.av}</span>`;}
 let hrPage='directory',hrEmp=null,hrEmpTab='Overview',hrAttTab='Attendance',hrAttView='List',hrNavCollapsed=false;
 let hrDirViews=[['All Employees','star','Table'],['By Status','Board','Board'],['By Dept','List','List']],hrDirActive='All Employees';
@@ -1336,7 +1336,7 @@ const COLL={
 METRIC_DEFS.accounts={total:['Accounts',()=>ACCOUNTS.length],active:['Active',()=>ACCOUNTS.filter(a=>a.status==='Active').length],bal:['Total balance',()=>fmt(ACCOUNTS.reduce((s,a)=>s+a.balance,0))],overdue:['Overdue',()=>ACCOUNTS.filter(a=>a.status==='Overdue').length]};
 METRIC_DEFS.vendors={total:['Vendors',()=>VENDORS.length],active:['Active',()=>VENDORS.filter(v=>v.status==='Active').length],pay:['Total payable',()=>fmt(VENDORS.reduce((s,v)=>s+v.balance,0))],overdue:['Overdue',()=>VENDORS.filter(v=>v.status==='Overdue').length]};
 METR.accounts=['total','active','bal'];METR.vendors=['total','active','pay'];
-const STC={Active:'var(--ok)',Overdue:'#9A6B12',Closed:'var(--muted)'};function stColor(s){return STC[s]||'var(--muted)';}
+const STC={Active:'var(--ok)',Overdue:'var(--warn-ink)',Closed:'var(--muted)'};function stColor(s){return STC[s]||'var(--muted)';}
 let coll=null,collView='Table',collRec=null,collTab='Overview',collColl=true;
 function curColl(){return COLL[coll];}function curRec(){return curColl().data().find(r=>r.id===collRec);}
 function mountColl(key){coll=key;collRec=null;collView='Table';const c=COLL[key];
@@ -1364,7 +1364,7 @@ const ACCTABS=['Overview','Transactions','Details','Notes'];
 const ACCTABICON={Overview:'star',Transactions:'Table',Details:'Details',Notes:'notes'};
 function acctRecScore(a){const util=a.limit?Math.min(100,Math.round(a.balance/a.limit*100)):0;
   let s=a.status==='Overdue'?42:a.status==='Closed'?72:88-Math.round(util*0.25);return Math.max(20,Math.min(96,s));}
-function acctTxnPill(s){const c={Paid:'var(--ok)',Overdue:'var(--coral-ink)',Sent:'var(--info)',Draft:'#9A6B12'}[s]||'var(--muted)';return `<span style="color:${c};font-weight:var(--weight-semibold)">${s}</span>`;}
+function acctTxnPill(s){const c={Paid:'var(--ok)',Overdue:'var(--warn-ink)',Sent:'var(--info)',Draft:'var(--warn-ink)'}[s]||'var(--muted)';return `<span style="color:${c};font-weight:var(--weight-semibold)">${s}</span>`;}
 function acctTxns(a){const sd=parseInt(a.id.replace(/\D/g,''))||1;
   return [{id:'INV-26-0'+sd+'2',date:'02 Jun 2026',amt:a.balance||50000,status:a.status==='Overdue'?'Overdue':a.balance?'Sent':'Paid'},
           {id:'PMT-26-0'+sd+'1',date:'18 May 2026',amt:60000+sd*15000,status:'Paid'},
@@ -1404,7 +1404,7 @@ function collBody(c,r){
   const util=r.limit?Math.round(r.balance/r.limit*100):0;
   return head+acctTopInsights(r)+`<div class="bgrid" style="margin-top:18px">
     <div class="bsec"><div class="bsec-h">Receivables</div><div class="bcard">
-      <div class="wkv"><span class="k">Outstanding</span><span class="v" style="color:${r.status==='Overdue'?'var(--coral-ink)':'var(--navy)'}">${fmt(r.balance)}</span></div>
+      <div class="wkv"><span class="k">Outstanding</span><span class="v" style="color:${r.status==='Overdue'?'var(--warn-ink)':'var(--navy)'}">${fmt(r.balance)}</span></div>
       <div class="wkv"><span class="k">Credit limit</span><span class="v">${fmt(r.limit)}</span></div>
       <div class="wkv"><span class="k">Utilisation</span><span class="v">${util}%</span></div>
       <div class="wkv"><span class="k">Terms</span><span class="v">${r.terms}</span></div>
@@ -1459,8 +1459,8 @@ const VNW={
  kpis:{title:'Engagement',body:v=>{const wr=vnWinRate(v);return `<div class="wkv"><span class="k">RFQs</span><span class="v">${wr[1]} · ${wr[0]} won</span></div><div class="wkv"><span class="k">Win rate</span><span class="v">${wr[2]}%</span></div><div class="wkv"><span class="k">Avg project score</span><span class="v">${vnScorePill(vnAvgScore(v))}</span></div><div class="wkv"><span class="k">Engagement value</span><span class="v">${fmt(v.balance+60000)}</span></div><div class="wkv"><span class="k">Escalations · 12m</span><span class="v">${v.status==='Overdue'?1:0}</span></div>`;}},
  spend:{title:'Spend · last 6 months',body:v=>{const s=vnSeed(v);const vals=[8,14,11,18,13,21].map(x=>x*(s+2));return `${vnBars(vals,'var(--info)',252,96)}<div class="wkv" style="margin-top:10px"><span class="k">Jan – Jun</span><span class="v">${fmt(vals.reduce((a,b)=>a+b,0)*1000)}</span></div>`;}},
  delivery:{title:'On-time delivery',body:v=>{const sc=vnScore(v);const vals=[sc.onTime-8,sc.onTime-3,sc.onTime-5,sc.onTime+1,sc.onTime-2,sc.onTime].map(x=>Math.max(20,x));return `${vnBars(vals,sc.onTime>=80?'var(--ok)':'var(--warn)',252,96)}<div class="wkv" style="margin-top:10px"><span class="k">6-month average</span><span class="v">${sc.onTime}%</span></div>`;}},
- outstanding:{title:'Outstanding',body:v=>`<div class="wkv"><span class="k">Payable</span><span class="v" style="color:${v.status==='Overdue'?'var(--coral-ink)':'var(--navy)'}">${fmt(v.balance)}</span></div><div class="wkv"><span class="k">Terms</span><span class="v">${v.terms}</span></div><div class="wkv"><span class="k">Status</span><span class="v" style="color:${stColor(v.status)}">● ${v.status}</span></div><div class="wkv"><span class="k">Next due</span><span class="v">${vnBillList(v)[0].due}</span></div>`},
- bills:{title:'Recent bills',body:v=>vnBillList(v).map(b=>`<div class="wkv"><span class="k">${b.id}</span><span class="v" style="color:${b.status==='Overdue'?'var(--coral-ink)':b.status==='Paid'?'var(--ok)':'var(--navy)'}">${fmt(b.amount)} · ${b.status}</span></div>`).join('')+`<div class="wkv"><span class="k"></span><span class="v"><a style="color:var(--info);font-weight:var(--weight-semibold);cursor:pointer" onclick="vnSetTab('Bills')">View all →</a></span></div>`},
+ outstanding:{title:'Outstanding',body:v=>`<div class="wkv"><span class="k">Payable</span><span class="v" style="color:${v.status==='Overdue'?'var(--warn-ink)':'var(--navy)'}">${fmt(v.balance)}</span></div><div class="wkv"><span class="k">Terms</span><span class="v">${v.terms}</span></div><div class="wkv"><span class="k">Status</span><span class="v" style="color:${stColor(v.status)}">● ${v.status}</span></div><div class="wkv"><span class="k">Next due</span><span class="v">${vnBillList(v)[0].due}</span></div>`},
+ bills:{title:'Recent bills',body:v=>vnBillList(v).map(b=>`<div class="wkv"><span class="k">${b.id}</span><span class="v" style="color:${b.status==='Overdue'?'var(--warn-ink)':b.status==='Paid'?'var(--ok)':'var(--navy)'}">${fmt(b.amount)} · ${b.status}</span></div>`).join('')+`<div class="wkv"><span class="k"></span><span class="v"><a style="color:var(--info);font-weight:var(--weight-semibold);cursor:pointer" onclick="vnSetTab('Bills')">View all →</a></span></div>`},
  quality:{title:'Deliverable quality',body:v=>{const sc=vnScore(v);return `<div style="display:flex;justify-content:center;padding:6px 0;position:relative">${ring(sc.qual,sc.qual>=80?'var(--ok)':'var(--warn)',104)}<div style="position:absolute;inset:0;display:grid;place-items:center;font-weight:var(--weight-semibold);font-size:var(--size-subheading);color:var(--navy)">${sc.qual}%</div></div><div class="wkv"><span class="k">Rework requests</span><span class="v">${sc.qual>=80?'0':'2'} in 12m</span></div>`;}},
  team:{title:'Their team',body:v=>(v.members||[]).map(m=>`<div class="wkv"><span class="k" style="color:var(--ink);font-weight:var(--weight-semibold)">${m[0]}</span><span class="v" style="color:var(--muted);font-weight:var(--weight-medium)">${m[1]}</span></div>`).join('')+`<div class="wkv"><span class="k">Team size</span><span class="v">${v.team} people</span></div><div class="wkv"><span class="k">Reach them</span><span class="v">${v.poc}${pcommMini(v.poc)}</span></div>`}};
 let vnWsets={};
@@ -1482,7 +1482,7 @@ function vnActivity(v){const items=[];
 function vnInfo(){const v=curVn();return `<div class="ip"><div class="ip-actonly">${vnActivity(v)}</div></div>`;}
 function commVendorContent(f){const v=curVn();return f==='info'?vnInfo():commChannel(f,v?v.poc:'this vendor');}
 const VNTABICON={Overview:'star',Projects:'Board',RFQs:'List',Bills:'Table',Details:'Details','Notes & Files':'notes'};
-function vnStatusPill(s){const c={Accepted:'var(--ok)',Paid:'var(--ok)',Sent:'var(--info)',Pending:'#9A6B12',Overdue:'var(--coral-ink)'}[s]||'var(--muted)';return `<span style="color:${c};font-weight:var(--weight-semibold)">${s}</span>`;}
+function vnStatusPill(s){const c={Accepted:'var(--ok)',Paid:'var(--ok)',Sent:'var(--info)',Pending:'var(--warn-ink)',Overdue:'var(--warn-ink)'}[s]||'var(--muted)';return `<span style="color:${c};font-weight:var(--weight-semibold)">${s}</span>`;}
 function vnHead(v){return `<div class="lead-head"><div class="lh-id"><h1>${v.name}</h1>
     <div class="byline lh-meta"><span class="lh-stage"><span class="dot" style="background:${stColor(v.status)}"></span>${v.status}</span><span class="lh-sep">·</span><span>${v.type}</span><span class="lh-sep">·</span><span>Owner ${v.owner}</span></div></div></div>`;}
 function vnBody(){const v=curVn();
@@ -1951,7 +1951,7 @@ const BILLS=[
 const PAYRUNS=[{id:'PR03',title:'Pay Run for March 2026',status:'Paid',net:20000,cost:20000,tax:0,payDate:'28 Feb 2026',payDays:30,emps:1,created:'16 Mar 2026'}];
 const FISCAL=[['FY 2026-27','01 Apr 2026','30 Mar 2027','Active',1],['FY 2025-26','31 Mar 2025','30 Mar 2026','Inactive',0]];
 const COA=[['1000','Cash in Hand','Asset'],['1100','Bank','Asset'],['1200','Accounts Receivable','Asset'],['2100','Accounts Payable','Liability'],['3000','Owner Equity','Equity'],['4000','Sales Revenue','Income'],['5000','Salaries & Wages','Expense'],['5100','Office Supplies','Expense'],['5200','Utilities','Expense']];
-const ACCSC={Posted:['#15A06A','#E4F4EC'],Paid:['#15A06A','#E4F4EC'],Draft:['#2F6FED','#E7EEFD'],'Over due':['#C92F3A','#FDECED'],Overdue:['#C92F3A','#FDECED'],'Due in 1 days':['#9A6B12','#FBEFD8'],'Pending Approval':['#2F6FED','#E7EEFD'],'Partially Paid':['#9A6B12','#FBEFD8'],Active:['#15A06A','#E4F4EC'],Inactive:['#5C6573','#EFEAE6'],Current:['#15A06A','#E4F4EC']};
+const ACCSC={Posted:['#15A06A','#E4F4EC'],Paid:['#15A06A','#E4F4EC'],Draft:['#2F6FED','#E7EEFD'],'Over due':['var(--error)','var(--error-soft)'],Overdue:['var(--error)','var(--error-soft)'],'Due in 1 days':['#9A6B12','#FBEFD8'],'Pending Approval':['#2F6FED','#E7EEFD'],'Partially Paid':['#9A6B12','#FBEFD8'],Active:['#15A06A','#E4F4EC'],Inactive:['#5C6573','#EFEAE6'],Current:['#15A06A','#E4F4EC']};
 function apill(s){const c=ACCSC[s]||['#5C6573','#EFEAE6'];return `<span class="ebadge" style="color:${c[0]};background:${c[1]}">${s}</span>`;}
 METRIC_DEFS.invoices={total:['Total Invoices',()=>INVOICES.length],pending:['Approval Pending',()=>INVOICES.filter(i=>i.status==='Draft').length],overdue:['Over Due',()=>inr(INVOICES.filter(i=>i.status==='Over due').reduce((s,i)=>s+i.amount,0))],recv:['Total Receivable',()=>inr(INVOICES.reduce((s,i)=>s+i.amount,0))],paid:['Paid',()=>INVOICES.filter(i=>i.status==='Paid').length]};
 METRIC_DEFS.bills={total:['Total Bills',()=>BILLS.length],due:['Balance Due',()=>inr(BILLS.reduce((s,b)=>s+b.balance,0))],overdue:['Overdue',()=>BILLS.filter(b=>b.status==='Overdue').length],pending:['Pending Approval',()=>BILLS.filter(b=>b.status==='Pending Approval').length]};
@@ -2133,7 +2133,8 @@ function acctPayrunDoc(p){return `<div class="docpage">
      <tr><td><span class="owncell">${eav({color:'#2F6FED',av:'VV'})}<b style="color:var(--navy)">Vinoth V V</b></span></td><td class="num">2</td><td class="num">${fmt(p.net)}</td><td><a style="color:var(--info);font-weight:var(--weight-semibold)">View</a> ${svg('<path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/>',13)}</td><td><a style="color:var(--info);font-weight:var(--weight-semibold)">View</a> ${svg('<path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/>',13)}</td><td>Bank Transfer</td></tr></tbody></table></div></div>`;}
 
 /* ============ UNIFIED TASKS MODULE (cell-style, gamified, with focus) ============ */
-const SRC={leads:['Leads','#E08A1E'],project:['Projects','#2F6FED'],hr:['HR','#7C53E6'],account:['Accounts','#15A06A'],vendor:['Vendors','#C92F3A']};
+/* category identity — distinct hues that avoid the semantic four (ok/warn/error/brand) */
+const SRC={leads:['Leads','#C2552E'],project:['Projects','#2F6FED'],hr:['HR','#7C53E6'],account:['Accounts','#0E9488'],vendor:['Vendors','#475569']};
 const TSTAGES=['Todo','Doing','Review','Done'];
 const TSTC={Todo:'#64748B',Doing:'#2F6FED',Review:'#9A6B12',Done:'#15A06A'};
 const TASKS=[
