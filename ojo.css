@@ -932,7 +932,7 @@ tr.svcgrp{background:var(--surface-2)}tr.svcgrp td{font-weight:var(--weight-semi
 .badge{display:inline-flex;align-items:center;gap:6px;font-size:var(--size-caption);font-weight:var(--weight-semibold);padding:3px 9px;border-radius:var(--pill);background:var(--surface-2);border:1px solid var(--line);color:var(--ink)}
 .badge .dot{width:7px;height:7px;border-radius:50%}
 .src{font-size:var(--size-caption);font-weight:var(--weight-semibold);color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:var(--pill);padding:2px 8px}
-.pri{font-size:var(--size-caption);font-weight:var(--weight-semibold);color:#fff;border-radius:var(--pill);padding:2px 9px}
+.pri{font-size:var(--size-caption);font-weight:var(--weight-semibold);--pc:var(--muted);background:color-mix(in srgb,var(--pc) 15%,var(--surface));color:var(--pc);border-radius:var(--pill);padding:2px 9px}
 
 /* LEADS BOARD / PROJECTS BOARD (shared) */
 .board{display:flex;gap:14px;align-items:flex-start;min-height:100%}
@@ -1036,7 +1036,7 @@ td .nm,td .tt{font-weight:var(--weight-semibold);color:var(--navy)}td .co{color:
 /* project header comm buttons */
 .projcomm{display:flex;align-items:center;gap:8px;margin-left:18px}
 /* project Details tab — static data, clean aligned grid */
-.pdetails{padding:20px 22px 32px;max-width:940px}
+.pdetails{padding:6px 0 30px;max-width:780px}
 .pd-block{margin-bottom:26px}
 .pd-block:last-child{margin-bottom:0}
 .pd-h{font-size:var(--size-caption);font-weight:var(--weight-medium);color:var(--faint);margin-bottom:14px}
