@@ -434,10 +434,11 @@ function renderProjWork(type){const el=document.getElementById('work');
 /* static project data (separated from the live/dynamic panel) — clean aligned grid, few section starters */
 function projDetails(){
   const about=[['Status','Active'],['Due date','20 Jul 2026'],['Milestones','4'],['Tasks','10 total'],['Budget','₹4,80,000'],['Budget left','₹3,80,000'],['Owner','Priya Nair'],['Created','7 May 2026']];
-  const client=[['Primary contact','Rajeeshlal'+pcommMini('Rajeeshlal')],['Role','POC'],['Email','vinoth+lal@palpx.com'],['Portal','Shared with client']];
+  const clientList=[['Rajeeshlal','POC · Primary contact','','#7C53E6',true]];
   const vendor=[['Vendor','Ojo Dojo (outsourced)'],['Vendor POC','ojodeveloper1'],['Vendor email','ojodeveloper1@gmail.com'],['Website','ojo.io']];
   const block=(h,rows)=>`<div class="pd-block"><div class="pd-h">${h}</div><div class="pd-grid">${rows.map(([k,v])=>`<div class="pd-cell"><div class="pd-k">${k}</div><div class="pd-v">${v}</div></div>`).join('')}</div></div>`;
-  return `<div class="pdetails">${block('About this project',about)}${block('Client',client)}${block('Delivery',vendor)}</div>`;}
+  const clientBlock=`<div class="pd-block"><div class="pd-h">Client</div>${contactsListHTML(clientList,null)}<div class="pd-grid" style="margin-top:14px"><div class="pd-cell"><div class="pd-k">Portal</div><div class="pd-v">Shared with client</div></div></div></div>`;
+  return `<div class="pdetails">${block('About this project',about)}${clientBlock}${block('Delivery',vendor)}</div>`;}
 function chev(){return svg('<path d="m9 18 6-6-6-6"/>',15);}
 function miniCal(){const y=2026,m=5;const first=new Date(y,m,1).getDay();const days=new Date(y,m+1,0).getDate();let c='';for(let i=0;i<first;i++)c+='<span class="cd"></span>';for(let d=1;d<=days;d++)c+=`<span class="cd ${d===5?'hl':''}">${d}</span>`;return `<div class="cal-h">June 2026</div><div class="cal-grid">${['S','M','T','W','T','F','S'].map(x=>`<span class="dow">${x}</span>`).join('')}${c}</div>`;}
 /* project home data + customisable modular boxes (each is a cell) */
@@ -673,10 +674,10 @@ function leadDetailsTab(){const l=rec.ent;const own=l.asg?PEOPLE[l.asg]:null;
   return `<div class="pdetails" style="padding:6px 0 30px">${blk('About this deal',about)}<div class="pd-block"><div class="pd-h">Client contacts</div>${contactsListHTML(leadContacts(l),null)}</div>${blk('Organisation',org)}${blk('Notifications',notif)}</div>`;}
 function taskDetailsTab(){const t=rec.ent;const p=PEOPLE[t.asg];
   const about=[['Status',t.st],['Priority',t.pri],['Due',t.due||'—'],['Estimate',t.est],['Milestone',t.ms],['Created','7 May 2026']];
-  const people=[['Assignee',(p?p[2]:'Unassigned')+pcommMini(p?p[2]:'')],['Created by','Priya Nair'+pcommMini('Priya Nair')]];
+  const peopleList=[p?[p[2],'Assignee','',p[1],false]:['Unassigned','Assignee','','#94A3B8',false],['Priya Nair','Created by','','#F04D56',false]];
   const ctx=[['Project',PROJECT],['Blocked by','None'],['Attachments',String((t.attach||[]).length)]];
   const block=(h,rows)=>`<div class="pd-block"><div class="pd-h">${h}</div><div class="pd-grid">${rows.map(([k,v])=>`<div class="pd-cell"><div class="pd-k">${k}</div><div class="pd-v">${v}</div></div>`).join('')}</div></div>`;
-  return `<div class="pdetails" style="padding:6px 0 30px">${block('About this task',about)}${block('People',people)}${block('Context',ctx)}</div>`;}
+  return `<div class="pdetails" style="padding:6px 0 30px">${block('About this task',about)}<div class="pd-block"><div class="pd-h">People</div>${contactsListHTML(peopleList,null)}</div>${block('Context',ctx)}</div>`;}
 
 /* ---- shared record body (rows + subtasks + comments) ---- */
 /* Notes & Files — cell-structured record tab (notes feed + files, composer with attach) */
