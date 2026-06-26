@@ -1626,6 +1626,9 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .dwrap .rec-head-slot{align-self:center;width:100%;max-width:844px;padding:2px 32px 10px}
 .dwrap .dmain>.viewbar{align-self:center;width:100%;max-width:844px;padding:4px 32px 12px}
 .dwrap.solo .rec-head-slot,.dwrap.solo .dmain>.viewbar{max-width:1004px}
+/* Project module — centre the content column (header, tabs, metrics, work) to mirror the Leads record detail.
+   #modbox .dmain is a column flexbox, so centre with align-self:center + width:100% + max-width. */
+#modbox .dmain>.mc-top,#modbox .dmain>.viewbar,#modbox .dmain>#metricsBar,#modbox .dmain>.work{align-self:center;width:100%;max-width:1000px}
 .dotsep{color:var(--ghost);margin:0 3px}
 .lh-score{display:flex;align-items:center;gap:13px;flex:0 0 auto;padding-top:2px}
 .ip-gauge.sm{width:76px;height:76px;flex:0 0 76px}.ip-gauge.sm svg{width:76px;height:76px}.ip-gauge.sm .pct{font-size:var(--size-subheading)}

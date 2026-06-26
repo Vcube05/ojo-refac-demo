@@ -146,12 +146,13 @@ function mountModule(){const c=cm();
   if(curMod==='project'){
     document.getElementById('modcontent').innerHTML=`<div class="box dbox ${modCollapsed?'collapsed':''}" id="modbox">
       <div class="dmain">
-        <div class="crumbbar"><a onclick="go('projectsDash')">Projects</a> <span class="sep">/</span> <span id="crumbTab">${c.active}</span></div>
-        <div class="mc-top"><div class="title-wrap"><div class="picon">${svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/>',20)}</div><div><h1>${c.title}</h1><div class="sub">${c.sub}</div></div></div>
-          <div class="sp"></div>
-          <span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span>
+        <div class="crumbbar"><a onclick="go('projectsDash')">Projects</a> <span class="sep">/</span> <span id="crumbTab">${c.active}</span>
+          <div class="sp" style="flex:1"></div>
           <button class="ptog-ic ${modCollapsed?'':'on'}" id="modPtogBtn" onclick="modToggle()" title="${modCollapsed?'Show activity':'Hide activity'}">${svg('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',17)}</button>
           <button class="mtool hdr-x" onclick="go('projectsDash')" title="Close">${svg(SVS.x,18)}</button></div>
+        <div class="mc-top"><div class="title-wrap"><div class="picon">${svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/>',20)}</div><div><h1>${c.title}</h1><div class="sub">${c.sub}</div></div></div>
+          <div class="sp"></div>
+          <span id="viewTools" style="display:flex;align-items:center;gap:3px">${modTools()}</span></div>
         ${modViewbar()}
         <div id="metricsBar" class="metrics" style="padding-left:22px;padding-right:22px"></div>
         <div class="work" id="work"></div>
