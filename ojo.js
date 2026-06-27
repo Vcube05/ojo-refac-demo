@@ -1044,7 +1044,7 @@ const EMP=[
  {code:'REL0002',name:'Rajesh Kumar',role:'Project Admin',dept:'projects',mgr:'Vinoth Varma',created:'27 Feb 2026',status:'Inactive',av:'RK',color:'#15A06A',phone:'+91 98220 45621',email:'rajesh@reliance.co',join:'27 Feb 2026'}];
 const EST={Active:'var(--ok)','Onboarding':'var(--info)','Invitation Sent':'var(--warn-ink)',Inactive:'var(--faint)'};
 function eav(e,s){s=s||26;return `<span class="eav" style="--ac:${e.color};width:${s}px;height:${s}px;font-size:${Math.round(s/2.5)}px">${e.av}</span>`;}
-let hrPage='directory',hrEmp=null,hrEmpTab='Overview',hrAttTab='Attendance',hrAttView='List',hrNavCollapsed=false,hrCommView='list',hrCommFilter='All';
+let hrPage='directory',hrEmp=null,hrEmpTab='Overview',hrAttTab='Attendance',hrAttView='List',hrNavCollapsed=false,hrCommView='list',hrCommFilter='All',hrCommRec=0;
 let hrDirViews=[['All Employees','star','Table'],['By Status','Board','Board'],['By Dept','List','List']],hrDirActive='All Employees';
 let empPanelCollapsed=true,empFace='info';
 let hrPerf=[{l:'On-Time Delivery',v:'75%',d:'+6'},{l:'Team Collaboration',v:'60%',d:'+3'},{l:'Tasks Completed',v:'12',d:'+4'},{l:'Avg Quality',v:'4.5/5',d:'+0.2'}];
@@ -1170,21 +1170,34 @@ function hrAttList(){
    ${hrAttView==='Calendar'?`<div class="sec" style="margin-top:4px">${miniCal()}</div>`:`<div class="tablewrap"><table><thead><tr><th>Employee</th><th>Status</th><th>Check in</th><th>Check out</th><th class="num">Hours</th><th></th></tr></thead><tbody>${att.map(a=>{const e=EMP.find(x=>x.code===a[0]);if(!e)return '';const c=sc[a[1]]||'var(--muted)';return `<tr><td><span class="owncell">${eav(e)}<b style="color:var(--navy)">${e.name}</b></span></td><td><span class="badge"><span class="dot" style="background:${c}"></span>${a[1]}</span></td><td class="co">${a[2]}</td><td class="co">${a[3]}</td><td class="num">${a[4]}</td><td><button class="iconedit" onclick="toast('Edit attendance')">${svg(SVS.pencil,14)}</button></td></tr>`;}).join('')}</tbody></table></div>`}`;}
 function commRow(k,inner){return `<div class="commrow"><div class="crk">${k}</div><div>${inner}</div></div>`;}
 const ANNS=[
- {t:'Q3 town hall — all hands',type:'Event',to:'All staff',date:'02 Jun 2026',status:'Sent'},
- {t:'Updated leave policy for 2026',type:'Policy',to:'All staff',date:'28 May 2026',status:'Sent'},
- {t:'Diwali holiday schedule',type:'General',to:'Everyone',date:'—',status:'Draft'},
- {t:'Quarterly review reminders',type:'General',to:'Managers',date:'15 Jun 2026',status:'Scheduled'},
- {t:'New security guidelines',type:'Urgent',to:'All staff',date:'20 May 2026',status:'Sent'}];
+ {t:'Q3 town hall — all hands',type:'Event',to:'All staff',date:'02 Jun 2026',status:'Sent',subject:'Join us for the Q3 town hall',body:'Hi team,\n\nOur Q3 town hall is on 12 June at 4:00 PM in the main hall. We will cover the quarter\'s wins, the roadmap ahead, and an open Q&A.\n\nSnacks provided — see you there!'},
+ {t:'Updated leave policy for 2026',type:'Policy',to:'All staff',date:'28 May 2026',status:'Sent',subject:'Changes to the leave policy, effective 1 June',body:'Hi everyone,\n\nWe have refreshed the leave policy for 2026. Casual leave is now 12 days and carries forward up to 5 days. Please review the full policy in Settings before your next request.'},
+ {t:'Diwali holiday schedule',type:'General',to:'Everyone',date:'—',status:'Draft',subject:'Diwali office closure',body:'Hi all,\n\nThe office will be closed from 8–10 November for Diwali. Please plan deliverables accordingly.'},
+ {t:'Quarterly review reminders',type:'General',to:'Managers',date:'15 Jun 2026',status:'Scheduled',subject:'Q2 reviews due by 30 June',body:'Managers,\n\nA reminder that Q2 performance reviews are due by 30 June. Please complete them for each of your reports in the HR module.'},
+ {t:'New security guidelines',type:'Urgent',to:'All staff',date:'20 May 2026',status:'Sent',subject:'Action required: enable 2FA',body:'Team,\n\nPlease enable two-factor authentication on your account by 25 May. This is now mandatory for all workspace members.'}];
 const COMM_IC='<path d="M3 11l18-8-8 18-2-7-8-3z"/>';
 function hrCommSetView(v){hrCommView=v;renderHRPage();}
 function hrCommSetFilter(f){hrCommFilter=f;renderHRPage();}
-function hrComm(){return hrCommView==='compose'?hrCommCompose():hrCommList();}
+function hrComm(){return hrCommView==='compose'?hrCommCompose():hrCommView==='detail'?hrCommDetail():hrCommList();}
+function hrCommOpen(i){hrCommRec=i;hrCommView='detail';renderHRPage();}
+function hrCommDetail(){const a=ANNS[hrCommRec];if(!a)return hrCommList();const sc={Sent:'var(--ok)',Draft:'var(--warn-ink)',Scheduled:'var(--info)'};
+  const ro=v=>`<div class="flv ro">${v}</div>`;
+  return `<div class="mc-top"><div class="title-wrap"><button class="back" onclick="hrCommSetView('list')">${svg(SVS.arrow,18)}</button><div><h1>${a.t}</h1><div class="byline lh-meta"><span class="lh-stage"><span class="dot" style="background:${sc[a.status]}"></span>${a.status}</span><span class="lh-sep">·</span><span>${a.type}</span><span class="lh-sep">·</span><span>${a.to}</span>${a.date!=='—'?`<span class="lh-sep">·</span><span>${a.date}</span>`:''}</div></div></div><div class="sp"></div><button class="pill" onclick="hrCommSetView('compose')">${svg(SVS.pencil,14)} Edit</button></div>
+   <div class="emp-sec" style="margin-top:8px">
+    ${commRow('Title',ro(a.t))}
+    ${commRow('Subject',ro(a.subject||'—'))}
+    ${commRow('Type',ro(a.type))}
+    ${commRow('Send to',ro(a.to))}
+    <div style="border-top:1px solid var(--line);margin:12px 0 0"></div>
+    <div class="commbody ro">${a.body.replace(/\n/g,'<br>')}</div>
+   </div>
+   <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:16px">${a.status==='Draft'?`<button class="pill" onclick="hrCommSetView('compose')">Continue editing</button><button class="abtn dark" style="padding:9px 18px;border-radius:999px;font-weight:var(--weight-semibold);font-size:var(--size-body)" onclick="hrCommSetView('list');toast('Announcement sent')">Send now</button>`:`<button class="pill" onclick="toast('Duplicated to a draft')">Duplicate</button><button class="abtn dark" style="padding:9px 18px;border-radius:999px;font-weight:var(--weight-semibold);font-size:var(--size-body)" onclick="toast('Resent to ${a.to}')">Resend</button>`}</div>`;}
 function hrCommList(){const filters=['All','Sent','Drafts','Scheduled'],fmap={Drafts:'Draft',Scheduled:'Scheduled',Sent:'Sent'};
   const items=hrCommFilter==='All'?ANNS:ANNS.filter(a=>a.status===fmap[hrCommFilter]);
   const sc={Sent:'var(--ok)',Draft:'var(--warn-ink)',Scheduled:'var(--info)'};
   return `<div class="mc-top"><div class="title-wrap"><div class="picon">${svg(COMM_IC,20)}</div><div><h1>Communication</h1><div class="sub">Announcements to your team</div></div></div><div class="sp"></div><div class="newbtn"><button class="a" onclick="hrCommSetView('compose')">New announcement</button><span class="b">${svg(SVS.caret,11)}</span></div></div>
    <div class="viewbar"><div style="display:flex;gap:5px">${filters.map(f=>`<button class="vtab ${f===hrCommFilter?'on':''}" onclick="hrCommSetFilter('${f}')">${f}</button>`).join('')}</div></div>
-   ${items.length?`<div class="llist" style="margin-top:4px">${items.map(a=>`<div class="lrow" onclick="toast('Open: ${a.t}')"><span class="nm">${a.t}</span><span class="co">${a.type} · ${a.to}</span><span class="co" style="flex:0 0 auto;color:var(--ghost)">${a.date}</span><span class="lstat"><span class="dot" style="background:${sc[a.status]}"></span>${a.status}</span></div>`).join('')}</div>`:`<div class="muted2" style="margin-top:24px">No ${hrCommFilter.toLowerCase()} announcements yet.</div>`}`;}
+   ${items.length?`<div class="llist" style="margin-top:4px">${items.map(a=>`<div class="lrow" onclick="hrCommOpen(${ANNS.indexOf(a)})"><span class="nm">${a.t}</span><span class="co">${a.type} · ${a.to}</span><span class="co" style="flex:0 0 auto;color:var(--ghost)">${a.date}</span><span class="lstat"><span class="dot" style="background:${sc[a.status]}"></span>${a.status}</span></div>`).join('')}</div>`:`<div class="muted2" style="margin-top:24px">No ${hrCommFilter.toLowerCase()} announcements yet.</div>`}`;}
 function hrCommCompose(){return `<div class="mc-top"><div class="title-wrap"><button class="back" onclick="hrCommSetView('list')">${svg(SVS.arrow,18)}</button><div><h1>New announcement</h1><div class="sub">Compose and send to your team</div></div></div></div>
    <div class="emp-sec" style="margin-top:8px">
     ${commRow('Title','<input class="flv" placeholder="Add an announcement title">')}
