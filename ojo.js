@@ -1036,12 +1036,12 @@ function accountBody(){const W=[['R','#C92F3A','Reliance','13 members · Org Adm
 
 /* ============ HR MODULE (cell-style database + pages) ============ */
 const EMP=[
- {code:'REL0006',name:'Test new',role:'Employee',dept:'design',mgr:'—',created:'15 May 2026',status:'Onboarding',av:'TN',color:'#64748B',phone:'8825562185',email:'vinoth+testnew@palpx.com',join:'15 May 2026'},
- {code:'REL0005',name:'Chetan',role:'Employee',dept:'—',mgr:'—',created:'05 May 2026',status:'Invitation Sent',av:'C',color:'#E08A1E',phone:'—',email:'chetan@reliance.co',join:'05 May 2026'},
- {code:'REL0003',name:'Nidhuna',role:'Finance Admin',dept:'finance',mgr:'Vinoth V V',created:'08 Mar 2026',status:'Active',av:'N',color:'#7C53E6',phone:'+91 90080 11223',email:'nidhuna@reliance.co',join:'08 Mar 2026'},
- {code:'REL0004',name:'Palpxvinoth',role:'Org Admin',dept:'—',mgr:'—',created:'01 Apr 2026',status:'Active',av:'P',color:'#2F6FED',phone:'—',email:'palpx@reliance.co',join:'01 Apr 2026'},
- {code:'REL0001',name:'Vinoth V V',role:'Org Admin',dept:'—',mgr:'—',created:'25 Feb 2026',status:'Active',av:'VV',color:'#C92F3A',phone:'9769011309',email:'vinotham@gmail.com',join:'25 Feb 2026'},
- {code:'REL0002',name:'Rajesh Kumar',role:'Project Admin',dept:'projects',mgr:'Vinoth V V',created:'27 Feb 2026',status:'Inactive',av:'RK',color:'#15A06A',phone:'+91 98220 45621',email:'rajesh@reliance.co',join:'27 Feb 2026'}];
+ {code:'REL0006',name:'Aarav Sharma',role:'Product Designer',dept:'design',mgr:'Nidhuna Menon',created:'15 May 2026',status:'Onboarding',av:'AS',color:'#64748B',phone:'+91 88255 62185',email:'aarav@reliance.co',join:'15 May 2026'},
+ {code:'REL0005',name:'Chetan Rao',role:'Marketing Lead',dept:'marketing',mgr:'—',created:'05 May 2026',status:'Invitation Sent',av:'CR',color:'#E08A1E',phone:'—',email:'chetan@reliance.co',join:'05 May 2026'},
+ {code:'REL0003',name:'Nidhuna Menon',role:'Finance Admin',dept:'finance',mgr:'Vinoth Varma',created:'08 Mar 2026',status:'Active',av:'NM',color:'#7C53E6',phone:'+91 90080 11223',email:'nidhuna@reliance.co',join:'08 Mar 2026'},
+ {code:'REL0004',name:'Vikram Shah',role:'Operations Admin',dept:'operations',mgr:'—',created:'01 Apr 2026',status:'Active',av:'VS',color:'#2F6FED',phone:'+91 99001 23456',email:'vikram@reliance.co',join:'01 Apr 2026'},
+ {code:'REL0001',name:'Vinoth Varma',role:'Org Admin',dept:'—',mgr:'—',created:'25 Feb 2026',status:'Active',av:'VV',color:'#C92F3A',phone:'+91 97690 11309',email:'vinoth@reliance.co',join:'25 Feb 2026'},
+ {code:'REL0002',name:'Rajesh Kumar',role:'Project Admin',dept:'projects',mgr:'Vinoth Varma',created:'27 Feb 2026',status:'Inactive',av:'RK',color:'#15A06A',phone:'+91 98220 45621',email:'rajesh@reliance.co',join:'27 Feb 2026'}];
 const EST={Active:'var(--ok)','Onboarding':'var(--info)','Invitation Sent':'var(--warn-ink)',Inactive:'var(--faint)'};
 function eav(e,s){s=s||26;return `<span class="eav" style="--ac:${e.color};width:${s}px;height:${s}px;font-size:${Math.round(s/2.5)}px">${e.av}</span>`;}
 let hrPage='directory',hrEmp=null,hrEmpTab='Overview',hrAttTab='Attendance',hrAttView='List',hrNavCollapsed=false;
@@ -1059,7 +1059,8 @@ function renderHRPage(){const el=document.getElementById('hrmain');if(!el)return
   else if(hrPage==='communication')el.innerHTML=hrComm();
   else if(hrPage==='payroll')el.innerHTML=hrPayroll();
   else if(hrPage==='tasks'){taskModule='hr';taskScope='hr';taskContainer='hrmain';el.innerHTML=tasksListHTML('hr');}
-  else el.innerHTML=`${pageHeader('Settings','Roles, policies & configuration','<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>')}<div class="emp-sec"><h3>HR settings</h3><div class="muted2">Roles & access, leave policies, holiday calendar, payroll configuration. Each is a cell you can edit. (Demo)</div></div>`;}
+  else el.innerHTML=`<div class="mc-top"><div class="title-wrap"><div class="picon">${svg('<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',20)}</div><div><h1>Settings</h1><div class="sub">Roles, policies and workspace configuration</div></div></div></div>
+   <div class="sec" style="margin-top:8px"><div class="llist">${[['Roles & access','Who can view, create and approve across HR'],['Leave policies','Leave types, balances and the approval flow'],['Holiday calendar','Company holidays and weekly offs'],['Payroll configuration','Pay cycle, salary components and tax setup']].map(s=>`<div class="lrow" onclick="toast('${s[0]} (demo)')"><span class="nm">${s[0]}</span><span class="co">${s[1]}</span><span class="val" style="color:var(--faint)">${svg('<path d="m9 18 6-6-6-6"/>',16)}</span></div>`).join('')}</div></div>`;}
 function hrTools(){return `<button class="mtool">${svg(SVS.filter,17)}</button><button class="mtool">${svg(SVS.sort,17)}</button>`;}
 function hrDirType(){return (hrDirViews.find(v=>v[0]===hrDirActive)||['','','Table'])[2];}
 function hrDirSetView(n){hrDirActive=n;renderHRPage();}
@@ -1168,23 +1169,24 @@ function hrAttList(){
    <div class="hstats">${stat(att.length,'Team',null)}${stat(n('Present'),'Present','var(--ok)')}${stat(n('Absent'),'Absent','var(--warn-ink)')}${stat(n('On leave'),'On leave','var(--info)')}</div>
    ${hrAttView==='Calendar'?`<div class="sec" style="margin-top:4px">${miniCal()}</div>`:`<div class="tablewrap"><table><thead><tr><th>Employee</th><th>Status</th><th>Check in</th><th>Check out</th><th class="num">Hours</th><th></th></tr></thead><tbody>${att.map(a=>{const e=EMP.find(x=>x.code===a[0]);if(!e)return '';const c=sc[a[1]]||'var(--muted)';return `<tr><td><span class="owncell">${eav(e)}<b style="color:var(--navy)">${e.name}</b></span></td><td><span class="badge"><span class="dot" style="background:${c}"></span>${a[1]}</span></td><td class="co">${a[2]}</td><td class="co">${a[3]}</td><td class="num">${a[4]}</td><td><button class="iconedit" onclick="toast('Edit attendance')">${svg(SVS.pencil,14)}</button></td></tr>`;}).join('')}</tbody></table></div>`}`;}
 function commRow(k,inner){return `<div class="commrow"><div class="crk">${k}</div><div>${inner}</div></div>`;}
-function hrComm(){return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px"><button class="back" onclick="hrSet('directory')">${svg(SVS.arrow,18)}</button><div class="hr-h" style="margin:0">New Announcement</div></div>
-   <div class="emp-sec">
-    ${commRow('Title','<input class="flv" placeholder="Enter announcement title">')}
-    ${commRow('Subject','<input class="flv" placeholder="Enter subject">')}
+function hrComm(){return `<div class="mc-top"><div class="title-wrap"><div class="picon">${svg('<path d="M3 11l18-8-8 18-2-7-8-3z"/>',20)}</div><div><h1>Communication</h1><div class="sub">Send an announcement to your team</div></div></div></div>
+   <div class="emp-sec" style="margin-top:8px">
+    ${commRow('Title','<input class="flv" placeholder="Add an announcement title">')}
+    ${commRow('Subject','<input class="flv" placeholder="Add a subject line">')}
     ${commRow('Type','<select class="flv"><option>General</option><option>Policy</option><option>Event</option><option>Urgent</option></select>')}
-    ${commRow('To','<input class="flv" placeholder="Select recipients">')}
-    ${commRow('Bcc','<input class="flv" placeholder="Type email and press Enter">')}
+    ${commRow('Send to','<input class="flv" placeholder="Choose teams or people">')}
     <div style="border-top:1px solid var(--line);margin:12px 0 0"></div>
     <button class="draftojo" onclick="toast('Drafting with OJO…')">✦ Draft with OJO</button>
     <textarea class="commbody" placeholder="Write your announcement message here..."></textarea>
     <div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="pill">${svg('<path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/>',14)} Upload</button></div>
    </div>
    <div style="display:flex;justify-content:center;gap:12px;margin-top:16px"><button class="pill" onclick="toast('Saved as draft')">Save as Draft</button><button class="abtn dark" style="padding:9px 18px;border-radius:999px;font-weight:var(--weight-semibold);font-size:var(--size-body)" onclick="toast('Announcement sent')">Send Now</button></div>`;}
-function hrPayroll(){const e=EMP[4];return `<div class="hr-h">Pay Run for March 2026 <span class="ebadge" style="color:var(--ok);background:var(--ok-soft)">✓ Paid</span></div>
-   <div class="hstats"><div class="hstat"><div class="v">1</div><div class="l">Active Employees</div></div><div class="hstat"><div class="v">₹20,000</div><div class="l">Total Payroll Cost</div></div><div class="hstat"><div class="v">₹0</div><div class="l">Taxes &amp; deductions</div></div><div class="hstat r"><div class="v">₹20,000</div><div class="l">Net Payable</div></div></div>
-   <div class="muted2" style="margin:-6px 0 16px">16 March 2026 · 30 Pay days</div>
-   <div class="tablewrap"><table><thead><tr><th>Employee</th><th class="num">Paid Days</th><th class="num">Gross</th><th class="num">Deductions</th><th class="num">Net Pay</th><th>Advance</th></tr></thead><tbody><tr><td><span class="owncell">${eav(e)}${e.name}</span></td><td class="num">2</td><td class="num">₹20,000</td><td class="num">₹0</td><td class="num">₹20,000</td><td>—</td></tr></tbody></table></div>`;}
+function hrPayroll(){const rows=[['REL0001',31,180000,18000],['REL0003',31,120000,11000],['REL0004',31,140000,13500],['REL0002',31,95000,8000]];
+  const gross=rows.reduce((a,r)=>a+r[2],0),ded=rows.reduce((a,r)=>a+r[3],0),net=gross-ded;
+  const stat=(v,l)=>`<div class="hstat"><div class="v">${v}</div><div class="l">${l}</div></div>`;
+  return `<div class="mc-top"><div class="title-wrap"><div class="picon">${svg('<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>',20)}</div><div><h1>Payroll</h1><div class="sub">Pay run · March 2026 · 31 pay days</div></div></div><div class="sp"></div><span class="ebadge" style="color:var(--ok);background:var(--ok-soft)">✓ Paid</span></div>
+   <div class="hstats">${stat(rows.length,'Employees')}${stat(fmt(gross),'Gross')}${stat(fmt(ded),'Deductions')}${stat(fmt(net),'Net payable')}</div>
+   <div class="tablewrap"><table><thead><tr><th>Employee</th><th class="num">Paid days</th><th class="num">Gross</th><th class="num">Deductions</th><th class="num">Net pay</th><th>Status</th></tr></thead><tbody>${rows.map(r=>{const e=EMP.find(x=>x.code===r[0]);return `<tr><td><span class="owncell">${eav(e)}<b style="color:var(--navy)">${e.name}</b></span></td><td class="num">${r[1]}</td><td class="num">${fmt(r[2])}</td><td class="num">${fmt(r[3])}</td><td class="num"><b style="color:var(--navy)">${fmt(r[2]-r[3])}</b></td><td><span class="badge"><span class="dot" style="background:var(--ok)"></span>Paid</span></td></tr>`;}).join('')}</tbody></table></div>`;}
 
 /* ============ PROFILE (account) — full page with left sub-nav, like HR / Accounts ============ */
 let profPage='profile', profTab='Overview', profNavCollapsed=false;
