@@ -423,11 +423,11 @@ tr.svcgrp{background:var(--surface-2)}tr.svcgrp td{font-weight:var(--weight-semi
 .hrnav a.on{background:var(--coral-soft);color:var(--coral-ink);font-weight:var(--weight-semibold)}
 .hrmain{flex:1;min-width:0;overflow:auto;padding:24px 28px 60px}
 .hr-h{font-size:var(--size-heading);font-weight:var(--weight-semibold);color:var(--navy);letter-spacing:-.02em;margin-bottom:16px;display:flex;align-items:center;gap:10px}
-.hstats{display:flex;gap:14px;margin-bottom:18px;flex-wrap:wrap}
-.hstat{flex:1;min-width:150px;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:17px 18px}
-.hstat .v{font-size:var(--size-heading);font-weight:var(--weight-semibold);color:var(--navy)}.hstat.r .v{color:var(--coral-ink)}
-.hstat .l{font-size:var(--size-caption);color:var(--faint);font-weight:var(--weight-semibold);margin-top:4px}
-.hrtoolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.hstats{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.hstat{flex:1;min-width:150px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.hstat .v{font-size:var(--size-heading);font-weight:var(--weight-bold);color:var(--navy)}.hstat.r .v{color:var(--warn-ink)}
+.hstat .l{font-size:var(--size-caption);color:var(--faint);font-weight:var(--weight-semibold);margin-top:4px;display:flex;align-items:center;gap:6px}
+.hrtoolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
 .hsearch{flex:1;max-width:360px;display:flex;align-items:center;gap:9px;background:var(--surface-2);border-radius:10px;padding:9px 13px;color:var(--faint);font-size:var(--size-body)}
 .muted2{color:var(--faint);font-size:var(--size-body)}
 .eav{border-radius:50%;display:inline-grid;place-items:center;--ac:#5B6B82;background:color-mix(in srgb,var(--ac) 16%,var(--surface));color:color-mix(in srgb,var(--ac) 72%,var(--ink-bg));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ac) 26%,var(--surface));font-weight:var(--weight-semibold);flex:0 0 auto}
