@@ -1044,7 +1044,7 @@ const EMP=[
  {code:'REL0002',name:'Rajesh Kumar',role:'Project Admin',dept:'projects',mgr:'Vinoth Varma',created:'27 Feb 2026',status:'Inactive',av:'RK',color:'#15A06A',phone:'+91 98220 45621',email:'rajesh@reliance.co',join:'27 Feb 2026'}];
 const EST={Active:'var(--ok)','Onboarding':'var(--info)','Invitation Sent':'var(--warn-ink)',Inactive:'var(--faint)'};
 function eav(e,s){s=s||26;return `<span class="eav" style="--ac:${e.color};width:${s}px;height:${s}px;font-size:${Math.round(s/2.5)}px">${e.av}</span>`;}
-let hrPage='directory',hrEmp=null,hrEmpTab='Overview',hrAttTab='Attendance',hrAttView='List',hrNavCollapsed=false;
+let hrPage='directory',hrEmp=null,hrEmpTab='Overview',hrAttTab='Attendance',hrAttView='List',hrNavCollapsed=false,hrCommView='list',hrCommFilter='All';
 let hrDirViews=[['All Employees','star','Table'],['By Status','Board','Board'],['By Dept','List','List']],hrDirActive='All Employees';
 let empPanelCollapsed=true,empFace='info';
 let hrPerf=[{l:'On-Time Delivery',v:'75%',d:'+6'},{l:'Team Collaboration',v:'60%',d:'+3'},{l:'Tasks Completed',v:'12',d:'+4'},{l:'Avg Quality',v:'4.5/5',d:'+0.2'}];
@@ -1052,7 +1052,7 @@ const HRPAGES=[['tasks','Tasks'],['directory','Employee Directory'],['attendance
 const SVS={search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',filter:'<path d="M3 5h18M6 12h12M10 19h4"/>',sort:'<path d="M3 6h12M3 12h8M3 18h5M17 4v16m0 0 4-4m-4 4-4-4"/>',pencil:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',plus:'<path d="M12 5v14M5 12h14"/>',x:'<path d="M18 6 6 18M6 6l12 12"/>',caret:'<path d="m6 9 6 6 6-6"/>',arrow:'<path d="M19 12H5M12 19l-7-7 7-7"/>',more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',up:'<path d="M12 19V5M5 12l7-7 7 7"/>',trend:'<path d="M3 17 9 11l4 3 7-8"/><path d="M21 6v5M16 6h5"/>'};
 function mountHR(){hrEmp=null;document.getElementById('screen').innerHTML=`<div class="box hrbox ${hrNavCollapsed?'navcollapsed':''}" id="hrbox"><aside class="hrnav"><div class="hrnav-top" style="justify-content:flex-end"><button class="hrcollapse" onclick="hrNavToggle()" title="Collapse">${svg('<path d="m11 17-5-5 5-5M18 17l-5-5 5-5"/>',16)}</button></div>${HRPAGES.map(p=>`<a class="${hrPage===p[0]?'on':''}" onclick="hrSet('${p[0]}')">${p[1]}</a>`).join('')}</aside><div class="hrmain" id="hrmain"></div><button class="hrreopen" onclick="hrNavToggle()" title="Show menu">${svg('<path d="M3 6h18M3 12h18M3 18h18"/>',17)}</button></div>`;renderHRPage();}
 function hrNavToggle(){hrNavCollapsed=!hrNavCollapsed;document.getElementById('hrbox').classList.toggle('navcollapsed',hrNavCollapsed);}
-function hrSet(p){hrPage=p;hrEmp=null;document.querySelectorAll('.hrnav a').forEach((a,i)=>a.classList.toggle('on',HRPAGES[i]&&HRPAGES[i][0]===p));renderHRPage();}
+function hrSet(p){hrPage=p;hrEmp=null;hrCommView='list';document.querySelectorAll('.hrnav a').forEach((a,i)=>a.classList.toggle('on',HRPAGES[i]&&HRPAGES[i][0]===p));renderHRPage();}
 function renderHRPage(){const el=document.getElementById('hrmain');if(!el)return;
   if(hrPage==='directory')el.innerHTML=hrDirectory();
   else if(hrPage==='attendance')el.innerHTML=hrAttendance();
@@ -1169,7 +1169,23 @@ function hrAttList(){
    <div class="hstats">${stat(att.length,'Team',null)}${stat(n('Present'),'Present','var(--ok)')}${stat(n('Absent'),'Absent','var(--warn-ink)')}${stat(n('On leave'),'On leave','var(--info)')}</div>
    ${hrAttView==='Calendar'?`<div class="sec" style="margin-top:4px">${miniCal()}</div>`:`<div class="tablewrap"><table><thead><tr><th>Employee</th><th>Status</th><th>Check in</th><th>Check out</th><th class="num">Hours</th><th></th></tr></thead><tbody>${att.map(a=>{const e=EMP.find(x=>x.code===a[0]);if(!e)return '';const c=sc[a[1]]||'var(--muted)';return `<tr><td><span class="owncell">${eav(e)}<b style="color:var(--navy)">${e.name}</b></span></td><td><span class="badge"><span class="dot" style="background:${c}"></span>${a[1]}</span></td><td class="co">${a[2]}</td><td class="co">${a[3]}</td><td class="num">${a[4]}</td><td><button class="iconedit" onclick="toast('Edit attendance')">${svg(SVS.pencil,14)}</button></td></tr>`;}).join('')}</tbody></table></div>`}`;}
 function commRow(k,inner){return `<div class="commrow"><div class="crk">${k}</div><div>${inner}</div></div>`;}
-function hrComm(){return `<div class="mc-top"><div class="title-wrap"><div class="picon">${svg('<path d="M3 11l18-8-8 18-2-7-8-3z"/>',20)}</div><div><h1>Communication</h1><div class="sub">Send an announcement to your team</div></div></div></div>
+const ANNS=[
+ {t:'Q3 town hall — all hands',type:'Event',to:'All staff',date:'02 Jun 2026',status:'Sent'},
+ {t:'Updated leave policy for 2026',type:'Policy',to:'All staff',date:'28 May 2026',status:'Sent'},
+ {t:'Diwali holiday schedule',type:'General',to:'Everyone',date:'—',status:'Draft'},
+ {t:'Quarterly review reminders',type:'General',to:'Managers',date:'15 Jun 2026',status:'Scheduled'},
+ {t:'New security guidelines',type:'Urgent',to:'All staff',date:'20 May 2026',status:'Sent'}];
+const COMM_IC='<path d="M3 11l18-8-8 18-2-7-8-3z"/>';
+function hrCommSetView(v){hrCommView=v;renderHRPage();}
+function hrCommSetFilter(f){hrCommFilter=f;renderHRPage();}
+function hrComm(){return hrCommView==='compose'?hrCommCompose():hrCommList();}
+function hrCommList(){const filters=['All','Sent','Drafts','Scheduled'],fmap={Drafts:'Draft',Scheduled:'Scheduled',Sent:'Sent'};
+  const items=hrCommFilter==='All'?ANNS:ANNS.filter(a=>a.status===fmap[hrCommFilter]);
+  const sc={Sent:'var(--ok)',Draft:'var(--warn-ink)',Scheduled:'var(--info)'};
+  return `<div class="mc-top"><div class="title-wrap"><div class="picon">${svg(COMM_IC,20)}</div><div><h1>Communication</h1><div class="sub">Announcements to your team</div></div></div><div class="sp"></div><div class="newbtn"><button class="a" onclick="hrCommSetView('compose')">New announcement</button><span class="b">${svg(SVS.caret,11)}</span></div></div>
+   <div class="viewbar"><div style="display:flex;gap:5px">${filters.map(f=>`<button class="vtab ${f===hrCommFilter?'on':''}" onclick="hrCommSetFilter('${f}')">${f}</button>`).join('')}</div></div>
+   ${items.length?`<div class="llist" style="margin-top:4px">${items.map(a=>`<div class="lrow" onclick="toast('Open: ${a.t}')"><span class="nm">${a.t}</span><span class="co">${a.type} · ${a.to}</span><span class="co" style="flex:0 0 auto;color:var(--ghost)">${a.date}</span><span class="lstat"><span class="dot" style="background:${sc[a.status]}"></span>${a.status}</span></div>`).join('')}</div>`:`<div class="muted2" style="margin-top:24px">No ${hrCommFilter.toLowerCase()} announcements yet.</div>`}`;}
+function hrCommCompose(){return `<div class="mc-top"><div class="title-wrap"><button class="back" onclick="hrCommSetView('list')">${svg(SVS.arrow,18)}</button><div><h1>New announcement</h1><div class="sub">Compose and send to your team</div></div></div></div>
    <div class="emp-sec" style="margin-top:8px">
     ${commRow('Title','<input class="flv" placeholder="Add an announcement title">')}
     ${commRow('Subject','<input class="flv" placeholder="Add a subject line">')}
@@ -1180,7 +1196,7 @@ function hrComm(){return `<div class="mc-top"><div class="title-wrap"><div class
     <textarea class="commbody" placeholder="Write your announcement message here..."></textarea>
     <div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="pill">${svg('<path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/>',14)} Upload</button></div>
    </div>
-   <div style="display:flex;justify-content:center;gap:12px;margin-top:16px"><button class="pill" onclick="toast('Saved as draft')">Save as Draft</button><button class="abtn dark" style="padding:9px 18px;border-radius:999px;font-weight:var(--weight-semibold);font-size:var(--size-body)" onclick="toast('Announcement sent')">Send Now</button></div>`;}
+   <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:16px"><button class="pill" onclick="hrCommSetView('list');toast('Saved as draft')">Save as draft</button><button class="abtn dark" style="padding:9px 18px;border-radius:999px;font-weight:var(--weight-semibold);font-size:var(--size-body)" onclick="hrCommSetView('list');toast('Announcement sent')">Send now</button></div>`;}
 function hrPayroll(){const rows=[['REL0001',31,180000,18000],['REL0003',31,120000,11000],['REL0004',31,140000,13500],['REL0002',31,95000,8000]];
   const gross=rows.reduce((a,r)=>a+r[2],0),ded=rows.reduce((a,r)=>a+r[3],0),net=gross-ded;
   const stat=(v,l)=>`<div class="hstat"><div class="v">${v}</div><div class="l">${l}</div></div>`;
