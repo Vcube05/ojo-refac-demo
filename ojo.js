@@ -431,34 +431,32 @@ function lList(){let h='';LSTAGES.forEach(s=>{const items=leads.filter(l=>l.st==
 /* ============ LEAD CREATE — quick capture (OJO conversational | manual), then expand in the record ============ */
 let leadCreateMode='ojo';
 const MIC_IC='<path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8 22h8"/>';
-function leadCreate(){leadCreateMode='ojo';mountLeadCreate();}
-function leadCreateSetMode(m){leadCreateMode=m;mountLeadCreate();}
-function mountLeadCreate(){document.getElementById('screen').innerHTML=`<div class="createwrap"><div class="createbox">
-   <div class="createtop"><button class="mtool" onclick="go('leads')" title="Back">${svg(SVS.arrow,18)}</button><div class="crtitle"><h1>Add a new lead</h1><div class="sub">Capture it fast — expand the details on the lead afterwards.</div></div></div>
+function leadCreate(){leadCreateMode='ojo';let o=document.getElementById('crOverlay');if(!o){o=document.createElement('div');o.id='crOverlay';o.className='cr-scrim';o.onclick=e=>{if(e.target===o)leadCreateClose();};document.body.appendChild(o);}renderLeadCreate();requestAnimationFrame(()=>o.classList.add('show'));setTimeout(()=>{const i=document.getElementById('lcPrompt');if(i)i.focus();},70);}
+function leadCreateClose(){const o=document.getElementById('crOverlay');if(o){o.classList.remove('show');setTimeout(()=>{const x=document.getElementById('crOverlay');if(x)x.remove();},180);}}
+function leadCreateSetMode(m){leadCreateMode=m;renderLeadCreate();setTimeout(()=>{const i=document.getElementById(m==='ojo'?'lcPrompt':'lcContact');if(i)i.focus();},20);}
+function renderLeadCreate(){const o=document.getElementById('crOverlay');if(!o)return;o.innerHTML=`<div class="cr-modal" onclick="event.stopPropagation()">
+   <div class="cr-mhead"><div><div class="cr-mt">New lead</div><div class="cr-msub">Capture it fast — expand the details on the lead afterwards.</div></div><button class="mtool" onclick="leadCreateClose()" title="Close (Esc)">${svg(SVS.x,18)}</button></div>
    <div class="crmode"><button class="${leadCreateMode==='ojo'?'on':''}" onclick="leadCreateSetMode('ojo')">${svg(SPARK,14)} Create with OJO</button><button class="${leadCreateMode==='manual'?'on':''}" onclick="leadCreateSetMode('manual')">Enter manually</button></div>
-   ${leadCreateMode==='ojo'?leadCreateOjo():leadCreateManual()}
- </div></div>`;}
-function leadCreateOjo(){return `<div class="crcard ojocap">
-   <div class="crfield"><label>Contact</label><input class="flv" id="lcContact" placeholder="Select or add a contact (optional)"></div>
-   <div class="crfield"><label>Tell OJO about this lead</label>
-     <textarea id="lcPrompt" class="flv crprompt" rows="5" placeholder="What does the client need, rough budget, timeline, source… Type it, record a voice note, or attach a brief — OJO drafts the lead and you review before it's saved."></textarea>
-     <div class="crbar"><button class="capbtn" onclick="toast('Attach a brief (demo)')" title="Attach">${svg(NF_CLIP,17)}</button><button class="capbtn" onclick="toast('Listening… (demo)')" title="Voice note">${svg(MIC_IC,17)}</button><span class="caphint">OJO drafts it — you review before saving.</span></div>
-   </div>
-   <div class="cractions"><button class="cr-go" onclick="leadDoCreate('ojo')">${svg(SPARK,15)} Plan with OJO</button></div>
- </div>`;}
-function leadCreateManual(){return `<div class="crcard">
-   <div class="crfield"><label>Contact <span class="req">*</span></label><input class="flv" id="lcContact" placeholder="Select or add a contact"></div>
+   <div class="cr-mbody">${leadCreateMode==='ojo'?leadCreateOjo():leadCreateManual()}</div></div>`;}
+function leadCreateOjo(){return `<div class="crfield"><label>Contact</label><input class="flv" id="lcContact" placeholder="Select or add a contact (optional)"></div>
+   <div class="ojocap"><div class="ojocap-h">${svg(SPARK,13)} Tell OJO about this lead</div>
+     <textarea id="lcPrompt" class="flv crprompt" rows="4" placeholder="What does the client need, rough budget, timeline, source… Type it, record a voice note, or attach a brief — OJO drafts the lead and you review before saving."></textarea>
+     <div class="crbar"><button class="capbtn" onclick="toast('Attach a brief (demo)')" title="Attach">${svg(NF_CLIP,17)}</button><button class="capbtn" onclick="toast('Listening… (demo)')" title="Voice note">${svg(MIC_IC,17)}</button><span class="caphint">OJO drafts it — you review before saving.</span></div></div>
+   <div class="cractions"><button class="cr-go" onclick="leadDoCreate('ojo')">${svg(SPARK,15)} Plan with OJO</button></div>`;}
+function leadCreateManual(){return `<div class="crfield"><label>Contact <span class="req">*</span></label><input class="flv" id="lcContact" placeholder="Select or add a contact"></div>
    <div class="crrow"><div class="crfield"><label>Lead title</label><input class="flv" id="lcTitle" placeholder="e.g. Website revamp for Acme"></div><div class="crfield"><label>Budget</label><input class="flv" id="lcBudget" placeholder="₹ amount"></div></div>
-   <div class="crfield"><label>Project description <span class="req">*</span></label><textarea id="lcDesc" class="flv crprompt" rows="4" placeholder="What's the engagement about?"></textarea><div class="crbar"><button class="capbtn" onclick="toast('Attach (demo)')" title="Attach">${svg(NF_CLIP,17)}</button></div></div>
-   <div class="cractions"><button class="cr-go" onclick="leadDoCreate('manual')">${svg('<path d="M20 6 9 17l-5-5"/>',15)} Create lead</button></div>
- </div>`;}
+   <div class="crfield"><label>Project description <span class="req">*</span></label><textarea id="lcDesc" class="flv crprompt" rows="3" placeholder="What's the engagement about?"></textarea><div class="crbar"><button class="capbtn" onclick="toast('Attach (demo)')" title="Attach">${svg(NF_CLIP,17)}</button></div></div>
+   <div class="cractions"><button class="cr-go" onclick="leadDoCreate('manual')">${svg('<path d="M20 6 9 17l-5-5"/>',15)} Create lead</button></div>`;}
 function leadVal(id){const e=document.getElementById(id);return e?e.value.trim():'';}
 function leadDoCreate(mode){const contact=leadVal('lcContact')||'New contact';let co,val,desc;
    if(mode==='manual'){co=leadVal('lcTitle')||(contact!=='New contact'?contact+' — new lead':'Untitled lead');val=parseInt(leadVal('lcBudget').replace(/[^\d]/g,''))||0;desc=leadVal('lcDesc');}
    else{const p=leadVal('lcPrompt');co=p?p.split(/[.\n]/)[0].slice(0,42):'New opportunity';val=0;desc=p;}
    const l=lk(co,contact,val,mode==='ojo'?'OJO':'Manual','New',null,'0/3');l.desc=desc;leads.unshift(l);
-   toast(mode==='ojo'?'OJO is setting up your lead…':'Lead created — add the details');
-   openDetail('lead',l.id);}
+   leadCreateClose();
+   if(curMod==='leads'&&document.getElementById('work'))renderWork();
+   toast(mode==='ojo'?'OJO drafted your lead — review the details':'Lead created');
+   if(mode==='ojo')setTimeout(()=>openDetail('lead',l.id),170);}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('crOverlay'))leadCreateClose();});
 
 /* ============ PROJECT RENDER ============ */
 function renderProjWork(type){const el=document.getElementById('work');
