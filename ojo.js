@@ -1147,8 +1147,9 @@ function hrPerfRefresh(){const a=document.getElementById('empBody');if(a&&hrEmp)
 function hrPerfRemove(i){hrPerf.splice(i,1);hrPerfRefresh();}
 function hrPerfAdd(){hrPerf.push({l:'New metric',v:'0',d:'+0'});hrPerfRefresh();}
 function hrAttendance(){const sub=['Attendance','Leave Requests','Holidays'];
+  const vt=hrAttTab==='Attendance'?`<div class="sp" style="flex:1"></div><span class="seg viewseg">${['List','Calendar'].map(v=>`<button class="${hrAttView===v?'on':''}" onclick="hrAttV('${v}')">${v}</button>`).join('')}</span>`:'';
   return `<div class="mc-top"><div class="title-wrap"><div class="picon">${svg(ICONS.Calendar,20)}</div><div><h1>Attendance &amp; Leaves</h1><div class="sub">Presence, leave and holidays · June 2026</div></div></div><div class="sp"></div><div class="newbtn"><button class="a" onclick="toast('Mark attendance')">Mark attendance</button><span class="b">${svg(SVS.caret,11)}</span></div></div>
-   <div class="viewbar"><div style="display:flex;gap:5px">${sub.map(t=>`<button class="vtab ${t===hrAttTab?'on':''}" onclick="hrAttSet('${t}')">${t}</button>`).join('')}</div></div>
+   <div class="viewbar"><div style="display:flex;gap:5px">${sub.map(t=>`<button class="vtab ${t===hrAttTab?'on':''}" onclick="hrAttSet('${t}')">${t}</button>`).join('')}</div>${vt}</div>
    ${hrAttTab==='Attendance'?hrAttList():hrAttTab==='Leave Requests'?hrLeaves():hrHolidays()}`;}
 function hrLeaves(){const reqs=[['REL0003','Casual leave','12–13 Jun 2026','Pending'],['REL0002','Sick leave','05 Jun 2026','Approved'],['REL0004','Work from home','03 Jun 2026','Approved']];
   const sc={Pending:'var(--warn-ink)',Approved:'var(--ok)',Declined:'var(--error)'};
@@ -1163,7 +1164,7 @@ function hrAttList(){
   const n=s=>att.filter(a=>a[1]===s).length;
   const dot=c=>c?`<span style="width:7px;height:7px;border-radius:50%;background:${c};display:inline-block;flex:0 0 7px"></span>`:'';
   const stat=(v,l,c)=>`<div class="hstat"><div class="v">${v}</div><div class="l">${dot(c)}${l}</div></div>`;
-  return `<div class="hrtoolbar"><div class="switch2"><button class="${hrAttView==='List'?'on':''}" onclick="hrAttV('List')">List</button><button class="${hrAttView==='Calendar'?'on':''}" onclick="hrAttV('Calendar')">Calendar</button></div><div class="hsearch">${svg(SVS.search,15)} Search employees</div><div class="datepill" style="margin-left:auto">${svg(ICONS.Calendar,15)} 5 Jun 2026</div></div>
+  return `<div class="hrtoolbar"><div class="hsearch">${svg(SVS.search,15)} Search employees</div><div class="datepill" style="margin-left:auto">${svg(ICONS.Calendar,15)} 5 Jun 2026</div></div>
    <div class="hstats">${stat(att.length,'Team',null)}${stat(n('Present'),'Present','var(--ok)')}${stat(n('Absent'),'Absent','var(--warn-ink)')}${stat(n('On leave'),'On leave','var(--info)')}</div>
    ${hrAttView==='Calendar'?`<div class="sec" style="margin-top:4px">${miniCal()}</div>`:`<div class="tablewrap"><table><thead><tr><th>Employee</th><th>Status</th><th>Check in</th><th>Check out</th><th class="num">Hours</th><th></th></tr></thead><tbody>${att.map(a=>{const e=EMP.find(x=>x.code===a[0]);if(!e)return '';const c=sc[a[1]]||'var(--muted)';return `<tr><td><span class="owncell">${eav(e)}<b style="color:var(--navy)">${e.name}</b></span></td><td><span class="badge"><span class="dot" style="background:${c}"></span>${a[1]}</span></td><td class="co">${a[2]}</td><td class="co">${a[3]}</td><td class="num">${a[4]}</td><td><button class="iconedit" onclick="toast('Edit attendance')">${svg(SVS.pencil,14)}</button></td></tr>`;}).join('')}</tbody></table></div>`}`;}
 function commRow(k,inner){return `<div class="commrow"><div class="crk">${k}</div><div>${inner}</div></div>`;}
