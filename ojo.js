@@ -128,7 +128,7 @@ function modTools(){return `<button class="mtool"><svg width="17" height="17" vi
       <button class="mtool"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h12M3 12h8M3 18h5M17 4v16m0 0 4-4m-4 4-4-4"/></svg></button>
       <button class="mtool"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></button>
       <button class="mtool" id="setBtn" onclick="toggleSettings(event)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></button>`;}
-function modNew(){return `<div class="newbtn"><button class="a" onclick="toast('New ${curMod==='leads'?'lead':curMod==='projdash'?'project':'task'}')">New</button><span class="b"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg></span></div>`;}
+function modNew(){const act=curMod==='leads'?"leadCreate()":`toast('New ${curMod==='projdash'?'project':'task'}')`;return `<div class="newbtn"><button class="a" onclick="${act}">New</button><span class="b"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg></span></div>`;}
 /* canonical Leads-style view-tab row (★ first tab + add-view) — shared by every listing page
    so all modules read identically: title·tools·New on top, ★tabs, then metrics, then content */
 function listVTabs(tabs,active,add){return `<div class="viewbar"><div style="display:flex;gap:5px">${tabs.map((t,i)=>`<button class="vtab ${t[0]===active?'on':''}" onclick="${t[2]}"><span class="${i===0?'star':''}">${svg(ICONS[t[1]]||ICONS.Table,15)}</span>${t[0]}</button>`).join('')}</div><button class="vadd" onclick="${add||"toast('Add a view — demo')"}">${svg(SVS.plus,15)}</button></div>`;}
@@ -421,13 +421,44 @@ function renderLeadsWork(type){const el=document.getElementById('work');
 function lBoard(){const c=cm();return `<div class="board ${c.color?'color':''} ${c.size}">`+LSTAGES.map(s=>{const items=leads.filter(l=>l.st===s.k);const sum=items.reduce((a,l)=>a+l.val,0);
   return `<div class="col"><div class="col-head" style="--cc:${s.cc}"><span class="pill"><span class="dot"></span>${s.k}</span><span class="ct">${items.length}</span><span class="more">${sum?fmt(sum):''}</span></div>
     <div class="col-body" ondragover="cardOver(event)" ondragleave="cardLeave(event)" ondrop="cardDrop(event,'${s.k}')">${items.map(l=>`<div class="card" draggable="true" ondragstart="cardDragStart(event,'${l.id}')" ondragend="cardDragEnd(event)" onclick="openPeek('${l.id}')"><div class="nm">${l.co}</div><div class="by">${l.nm} · By Priya on Mar 6</div><div class="mid"><span class="val">${fmt(l.val)}</span></div><div class="foot"><span class="src">${l.src}</span><span class="chk">${svg('<path d="M9 11l3 3 8-8"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',13)}${l.chk}</span>${av(l.asg)}</div></div>`).join('')||'<div class="col-empty">Drop a lead here</div>'}
-      <button class="col-add" onclick="toast('New lead')">${svg('<path d="M12 5v14M5 12h14"/>',14)} New lead</button></div></div>`;}).join('')+`</div>`;}
+      <button class="col-add" onclick="leadCreate()">${svg('<path d="M12 5v14M5 12h14"/>',14)} New lead</button></div></div>`;}).join('')+`</div>`;}
 function lTable(){let h='<div class="tablewrap"><table><thead><tr><th>Lead</th><th>Company</th><th class="num">Value</th><th>Source</th><th>Owner</th><th>Stage</th></tr></thead><tbody>';
   leads.forEach(l=>{h+=`<tr onclick="openPeek('${l.id}')"><td><span class="nm">${l.nm}</span></td><td class="co">${l.co}</td><td class="num">${fmt(l.val)}</td><td><span class="src">${l.src}</span></td><td><span class="owncell">${av(l.asg)}${l.asg?PEOPLE[l.asg][2]:'Unassigned'}</span></td><td><span class="badge"><span class="dot" style="background:${lcc(l.st)}"></span>${l.st}</span></td></tr>`;});return h+'</tbody></table></div>';}
 function lList(){let h='';LSTAGES.forEach(s=>{const items=leads.filter(l=>l.st===s.k);if(!items.length)return;const sum=items.reduce((a,l)=>a+l.val,0);
   h+=`<div class="lg"><div class="lg-head"><span class="pill"><span class="dot" style="background:${s.cc}"></span>${s.k}</span><span class="ct">${items.length}</span><span class="sum">${sum?fmt(sum):''}</span></div><div class="llist">`;
   items.forEach(l=>{h+=`<div class="lrow" onclick="openPeek('${l.id}')"><span class="nm">${l.co}</span><span class="co">${l.nm}</span><span class="src">${l.src}</span><span class="val">${fmt(l.val)}</span>${av(l.asg)}</div>`;});
   h+='</div></div>';});return h;}
+/* ============ LEAD CREATE — quick capture (OJO conversational | manual), then expand in the record ============ */
+let leadCreateMode='ojo';
+const MIC_IC='<path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8 22h8"/>';
+function leadCreate(){leadCreateMode='ojo';mountLeadCreate();}
+function leadCreateSetMode(m){leadCreateMode=m;mountLeadCreate();}
+function mountLeadCreate(){document.getElementById('screen').innerHTML=`<div class="createwrap"><div class="createbox">
+   <div class="createtop"><button class="mtool" onclick="go('leads')" title="Back">${svg(SVS.arrow,18)}</button><div class="crtitle"><h1>Add a new lead</h1><div class="sub">Capture it fast — expand the details on the lead afterwards.</div></div></div>
+   <div class="crmode"><button class="${leadCreateMode==='ojo'?'on':''}" onclick="leadCreateSetMode('ojo')">${svg(SPARK,14)} Create with OJO</button><button class="${leadCreateMode==='manual'?'on':''}" onclick="leadCreateSetMode('manual')">Enter manually</button></div>
+   ${leadCreateMode==='ojo'?leadCreateOjo():leadCreateManual()}
+ </div></div>`;}
+function leadCreateOjo(){return `<div class="crcard ojocap">
+   <div class="crfield"><label>Contact</label><input class="flv" id="lcContact" placeholder="Select or add a contact (optional)"></div>
+   <div class="crfield"><label>Tell OJO about this lead</label>
+     <textarea id="lcPrompt" class="flv crprompt" rows="5" placeholder="What does the client need, rough budget, timeline, source… Type it, record a voice note, or attach a brief — OJO drafts the lead and you review before it's saved."></textarea>
+     <div class="crbar"><button class="capbtn" onclick="toast('Attach a brief (demo)')" title="Attach">${svg(NF_CLIP,17)}</button><button class="capbtn" onclick="toast('Listening… (demo)')" title="Voice note">${svg(MIC_IC,17)}</button><span class="caphint">OJO drafts it — you review before saving.</span></div>
+   </div>
+   <div class="cractions"><button class="cr-go" onclick="leadDoCreate('ojo')">${svg(SPARK,15)} Plan with OJO</button></div>
+ </div>`;}
+function leadCreateManual(){return `<div class="crcard">
+   <div class="crfield"><label>Contact <span class="req">*</span></label><input class="flv" id="lcContact" placeholder="Select or add a contact"></div>
+   <div class="crrow"><div class="crfield"><label>Lead title</label><input class="flv" id="lcTitle" placeholder="e.g. Website revamp for Acme"></div><div class="crfield"><label>Budget</label><input class="flv" id="lcBudget" placeholder="₹ amount"></div></div>
+   <div class="crfield"><label>Project description <span class="req">*</span></label><textarea id="lcDesc" class="flv crprompt" rows="4" placeholder="What's the engagement about?"></textarea><div class="crbar"><button class="capbtn" onclick="toast('Attach (demo)')" title="Attach">${svg(NF_CLIP,17)}</button></div></div>
+   <div class="cractions"><button class="cr-go" onclick="leadDoCreate('manual')">${svg('<path d="M20 6 9 17l-5-5"/>',15)} Create lead</button></div>
+ </div>`;}
+function leadVal(id){const e=document.getElementById(id);return e?e.value.trim():'';}
+function leadDoCreate(mode){const contact=leadVal('lcContact')||'New contact';let co,val,desc;
+   if(mode==='manual'){co=leadVal('lcTitle')||(contact!=='New contact'?contact+' — new lead':'Untitled lead');val=parseInt(leadVal('lcBudget').replace(/[^\d]/g,''))||0;desc=leadVal('lcDesc');}
+   else{const p=leadVal('lcPrompt');co=p?p.split(/[.\n]/)[0].slice(0,42):'New opportunity';val=0;desc=p;}
+   const l=lk(co,contact,val,mode==='ojo'?'OJO':'Manual','New',null,'0/3');l.desc=desc;leads.unshift(l);
+   toast(mode==='ojo'?'OJO is setting up your lead…':'Lead created — add the details');
+   openDetail('lead',l.id);}
 
 /* ============ PROJECT RENDER ============ */
 function renderProjWork(type){const el=document.getElementById('work');
@@ -775,7 +806,7 @@ function leadRecHTML(){const l=rec.ent;
     </div>
     <div class="sec"><div class="sec-h">Client contacts</div>${contactsListHTML(leadContacts(l),null)}</div>
   </div>
-  <div class="rec-desc">${l.co} is undertaking the ${l.nm} engagement — taken from brief to launch on OJO's delivery workflow, with deliverables, timeline and budget tracked as cells.</div>
+  <div class="rec-desc">${l.desc?l.desc:`${l.co} is undertaking the ${l.nm} engagement — taken from brief to launch on OJO's delivery workflow, with deliverables, timeline and budget tracked as cells.`}</div>
   <button class="rec-morelink" onclick="detailSetTab('Details')">View full details ${svg('<path d="M5 12h14M13 6l6 6-6 6"/>',14)}</button>
   ${commentsHTML('lead')}`;}
 function taskRecHTML(){const t=rec.ent;if(!t.accept)t.accept=[];if(!t.proof)t.proof=[];
