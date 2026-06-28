@@ -2456,13 +2456,13 @@ function tcard(t){const sm=SRC[t.src];const p=PEOPLE[t.asg];const over=homeDay(t
   </article>`;}
 function homeSub2(id,i){const t=TASKS.find(x=>x.id===id);if(!t)return;t.subs[i].done=!t.subs[i].done;const el=document.getElementById('tc-'+id);if(el)el.outerHTML=tcard(t);}
 let homeActCollapsed=true;
-function homeToggleAct(){homeActCollapsed=!homeActCollapsed;const b=document.getElementById('homebox');if(b)b.classList.toggle('collapsed',homeActCollapsed);const t=document.getElementById('homActTxt');if(t)t.textContent=homeActCollapsed?'Activity':'Hide activity';const btn=document.getElementById('homActBtn');if(btn)btn.classList.toggle('on',!homeActCollapsed);}
+function homeToggleAct(){homeActCollapsed=!homeActCollapsed;const b=document.getElementById('homebox');if(b)b.classList.toggle('collapsed',homeActCollapsed);const btn=document.getElementById('homActBtn');if(btn){btn.classList.toggle('on',!homeActCollapsed);btn.title=homeActCollapsed?'Show activity':'Hide activity';}}
 /* ===== Home outlooks — each is a UI cell: render(timeline|schedule|cards) + bind:collection:Task ===== */
 let homeOutlook='timeline';try{homeOutlook=localStorage.getItem('ojo-home-view')||'timeline';}catch(e){}
 let homeOrient='vertical';try{homeOrient=localStorage.getItem('ojo-home-orient')||'vertical';}catch(e){}
 if(homeOutlook==='schedule'){homeOutlook='timeline';homeOrient='horizontal';} /* migrate old Schedule tab → Timeline (horizontal) */
+if(homeOutlook==='list')homeOutlook='timeline'; /* List view retired → fall back to Timeline */
 const HVIEWS=[['timeline','Timeline','<path d="M5 3v18"/><circle cx="5" cy="7" r="2.3" fill="currentColor" stroke="none"/><circle cx="5" cy="16" r="2.3" fill="currentColor" stroke="none"/><path d="M10 7h9M10 16h6"/>'],
- ['list','List','<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1.5" fill="currentColor" stroke="none"/>'],
  ['cards','Cards','<rect x="3.5" y="4" width="7" height="16" rx="1.6"/><rect x="13.5" y="4" width="7" height="16" rx="1.6"/>']];
 const ORIENTS=[['vertical','<path d="M12 3v18"/><circle cx="12" cy="7" r="2.1" fill="currentColor" stroke="none"/><circle cx="12" cy="16" r="2.1" fill="currentColor" stroke="none"/>'],
  ['horizontal','<path d="M3 12h18"/><circle cx="7.5" cy="12" r="2.1" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2.1" fill="currentColor" stroke="none"/>']];
@@ -2472,13 +2472,15 @@ const FILTER_IC='<path d="M3 7h12M19 7h2"/><circle cx="17" cy="7" r="2.1"/><path
 /* ===== Home filter (single control, applies across every outlook) ===== */
 let homeFilterMod=null;   /* null = all modules */
 let homeGroup='time';     /* list grouping: time | module | level */
-function homeActiveTasks(){let a=TASKS.filter(t=>t.status!=='Done');if(homeFilterMod)a=a.filter(t=>t.src===homeFilterMod);return a;}
+let homeQuery='';         /* local task search (title · linked record · module) */
+let homeSearchOpen=false; /* search collapses to an icon until clicked (module pattern) */
+function taskMatchQ(t){const q=homeQuery.trim().toLowerCase();if(!q)return true;return (t.title||'').toLowerCase().includes(q)||(t.link||'').toLowerCase().includes(q)||((SRC[t.src]&&SRC[t.src][0])||'').toLowerCase().includes(q);}
+function homeActiveTasks(){let a=TASKS.filter(t=>t.status!=='Done');if(homeFilterMod)a=a.filter(t=>t.src===homeFilterMod);if(homeQuery)a=a.filter(taskMatchQ);return a;}
 const HMODS=[['','All'],['leads','Leads'],['project','Projects'],['hr','HR'],['account','Accounts'],['vendor','Vendors']];
 const HGRP=[['time','By time'],['module','By module'],['level','By level']];
-function homeFilterHTML(){return `<div class="hf-sec">Module</div><div class="hf-chips">${HMODS.map(([k,l])=>`<button class="hf-chip ${(homeFilterMod||'')===k?'on':''}" onclick="homeSetFilter('${k}')">${k?`<span class="hf-dot" style="--c:${SRC[k][1]}"></span>`:''}${l}</button>`).join('')}</div>
-  <div class="hf-sec">Group by</div><div class="hf-chips">${HGRP.map(([k,l])=>`<button class="hf-chip ${homeGroup===k?'on':''}" onclick="homeSetGroup('${k}')">${l}</button>`).join('')}</div>`;}
+function homeFilterHTML(){return `<div class="hf-sec">Show</div><div class="hf-chips">${HMODS.map(([k,l])=>`<button class="hf-chip ${(homeFilterMod||'')===k?'on':''}" onclick="homeSetFilter('${k}')">${k?`<span class="hf-dot" style="--c:${SRC[k][1]}"></span>`:''}${l}</button>`).join('')}</div>`;}
 function openHomeFilter(e){e.stopPropagation();const m=document.getElementById('homeFilterPop');if(!m)return;m.innerHTML=homeFilterHTML();const r=e.currentTarget.getBoundingClientRect();m.style.top=(r.bottom+8)+'px';m.style.left=Math.max(12,Math.min(r.left,window.innerWidth-258))+'px';openPop('homeFilterPop');}
-function homeSetFilter(k){homeFilterMod=k||null;mountHome();const m=document.getElementById('homeFilterPop');if(m)m.innerHTML=homeFilterHTML();}
+function homeSetFilter(k){homeFilterMod=k||null;closePops();mountHome();}
 function homeSetGroup(k){homeGroup=k;if(homeOutlook!=='list')homeSetOutlook('list');else mountHome();const m=document.getElementById('homeFilterPop');if(m)m.innerHTML=homeFilterHTML();}
 /* ===== List outlook — calm, polished rows (grouped) ===== */
 function listRow(t){const sm=SRC[t.src];const done=t.status==='Done';const over=homeDay(t)<11&&!done;
@@ -2502,22 +2504,17 @@ function nowLineHTML(){const h=Math.floor(NOW_MIN/60),m=NOW_MIN%60;return `<div 
 /* slim row → click to expand a small detail card */
 function tlRow(t){const sm=SRC[t.src];const p=PEOPLE[t.asg];const done=t.status==='Done';const over=homeDay(t)<11&&!done;const op=t._tlopen;
   return `<div class="tl-item ${done?'done':''} ${op?'open':''}" id="tl-${t.id}">
-    <div class="tl-row" onclick="tlToggle('${t.id}')">
+    <div class="tl-row">
       <span class="tl-time ${over?'over':''}">${over?'late':(t.time||'')}</span>
-      <span class="tl-dot" style="--c:${sm[1]}"></span>
-      <div class="tl-t">${t.title}</div>
-      <span class="tl-pd p-${t.pri[0]}" title="${t.pri} priority"></span>
+      <div class="tl-main" onclick="openTaskRec('${t.id}','home')" title="Open task"><div class="tl-t">${t.title}</div><div class="tl-sub"><span class="tl-mod" style="--c:${sm[1]}">${sm[0]}</span><span class="tl-x">·</span>${t.link}</div></div>
       <button class="tl-ck ${done?'on':''}" onclick="event.stopPropagation();homeComplete('${t.id}')" title="${done?'Undo':'Complete'}">${svg(HICON.check,12)}</button>
-      <span class="tl-chev">${svg('<path d="m6 9 6 6 6-6"/>',14)}</span>
+      <button class="tl-chev" onclick="tlToggle('${t.id}')" title="${op?'Hide details':'Details'}">${svg('<path d="m6 9 6 6 6-6"/>',14)}</button>
     </div>
-    ${op?`<div class="tl-exp">
-      <div class="tl-exp-meta"><span class="tr-src" style="--c:${sm[1]}"><span class="d"></span>${sm[0]}</span><span class="tl-sep">·</span>${t.link}<span class="tl-sep">·</span><span class="tl-who">${av(t.asg)} ${p[2]}</span><span class="tl-sep">·</span>${t.est}<span class="tl-sep">·</span><span class="tl-xp">+${t.pts} XP</span></div>
-      <div class="tl-exp-act"><button class="tp-act" onclick="event.stopPropagation();openTaskRec('${t.id}','home')">${svg(ARROW,14)} Open</button><button class="tp-act" onclick="homeSchedule(event,'${t.id}')">${svg(HICON.cal,14)} Schedule</button></div>
-    </div>`:''}
+    ${op?`<div class="tl-exp"><div class="tl-exp-row"><span class="tl-who">${av(t.asg)} ${p[2]}</span><span class="tl-sep">·</span><span class="tl-est">${t.est||'No estimate'}</span><span class="tp-sp"></span><button class="tp-act" onclick="homeSchedule(event,'${t.id}')">${svg(HICON.cal,14)} Schedule</button></div></div>`:''}
   </div>`;}
 function tlToggle(id){const t=TASKS.find(x=>x.id===id);if(!t)return;t._tlopen=!t._tlopen;const fl=document.getElementById('feedList');if(fl)fl.innerHTML=homeTimeline();}
 function tlGroup(numHTML,wd,cnt,rows,cls){return `<div class="tl-day ${cls||''}"><div class="tl-num ${cls||''}">${numHTML}${wd?`<div class="wd">${wd}</div>`:''}${cnt?`<div class="cnt">${cnt}</div>`:''}</div><div class="tl-rows">${rows}</div></div>`;}
-function homeTimeline(){const all=homeFilterMod?TASKS.filter(t=>t.src===homeFilterMod):TASKS;
+function homeTimeline(){let all=homeFilterMod?TASKS.filter(t=>t.src===homeFilterMod):TASKS;if(homeQuery)all=all.filter(taskMatchQ);
   const active=all.filter(t=>t.status!=='Done');
   const byTime=(a,b)=>t2m(a.time)-t2m(b.time);
   /* completed tasks stay visible but sink to the bottom of their day, dimmed */
@@ -2532,7 +2529,7 @@ function homeTimeline(){const all=homeFilterMod?TASKS.filter(t=>t.src===homeFilt
   html+=tlGroup(`<div class="d">11</div>`,WD[wdOf(11)]+' · Today',today.length+' scheduled',trows,'today');
   fdays.forEach(d=>{const rows=[...active.filter(t=>homeDay(t)===d).sort(byTime),...doneOf(d)];
     html+=tlGroup(`<div class="d">${d}</div>`,WD[wdOf(d)],rows.length+(d===12?' planned':' '),rows.map(tlRow).join(''));});
-  return `<div class="timeline">${html}</div>`;}
+  return `<div class="timeline">${html||`<div class="tp-empty"><div class="tp-empty-ic">${svg(SVS.search,26)}</div><h3>No matching tasks</h3><p>${homeQuery?'Nothing matches “'+homeQuery+'”.':'No tasks here.'}</p></div>`}</div>`;}
 function estMin(e){if(!e)return 60;let v=0;const h=e.match(/(\d+)\s*h/),m=e.match(/(\d+)\s*m/);if(h)v+=(+h[1])*60;if(m)v+=(+m[1]);return v||60;}
 const SCH_START=8,SCH_END=18,HOUR_W=128,LANE_H=76;
 /* Schedule outlook — horizontal time-blocked calendar: hours run left→right, each task
@@ -2551,6 +2548,15 @@ function homeHourRail(){const day=homeSelDay;const px=m=>((m-SCH_START*60)/60)*H
     <div class="sched-body" style="height:${bodyH}px;background-size:${HOUR_W}px 100%">${now}${blocks||'<div class="sched-empty">Nothing scheduled — pick another day.</div>'}</div>
   </div></div>`;}
 function homeSetOutlook(v){homeOutlook=v;try{localStorage.setItem('ojo-home-view',v);}catch(e){}mountHome();}
+/* body for the current outlook — extracted so live search can re-render just the feed without losing input focus */
+function homeBody(){const dayLabel=homeSelDay===11?'today':WD[wdOf(homeSelDay)]+', Jun '+homeSelDay;
+  if(homeOutlook==='timeline')return homeOrient==='horizontal'?(`<div class="hcal">${homeDayStrip()}</div>`+homeHourRail()):homeTimeline();
+  if(homeOutlook==='list')return homeList();
+  const list=homeDayTasks();return homeMetrics()+`<div class="hcal">${homeDayStrip()}</div>`+`<div class="feed-controls2"><h2 class="fc-h">${homeSelDay===11?"Today's tasks":WD[wdOf(homeSelDay)]+', Jun '+homeSelDay}</h2></div>`+(list.length?`<div class="tgrid">${list.map(tcard).join('')}</div>`:`<div class="tp-empty"><div class="tp-empty-ic">${svg(homeQuery?SVS.search:HICON.check,26)}</div><h3>${homeQuery?'No matching tasks':'Nothing on '+dayLabel}</h3><p>${homeQuery?'Nothing matches “'+homeQuery+'”.':"You're all clear here."}</p></div>`);}
+function homeSearch(v){homeQuery=v;const fl=document.getElementById('feedList');if(fl)fl.innerHTML=homeBody();const fic=document.getElementById('homeSearchClear');if(fic)fic.style.display=v?'grid':'none';}
+function homeSearchReset(){homeQuery='';homeSearchOpen=false;mountHome();}
+function homeSearchOpenBox(){homeSearchOpen=true;mountHome();const i=document.getElementById('homeSearchInput');if(i)i.focus();}
+function homeSearchBlur(){if(!homeQuery.trim()){homeSearchOpen=false;mountHome();}}
 function mountHome(){setRail('navHome');
   const h=new Date().getHours(),greet=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
   const dstr=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
@@ -2560,15 +2566,12 @@ function mountHome(){setRail('navHome');
   const cellHint={timeline:"render:'timeline' · bind:'collection:Task' · orient:'"+homeOrient+"'",list:"render:'list' · bind:'collection:Task' · group:'"+homeGroup+"'",cards:"render:'cards' · bind:'collection:Task'"}[homeOutlook];
   const dayLabel=homeSelDay===11?'today':WD[wdOf(homeSelDay)]+', Jun '+homeSelDay;
   const fLbl=homeFilterMod?SRC[homeFilterMod][0]:'All';
-  let body='';
-  if(homeOutlook==='timeline')body=homeOrient==='horizontal'?(`<div class="hcal">${homeDayStrip()}</div>`+homeHourRail()):homeTimeline();
-  else if(homeOutlook==='list')body=homeList();
-  else{const list=homeDayTasks();body=homeMetrics()+`<div class="hcal">${homeDayStrip()}</div>`+`<div class="feed-controls2"><h2 class="fc-h">${homeSelDay===11?"Today's tasks":WD[wdOf(homeSelDay)]+', Jun '+homeSelDay}</h2></div>`+(list.length?`<div class="tgrid">${list.map(tcard).join('')}</div>`:`<div class="tp-empty"><div class="tp-empty-ic">${svg(HICON.check,26)}</div><h3>Nothing on ${dayLabel}</h3><p>You're all clear here.</p></div>`);}
+  const body=homeBody();
   document.getElementById('screen').innerHTML=`<div class="homebox ${homeActCollapsed?'collapsed':''}" id="homebox">
     <div class="dmain hfeed"><div class="hfeed-scroll">
-      <header class="hero"><div class="hero-l"><h1>${greet}, Vinoth.</h1><p class="hero-sub">${st.over?`<b class="over">${st.over} overdue</b> · `:''}${st.active} on your plate · ${streak}-day streak · ${fmin}m focused · ${dstr}</p></div>
-        <button class="paneltoggle hero-act" id="homActBtn" onclick="homeToggleAct()"><span id="homActTxt">${homeActCollapsed?'Activity':'Hide activity'}</span>${svg('<path d="M15 18l-6-6 6-6"/>',14)}</button></header>
-      <div class="home-controls"><span class="seg viewseg big">${HVIEWS.map(([k,l,ic])=>`<button class="${homeOutlook===k?'on':''}" onclick="homeSetOutlook('${k}')">${svg(ic,15)} ${l}</button>`).join('')}</span><span class="tp-sp"></span>${homeOutlook==='timeline'?`<span class="seg orientseg" title="Orientation">${ORIENTS.map(([o,ic])=>`<button class="${homeOrient===o?'on':''}" onclick="homeSetOrient('${o}')">${svg(ic,16)}</button>`).join('')}</span>`:''}<button class="hctrl-add" onclick="homeQuickOpen(event)">${svg(HICON.plus,15)}<span>Add task</span></button><button class="hctrl-filter ${homeFilterMod?'on':''}" onclick="openHomeFilter(event)" title="Filter & group">${svg(FILTER_IC,16)}<span>${fLbl}</span></button></div>
+      <header class="hero"><div class="hero-l"><h1>${greet}, Vinoth.</h1><p class="hero-sub">${dstr}</p></div>
+        <button class="ptog-ic hero-act ${homeActCollapsed?'':'on'}" id="homActBtn" onclick="homeToggleAct()" title="${homeActCollapsed?'Show activity':'Hide activity'}">${svg('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',17)}</button></header>
+      <div class="home-controls"><span class="seg viewseg big">${HVIEWS.map(([k,l,ic])=>`<button class="${homeOutlook===k?'on':''}" onclick="homeSetOutlook('${k}')">${svg(ic,15)} ${l}</button>`).join('')}</span><span class="tp-sp"></span>${(homeSearchOpen||homeQuery)?`<span class="home-search has"><span class="hs-ic">${svg(SVS.search,15)}</span><input id="homeSearchInput" placeholder="Search tasks" value="${(homeQuery||'').replace(/"/g,'&quot;')}" oninput="homeSearch(this.value)" onblur="homeSearchBlur()"><button id="homeSearchClear" class="hs-clear" style="display:${homeQuery?'grid':'none'}" onmousedown="event.preventDefault()" onclick="homeSearchReset()" title="Clear">${svg(SVS.x,13)}</button></span>`:`<button class="ptog-ic hctrl-sic" onclick="homeSearchOpenBox()" title="Search tasks">${svg(SVS.search,17)}</button>`}<button class="ptog-ic hctrl-fic ${homeFilterMod?'on':''}" onclick="openHomeFilter(event)" title="${homeFilterMod?'Showing '+SRC[homeFilterMod][0]:'Filter'}">${svg(FILTER_IC,17)}</button><button class="hctrl-add hot" onclick="homeQuickOpen(event)">${svg(HICON.plus,16)}<span>Add task</span></button></div>
       <div class="feed-list" id="feedList">${body}</div>
     </div></div>
     <aside class="dpanel hact-panel">
