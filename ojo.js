@@ -247,17 +247,18 @@ const SVGVID='<rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 
 const DOCK_ICONS={
   chat:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
   call:SVGPHONE, video:SVGVID, email:SVGMAIL,
+  scratch:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
   bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>',
   search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>'
 };
 /* Genie's comm faces — selected via the topbar cluster; null = the Genie chat itself */
 let genieFace=null,genieRegen=null;
-const GFACES=['chat','call','video','email'];
-const GFACE_LBL={chat:'Messages',call:'Calls',video:'Meetings',email:'Email',notif:'Notifications'};
-const GH_FACES=['chat','call','video','email'];
+const GFACES=['chat','call','video','email','scratch']; /* call/video are valid faces but reached from inside Chat */
+const GFACE_LBL={chat:'Messages',call:'Calls',video:'Meetings',email:'Email',scratch:'Scratchpad',notif:'Notifications'};
+const GH_FACES=['chat','email','scratch']; /* top cluster: Chat · Mail · Scratchpad */
 let notifRead=false,genieNotif=false;function notifUnread(){return notifRead?0:3;}
 /* short labels for the traveling tab — they ride beside the icon, room is tight */
-const GFACE_TAB={chat:'Chat',call:'Calls',video:'Meet',email:'Mail',notif:'Alerts'};
+const GFACE_TAB={chat:'Chat',call:'Call',video:'Meet',email:'Mail',scratch:'Notes',notif:'Alerts'};
 /* Single-sheet tabs: comm channels + Genie. (Search lives on Home, Notifications in the rail.) */
 const DOCK_CELLS=[
   {id:'ui-dock-genie',  type:'UICell', owner:'ui-dock', group:'assist', values:{name:'Ojo Genie', render:'anchor', bind:'capability:genie',    click:'open', icon:'genie'}, links:{target:'genie'}},
@@ -383,7 +384,7 @@ function cpBody(f,name){
      <button class="cact" onclick="toast('Calling ${name||''}…')">${svg(SVGPHONE,15)} Call ${name||''}</button>`;
   if(f==='video')return `<div class="clist">${CDATA.video.map(v=>`<div class="ccell"><span class="cic vid">${svg(SVGVID,15)}</span><div class="cmn"><div class="cnt">${v[0]}</div><div class="csb">${v[1]} · ${v[3]}</div></div><span class="cstat ${v[2]==='Upcoming'?'up':'done'}">${v[2]}</span></div>`).join('')}</div>
      <button class="cact" onclick="toast('New meeting')">${svg('<path d="M12 5v14M5 12h14"/>',15)} New meeting</button>`;
-  return `<div class="cmaillab">Recent emails</div><div class="clist">${CDATA.email.map(e=>`<div class="ccell mail" onclick="toast('Open email')"><div class="cmh">${svg(SVGMAIL,14)} <span class="cmt">${e[0]}</span></div><div class="cms">${e[1]}</div><div class="cmd">${e[2]}</div></div>`).join('')}</div>
+  return `<div class="cl-bar"><div class="msrch">${svg(SVS.search,15)} Search mail…</div><button class="cl-expand" onclick="mailExpand()" title="Open full view">${svg(EXPANDIC,16)}</button></div><div class="cmaillab">Recent emails</div><div class="clist">${CDATA.email.map(e=>`<div class="ccell mail" onclick="toast('Open email')"><div class="cmh">${svg(SVGMAIL,14)} <span class="cmt">${e[0]}</span></div><div class="cms">${e[1]}</div><div class="cmd">${e[2]}</div></div>`).join('')}</div>
      <button class="cact dark" onclick="toast('New mail')">${svg(SVGMAIL,15)} New Mail</button>`;}
 function mountDash(){
   document.getElementById('modcontent').innerHTML=`<div class="box">
@@ -928,7 +929,7 @@ function flySize(px){const f=document.getElementById('flyout');if(!f)return;f.st
 (function(){let rz=false;
   const noTrans=on=>{['flyout','tbOjo'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.transition=on?'none':'';});};
   document.addEventListener('mousedown',e=>{if(e.target&&e.target.id==='flyResize'){rz=true;document.body.style.userSelect='none';noTrans(true);e.preventDefault();}});
-  document.addEventListener('mousemove',e=>{if(!rz)return;flyW=Math.min(680,Math.max(300,(window.innerWidth-74)-e.clientX));flySize(flyW);});
+  document.addEventListener('mousemove',e=>{if(!rz)return;flyW=Math.max(390,Math.min(620,window.innerWidth-480,(window.innerWidth-74)-e.clientX));flySize(flyW);});
   document.addEventListener('mouseup',()=>{if(rz){rz=false;document.body.style.userSelect='';noTrans(false);}});
 })();
 /* ---- floating dock → section flyout (Ojo Genie / Notifications / Chat / Search / Profile) ---- */
@@ -1014,11 +1015,162 @@ function openNotif(){
   gnotchSync();renderPanelTabs();
 }
 function genieSwapHTML(){
+  if(genieFace==='chat'&&!commHost){
+    if(chatThreadId)return `<div class="gswap chatfull">${chatThread(chatThreadId)}</div>`;
+    return `<div class="gswap"><div class="genie-hi mini">Messages<div class="gctx">Chats across OJO</div></div><div class="gcomm">${chatList()}</div></div>`;}
+  if(genieFace==='scratch')
+    return `<div class="gswap"><div class="genie-hi mini">Scratchpad<div class="gctx">Quick notes · turn them into tasks or projects</div></div><div class="gcomm gscratch">${scratchBody()}</div></div>`;
   if(genieFace){const cn=commContextName();
     return `<div class="gswap"><div class="genie-hi mini">${cn||'Workspace'}<div class="gctx">${GFACE_LBL[genieFace]}${cn?' with this record':' across OJO'}</div></div><div class="gcomm">${genieFace==='chat'&&!commHost?msgBody():commBody(genieFace)}</div></div>`;}
   const ctx=genieContext();
   return `<div class="gswap"><div class="genie-hi">Hello, Vinoth<div class="gctx">${ctx.who?`Ask me anything about <b>${ctx.who}</b>`:'How can I help you today?'}</div></div></div>`;
 }
+/* ============ CHAT HUB — conversations w/ in-thread calls & meets, transcript detail, scratchpad ============ */
+let chatThreadId=null, chatRec=null;
+const MICICON='<path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3"/>';
+const TICK='<path d="M16 6 9 13.5 6.5 11"/><path d="M21 6l-7.5 8"/>';
+const RECS={
+ 'r-apparel':{kind:'call',title:'Apparel Brand Launch',proj:'Hexathalon Apparel Brand',host:'Vinotham',date:'08 Jun 2026, 05:24 PM',dur:'4 min',parts:['Vinotham','Priya Nair'],insights:'Client approved the campaign scope and budget. Next step: share the revised timeline by Friday.',transcript:[['Vinotham','Thanks for hopping on — wanted to confirm the campaign scope.'],['Priya Nair','The scope and budget look good to us.'],['Vinotham',"Great, I'll send the revised timeline by Friday."]]},
+ 'r-meet':{kind:'meet',title:'IPL marketing - Branding',proj:'IPL marketing - Branding',host:'Vinotham',date:'28 Jun 2026, 11:29 AM',dur:'1 min',parts:['Vinotham'],insights:'',transcript:[]}
+};
+const CONVOS=[
+ {id:'apparel',av:'AB',color:'#7C53E6',name:'Apparel Brand Launch',members:'1 member',msgs:[
+   {k:'date',v:'05 Jun 2026'},{k:'out',v:'hi',t:'10:59 AM'},
+   {k:'date',v:'08 Jun 2026'},{k:'rec',rid:'r-apparel',t:'05:28 PM'},
+   {k:'out',v:'jj',t:'05:29 PM'},{k:'out',v:'oinij np',t:'05:30 PM'}]},
+ {id:'amanuay',av:'AM',color:'#E08A1E',name:'Amanuay',members:'Direct message',msgs:[
+   {k:'date',v:'27 Jun 2026'},{k:'in',v:'Are we still on for the demo?',t:'9:02 AM'},
+   {k:'rec',rid:'r-meet',t:'11:30 AM'},{k:'out',v:'Recording is in the thread.',t:'11:35 AM'}]},
+ {id:'fuel',av:'RF',color:'#7C53E6',name:'requirement for fuel app',members:'1 member',msgs:[
+   {k:'date',v:'01 May 2026'},{k:'in',v:'whatsup? are we doing this today?',t:'2:10 PM'}]}
+];
+function chatFindConv(id){return CONVOS.find(c=>c.id===id);}
+function chatOpen(id){chatThreadId=id;chatRec=null;genieSel('chat');}
+function chatBack(){if(chatRec)chatRec=null;else chatThreadId=null;genieSel('chat');}
+function chatOpenRec(rid){chatRec=rid;genieSel('chat');}
+function chatStartCall(id,kind){toast((kind==='meet'?'Starting OJO Meet':'Calling')+'…');}
+function chatLastTime(c){for(let i=c.msgs.length-1;i>=0;i--)if(c.msgs[i].t)return c.msgs[i].t;return '';}
+function chatLastSnip(c){for(let i=c.msgs.length-1;i>=0;i--){const m=c.msgs[i];if(m.k==='rec')return (RECS[m.rid].kind==='meet'?'OJO meeting':'OJO call')+' · recording';if(m.k==='in'||m.k==='out')return m.v;}return '';}
+function chatList(){
+  return `<div class="cl-bar"><div class="msrch">${svg(SVS.search,15)} Search conversations…</div><button class="cl-expand" onclick="chatExpand()" title="Open full view">${svg(EXPANDIC,16)}</button></div>
+   <div class="chatlist">${CONVOS.map(c=>`<div class="clrow" onclick="chatOpen('${c.id}')">
+     <div class="clav" style="--ac:${c.color}">${c.av}</div>
+     <div class="clcell"><div class="clname"><span class="clnm">${c.name}</span><span class="cltime">${chatLastTime(c)}</span></div><div class="clsnip">${chatLastSnip(c)}</div></div>
+   </div>`).join('')}</div>`;
+}
+function chatThread(id){const c=chatFindConv(id);if(!c)return chatList();
+  if(chatRec)return recDetail(chatRec,false);
+  return `<div class="cthd">
+    <div class="cth-head">
+      <button class="cth-back" onclick="chatBack()" title="Back">${svg('<path d="M15 18l-6-6 6-6"/>',16)}</button>
+      <div class="cav sm" style="--ac:${c.color}">${c.av}</div>
+      <div class="cth-id"><div class="cth-nm">${c.name}</div><div class="cth-sub">${c.members}</div></div>
+      <button class="cth-act" onclick="chatStartCall('${c.id}','call')" title="Call">${svg(DOCK_ICONS.call,17)}</button>
+      <button class="cth-act" onclick="chatStartCall('${c.id}','meet')" title="Meet">${svg(DOCK_ICONS.video,17)}</button>
+      <button class="cth-act" onclick="chatExpand()" title="Expand to full view">${svg(EXPANDIC,17)}</button>
+    </div>
+    <div class="cth-msgs">${c.msgs.map(chatMsg).join('')}</div>
+    <div class="cth-compose"><input placeholder="Type a message…"><button class="cth-send" onclick="toast('Sent')">${svg('<path d="M12 19V5M5 12l7-7 7 7"/>',16)}</button></div>
+  </div>`;
+}
+function chatMsg(m){
+  if(m.k==='date')return `<div class="cm-date"><span>${m.v}</span></div>`;
+  if(m.k==='rec'){const r=RECS[m.rid];return `<div class="cm-recwrap"><div class="cm-rec" onclick="chatRecClick('${m.rid}')">
+    <div class="cm-rec-ic">${svg(r.kind==='meet'?DOCK_ICONS.video:DOCK_ICONS.call,18)}</div>
+    <div class="cm-rec-b"><div class="cm-rec-t">OJO ${r.kind==='meet'?'meeting':'audio call'} ended</div><div class="cm-rec-l">View recording & notes</div><div class="cm-rec-a">About: ${r.proj}</div></div>
+    <span class="cm-rec-go">${svg('<path d="m9 18 6-6-6-6"/>',16)}</span></div><div class="cm-rec-time">${m.t}</div></div>`;}
+  return `<div class="cm-row ${m.k}"><div class="cm-bubble">${m.v}</div><div class="cm-time">${m.t}${m.k==='out'?` <span class="cm-tick">${svg(TICK,13)}</span>`:''}</div></div>`;
+}
+/* transcript / insight detail body — shared by the panel, the article overlay, and the full chat view */
+function recBodyHTML(r){return `<div class="rec-body">
+    <div class="rec-title">${r.title} <span class="rec-badge">Ended</span></div>
+    <div class="rec-proj">${svg('<path d="M10 13a4 4 0 0 0 6 0l3-3a4 4 0 1 0-6-6l-1 1"/><path d="M14 11a4 4 0 0 0-6 0l-3 3a4 4 0 1 0 6 6l1-1"/>',13)} Project · ${r.proj}</div>
+    <div class="rec-meta"><span>Host: ${r.host}</span><span>${svg(HICON.cal,12)} ${r.date}</span><span>${svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',12)} ${r.dur}</span></div>
+    <div class="rec-card"><div class="rec-ch">Participants</div><div class="rec-parts">${r.parts.map(p=>`<span class="rec-part"><span class="av">${cpInitials(p)}</span>${p}</span>`).join('')}</div></div>
+    <div class="rec-card"><div class="rec-ch">Recording</div><div class="rec-video"><span class="rec-play">${svg('<path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/>',22)}</span></div></div>
+    <div class="rec-card"><div class="rec-ch">${svg(SPARK,13)} OJO Insights</div><div class="rec-ai ${r.insights?'':'empty'}">${r.insights||'Insights not available yet.'}</div></div>
+    <div class="rec-card"><div class="rec-ch">Transcript</div>${r.transcript.length?`<div class="rec-tx">${r.transcript.map(x=>`<div class="rec-line"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('')}</div>`:'<div class="rec-ai empty">Transcript not available yet.</div>'}</div>
+  </div>`;}
+function recDetail(rid,full){const r=RECS[rid];if(!r)return chatThread(chatThreadId);
+  const head=full
+   ?`<div class="rec-fhead"><div class="rec-fbrand"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO">OJO ${r.kind==='meet'?'Meet':'Call'}</div><button class="rec-close" onclick="recCloseFull()" title="Close">${svg(SVS.x,18)}</button></div>`
+   :`<div class="rec-head"><button class="cth-back" onclick="chatBack()" title="Back">${svg('<path d="M15 18l-6-6 6-6"/>',16)}</button><div class="rec-htitle">OJO ${r.kind==='meet'?'Meet':'Call'}</div><button class="rec-expand" onclick="recExpand('${rid}')" title="Expand to full page">${svg('<path d="M15 3h6v6M21 3l-7 7M9 21H3v-6M3 21l7-7"/>',16)}</button></div>`;
+  return `<div class="recdet ${full?'full':''}">${head}<div class="rec-scroll">${recBodyHTML(r)}</div></div>`;
+}
+function recExpand(rid){const o=document.getElementById('recFull');if(!o)return;o.innerHTML=`<div class="recfull-card">${recDetail(rid,true)}</div>`;o.classList.add('show');}
+/* ---- which surface a call/meet card opens into ---- */
+function chatRecClick(rid){if(chatFullOpen)chatFullOpenRec(rid);else chatOpenRec(rid);}
+/* ============ FULL-PAGE CHAT — two-pane (list + thread), covers the window except the nav rail ============ */
+let chatFullOpen=false, chatFullId=null, chatFullRec=null;
+const EXPANDIC='<path d="M15 3h6v6M21 3l-7 7M9 21H3v-6M3 21l7-7"/>';
+function chatExpand(){chatFullOpen=true;chatFullId=chatThreadId;chatFullRec=chatRec;renderChatFull();}
+function chatFullClose(){chatFullOpen=false;const o=document.getElementById('chatFull');if(o){o.classList.remove('show');o.innerHTML='';}}
+function chatFullOpenConv(id){chatFullId=id;chatFullRec=null;renderChatFull();}
+function chatFullOpenRec(rid){chatFullRec=rid;renderChatFull();}
+function chatFullBack(){chatFullRec=null;renderChatFull();}
+function renderChatFull(){const o=document.getElementById('chatFull');if(!o)return;o.innerHTML=chatFullHTML();o.classList.add('show');}
+/* full-page Mail — same two-pane shell as chat */
+let mailFullId=null;
+function mailExpand(){mailFullId=null;renderMailFull();}
+function mailFullOpen(i){mailFullId=i;renderMailFull();}
+function renderMailFull(){const o=document.getElementById('chatFull');if(!o)return;o.innerHTML=mailFullHTML();o.classList.add('show');}
+function mailFullHTML(){
+  const e=mailFullId!=null?CDATA.email[mailFullId]:null;
+  const right=e?`<div class="cf-mailread"><div class="cf-mr-h">${e[0]}</div><div class="cf-mr-d">${svg(SVGMAIL,13)} ${e[2]}</div><div class="cf-mr-b">${e[1]}</div></div>`:`<div class="cf-empty"><div class="cf-empty-ic">${svg(DOCK_ICONS.email,26)}</div><h3>Select an email</h3><p>Pick an email from the list to read it.</p></div>`;
+  return `<div class="cf-shell">
+    <aside class="cf-list">
+      <div class="cf-lhead"><h2>Mail</h2><button class="cf-new" onclick="toast('New mail')" title="New">${svg(SVS.plus,16)}</button></div>
+      <div class="cf-search">${svg(SVS.search,15)}<input placeholder="Search mail…"></div>
+      <div class="cf-rows">${CDATA.email.map((em,i)=>`<div class="cf-row ${i===mailFullId?'on':''}" onclick="mailFullOpen(${i})"><div class="cav mailav">${svg(SVGMAIL,17)}</div><div class="clcell"><div class="clname"><span class="cf-nm">${em[0]}</span><span class="cf-time">${em[2]}</span></div><div class="cf-snip">${em[1]}</div></div></div>`).join('')}</div>
+    </aside>
+    <main class="cf-main"><div class="cf-topbtns"><button class="cf-iconbtn" onclick="chatFullClose()" title="Close">${svg(SVS.x,18)}</button></div>${right}</main>
+  </div>`;
+}
+function chatFullHTML(){
+  const c=chatFullId?chatFindConv(chatFullId):null;
+  let right;
+  if(chatFullRec&&RECS[chatFullRec]){const r=RECS[chatFullRec];
+    right=`<div class="cf-rec"><div class="rec-head"><button class="cth-back" onclick="chatFullBack()" title="Back">${svg('<path d="M15 18l-6-6 6-6"/>',16)}</button><div class="rec-htitle">OJO ${r.kind==='meet'?'Meet':'Call'}</div></div><div class="rec-scroll">${recBodyHTML(r)}</div></div>`;
+  }else if(c){
+    right=`<div class="cf-thread">
+      <div class="cf-thhead"><div class="cav sm" style="--ac:${c.color}">${c.av}</div><div class="cf-thid"><div class="cf-thnm">${c.name}</div><div class="cf-thsub">${c.members}</div></div><button class="cth-act" onclick="chatStartCall('${c.id}','call')" title="Call">${svg(DOCK_ICONS.call,18)}</button><button class="cth-act" onclick="chatStartCall('${c.id}','meet')" title="Meet">${svg(DOCK_ICONS.video,18)}</button></div>
+      <div class="cf-thmsgs">${c.msgs.map(chatMsg).join('')}</div>
+      <div class="cth-compose"><input placeholder="Type a message…"><button class="cth-send" onclick="toast('Sent')">${svg('<path d="M12 19V5M5 12l7-7 7 7"/>',16)}</button></div></div>`;
+  }else{
+    right=`<div class="cf-empty"><div class="cf-empty-ic">${svg(DOCK_ICONS.chat,26)}</div><h3>Select a conversation</h3><p>Pick a chat from the list or start a new one to begin messaging.</p></div>`;
+  }
+  return `<div class="cf-shell">
+    <aside class="cf-list">
+      <div class="cf-lhead"><h2>Messages</h2><button class="cf-new" onclick="toast('New chat')" title="New">${svg(SVS.plus,16)}</button></div>
+      <div class="cf-search">${svg(SVS.search,15)}<input placeholder="Search conversations…"></div>
+      <div class="cf-rows">${CONVOS.map(cv=>`<div class="cf-row ${cv.id===chatFullId&&!chatFullRec?'on':''}" onclick="chatFullOpenConv('${cv.id}')"><div class="cav" style="--ac:${cv.color}">${cv.av}</div><div class="clcell"><div class="clname"><span class="cf-nm">${cv.name}</span><span class="cf-time">${chatLastTime(cv)}</span></div><div class="cf-snip">${chatLastSnip(cv)}</div></div></div>`).join('')}</div>
+    </aside>
+    <main class="cf-main"><div class="cf-topbtns"><button class="cf-iconbtn" onclick="chatFullClose()" title="Collapse">${svg('<path d="M9 9 4 4M9 9V5M9 9H5M15 15l5 5M15 15v4M15 15h4"/>',16)}</button><button class="cf-iconbtn" onclick="chatFullClose()" title="Close">${svg(SVS.x,18)}</button></div>${right}</main>
+  </div>`;
+}
+function recCloseFull(){const o=document.getElementById('recFull');if(o){o.classList.remove('show');o.innerHTML='';}}
+/* Scratchpad — quick text/voice note → make task or add to project */
+let SCRATCH=[
+ {id:'sc1',kind:'text',text:'Follow up with Priya on the revised timeline before Friday.',time:'Today · 9:12 AM'},
+ {id:'sc2',kind:'voice',dur:'0:14',time:'Yesterday · 6:40 PM'}
+];
+function scratchBody(){
+  return `<div class="scr">
+    <div class="scr-new">
+      <textarea id="scrInput" class="scr-ta" placeholder="Jot a quick note…" rows="2"></textarea>
+      <div class="scr-row"><button class="scr-voice" onclick="scrVoice()">${svg(MICICON,15)} Voice note</button><span class="tp-sp"></span><button class="scr-save" onclick="scrSave()">${svg(SVS.plus,14)} Save</button></div>
+    </div>
+    <div class="scr-list">${SCRATCH.map(scrItem).join('')||'<div class="scr-empty">No notes yet.</div>'}</div>
+  </div>`;
+}
+function scrItem(s){return `<div class="scr-card">
+   <div class="scr-c-top">${s.kind==='voice'?`<span class="scr-vchip">${svg(MICICON,13)} Voice note · ${s.dur}</span>`:`<div class="scr-text">${s.text}</div>`}<span class="scr-time">${s.time}</span></div>
+   <div class="scr-c-acts"><button onclick="scrMakeTask('${s.id}')">${svg(HICON.check,13)} Make task</button><button onclick="scrAddProj('${s.id}')">${svg('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',13)} Add to project</button></div>
+ </div>`;}
+function scrSave(){const i=document.getElementById('scrInput');if(!i||!i.value.trim())return;SCRATCH.unshift({id:'sc'+(SCRATCH.length+1),kind:'text',text:i.value.trim(),time:'Just now'});genieSel('scratch');toast('Note saved');}
+function scrVoice(){SCRATCH.unshift({id:'sc'+(SCRATCH.length+1),kind:'voice',dur:'0:0'+(3+SCRATCH.length%6),time:'Just now'});genieSel('scratch');toast('Voice note captured');}
+function scrMakeTask(id){toast('Added to your tasks');}
+function scrAddProj(id){toast('Pick a project to attach');}
 function genieBody(){const ctx=genieContext();const ask=s=>s.replace(/'/g,"\\'");
   if(genieNotif)
     return `<div class="gwrap"><div class="gmsgs" id="gmsgs">${ghActs()}${notifSwapHTML()}</div></div>`;
