@@ -1278,7 +1278,14 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .gha.glogo .ojo-logo{width:28px;height:28px;border-radius:50%;object-fit:cover;display:block}
 /* ===== Chat hub ===== */
 .gmsgs:has(.chatfull){padding:0;overflow:hidden}
-.gswap.chatfull{position:absolute;inset:0;display:flex;flex-direction:column;padding:52px 0 0}
+.gswap.chatfull{position:absolute;inset:0;display:flex;flex-direction:column;padding:0;background:#fff}
+/* header clears the notch; the white sheet covers the whole panel so no brand colour shows around it */
+.gswap.chatfull .cth-head,.gswap.chatfull .rec-head{padding-top:54px}
+/* notch turns white for the chat thread so it fuses into the white sheet (seamless, like the other faces fuse into the brand panel) */
+.gmsgs:has(.chatfull) .gh-notch{background:#fff}
+.gmsgs:has(.chatfull) .gh-notch::before{background:radial-gradient(circle 22px at 0 0,transparent 21px,#fff 21.8px)}
+.gmsgs:has(.chatfull) .gh-notch::after{background:radial-gradient(circle 22px at 100% 0,transparent 21px,#fff 21.8px)}
+.gmsgs:has(.chatfull) .gh-nlab{color:#16181D}
 .chatlist{display:flex;flex-direction:column;padding:2px 2px 8px}
 .chatlist{display:flex;flex-direction:column;gap:8px;padding:2px 2px 8px}
 .clrow{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:14px;cursor:pointer;background:var(--g-card);border:1px solid var(--g-line);transition:.12s}
