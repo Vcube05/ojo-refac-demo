@@ -1016,7 +1016,8 @@ function openNotif(){
 }
 function genieSwapHTML(){
   if(genieFace==='chat'&&!commHost){
-    return `<div class="gswap chatfull">${chatThreadId?chatThread(chatThreadId):chatListPanel()}</div>`;}
+    if(chatThreadId)return `<div class="gswap chatfull">${chatThread(chatThreadId)}</div>`;
+    return `<div class="gswap"><div class="genie-hi mini">Messages<div class="gctx">Chats across OJO</div></div><div class="gcomm">${chatList()}</div></div>`;}
   if(genieFace==='scratch')
     return `<div class="gswap"><div class="genie-hi mini">Scratchpad<div class="gctx">Quick notes · turn them into tasks or projects</div></div><div class="gcomm gscratch">${scratchBody()}</div></div>`;
   if(genieFace){const cn=commContextName();
