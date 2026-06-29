@@ -1016,8 +1016,7 @@ function openNotif(){
 }
 function genieSwapHTML(){
   if(genieFace==='chat'&&!commHost){
-    if(chatThreadId)return `<div class="gswap chatfull">${chatThread(chatThreadId)}</div>`;
-    return `<div class="gswap"><div class="genie-hi mini">Messages<div class="gctx">Chats across OJO</div></div><div class="gcomm">${chatList()}</div></div>`;}
+    return `<div class="gswap chatfull">${chatThreadId?chatThread(chatThreadId):chatListPanel()}</div>`;}
   if(genieFace==='scratch')
     return `<div class="gswap"><div class="genie-hi mini">Scratchpad<div class="gctx">Quick notes · turn them into tasks or projects</div></div><div class="gcomm gscratch">${scratchBody()}</div></div>`;
   if(genieFace){const cn=commContextName();
@@ -1058,7 +1057,19 @@ function chatList(){
      <div class="clcell"><div class="clname"><span class="clnm">${c.name}</span><span class="cltime">${chatLastTime(c)}</span></div><div class="clsnip">${chatLastSnip(c)}</div></div>
    </div>`).join('')}</div>`;
 }
-function chatThread(id){const c=chatFindConv(id);if(!c)return chatList();
+function chatListPanel(){
+  return `<div class="cthd">
+    <div class="cth-head cl-head"><div class="cl-title">Messages</div><span class="tp-sp"></span><button class="cth-act" onclick="chatExpand()" title="Expand to full view">${svg(EXPANDIC,18)}</button></div>
+    <div class="cl-body">
+      <div class="cl-srch">${svg(SVS.search,15)}<input placeholder="Search conversations…"></div>
+      <div class="cl-rows">${CONVOS.map(c=>`<div class="cl-row" onclick="chatOpen('${c.id}')">
+        <div class="cav" style="--ac:${c.color}">${c.av}</div>
+        <div class="clcell"><div class="clname"><span class="cl-nm">${c.name}</span><span class="cl-time">${chatLastTime(c)}</span></div><div class="cl-snip">${chatLastSnip(c)}</div></div>
+      </div>`).join('')}</div>
+    </div>
+  </div>`;
+}
+function chatThread(id){const c=chatFindConv(id);if(!c)return chatListPanel();
   if(chatRec)return recDetail(chatRec,false);
   return `<div class="cthd">
     <div class="cth-head">
