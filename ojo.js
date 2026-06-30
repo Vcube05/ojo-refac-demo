@@ -296,17 +296,19 @@ function renderDock(){
    panel is open, because the live cluster sits in the panel's notch at the same height. */
 function renderPanelTabs(){
   const el=document.getElementById('panelTabs'); if(!el)return;
-  const faces=GH_FACES.map(f=>`<button class="gtab ptf" onclick="genieSel('${f}')" title="${GFACE_LBL[f]}">${svg(DOCK_ICONS[f],16)}</button>`).join('');
-  el.innerHTML=`<button class="gtab on genie" onclick="genieToggle()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span>Ojo Genie</span></button><span class="pt-faces">${faces}</span>`;
+  const faces=GH_FACES.map(f=>`<button class="gtab ptf" onclick="topFaceClick('${f}')" title="${GFACE_LBL[f]}">${svg(DOCK_ICONS[f],16)}</button>`).join('');
+  el.innerHTML=`<button class="gtab on genie" onclick="topGenieClick()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span>Ojo Genie</span></button><span class="pt-faces">${faces}</span>`;
 }
 /* FIXED-POSITION cluster: the pill and the four circles never move (one mental model —
    the same control always lives in the same place). The NOTCH travels: the dark cut
    slides along the top edge to wrap whichever item is active. */
 function ghActs(){
   return `<span class="gh-band"></span><span class="gh-notch"></span>`+
-    `<span class="gh-pill"><button class="gpill" onclick="geniePill()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span>Ojo Genie</span></button></span>`+
-    `<span class="gh-acts">`+GH_FACES.map(f=>`<button class="gha ${genieFace===f?'on':''}" data-face="${f}" onclick="genieSel('${f}')" title="${GFACE_LBL[f]}">${svg(DOCK_ICONS[f],16)}</button>`).join('')+`</span>`;
+    `<span class="gh-pill"><button class="gpill" onclick="topGenieClick()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span>Ojo Genie</span></button></span>`+
+    `<span class="gh-acts">`+GH_FACES.map(f=>`<button class="gha ${genieFace===f?'on':''}" data-face="${f}" onclick="topFaceClick('${f}')" title="${GFACE_LBL[f]}">${svg(DOCK_ICONS[f],16)}</button>`).join('')+`</span>`;
 }
+function topGenieClick(){if(chatFullOpen)openFullFace('genie');else geniePill();}
+function topFaceClick(f){if(chatFullOpen)openFullFace(f);else genieSel(f);}
 /* pill = home base: from a face it returns to the Genie chat; from the chat it puts the panel away */
 function geniePill(){if(genieFace||genieNotif)genieHome();else genieToggle();}
 /* place the traveling tab under the active item (with its label); slides from its previous spot */
@@ -1075,11 +1077,11 @@ function chatThread(id){const c=chatFindConv(id);if(!c)return chatListPanel();
   return `<div class="cthd">
     <div class="cth-head">
       <button class="cth-back" onclick="chatBack()" title="Back">${svg('<path d="M15 18l-6-6 6-6"/>',16)}</button>
-      <div class="cav sm" style="--ac:${c.color}">${c.av}</div>
-      <div class="cth-id"><div class="cth-nm">${c.name}</div><div class="cth-sub">${c.members}</div></div>
-      <button class="cth-act" onclick="chatStartCall('${c.id}','call')" title="Call">${svg(DOCK_ICONS.call,17)}</button>
+      <div class="cth-main"><div class="cav sm" style="--ac:${c.color}">${c.av}</div>
+      <div class="cth-id"><div class="cth-nm">${c.name}</div><div class="cth-sub">${c.members}</div></div></div>
+      <div class="cth-actions"><button class="cth-act" onclick="chatStartCall('${c.id}','call')" title="Call">${svg(DOCK_ICONS.call,17)}</button>
       <button class="cth-act" onclick="chatStartCall('${c.id}','meet')" title="Meet">${svg(DOCK_ICONS.video,17)}</button>
-      <button class="cth-act" onclick="chatExpand()" title="Expand to full view">${svg(EXPANDIC,17)}</button>
+      <button class="cth-act" onclick="chatExpand()" title="Expand to full view">${svg(EXPANDIC,17)}</button></div>
     </div>
     <div class="cth-msgs">${c.msgs.map(chatMsg).join('')}</div>
     <div class="cth-compose"><input placeholder="Type a message…"><button class="cth-send" onclick="toast('Sent')">${svg('<path d="M12 19V5M5 12l7-7 7 7"/>',16)}</button></div>
@@ -1109,7 +1111,8 @@ function recDetail(rid,full){const r=RECS[rid];if(!r)return chatThread(chatThrea
    :`<div class="rec-head"><button class="cth-back" onclick="chatBack()" title="Back">${svg('<path d="M15 18l-6-6 6-6"/>',16)}</button><div class="rec-htitle">OJO ${r.kind==='meet'?'Meet':'Call'}</div><button class="rec-expand" onclick="recExpand('${rid}')" title="Expand to full page">${svg('<path d="M15 3h6v6M21 3l-7 7M9 21H3v-6M3 21l7-7"/>',16)}</button></div>`;
   return `<div class="recdet ${full?'full':''}">${head}<div class="rec-scroll">${recBodyHTML(r)}</div></div>`;
 }
-function recExpand(rid){const o=document.getElementById('recFull');if(!o)return;o.innerHTML=`<div class="recfull-card">${recDetail(rid,true)}</div>`;o.classList.add('show');}
+function chatConvForRec(rid){const c=CONVOS.find(cv=>cv.msgs.some(m=>m.k==='rec'&&m.rid===rid));return c?c.id:null;}
+function recExpand(rid){chatFullOpen=true;chatFullId=chatThreadId||chatConvForRec(rid);chatFullRec=rid;renderChatFull();}
 /* ---- which surface a call/meet card opens into ---- */
 function chatRecClick(rid){if(chatFullOpen)chatFullOpenRec(rid);else chatOpenRec(rid);}
 /* ============ FULL-PAGE CHAT — two-pane (list + thread), covers the window except the nav rail ============ */
@@ -1120,12 +1123,20 @@ function chatFullClose(){chatFullOpen=false;const o=document.getElementById('cha
 function chatFullOpenConv(id){chatFullId=id;chatFullRec=null;renderChatFull();}
 function chatFullOpenRec(rid){chatFullRec=rid;renderChatFull();}
 function chatFullBack(){chatFullRec=null;renderChatFull();}
-function renderChatFull(){const o=document.getElementById('chatFull');if(!o)return;o.innerHTML=chatFullHTML();o.classList.add('show');}
+function renderChatFull(){const o=document.getElementById('chatFull');if(!o)return;o.dataset.fullFace='chat';o.innerHTML=chatFullHTML();o.classList.add('show');}
+function openFullFace(f){
+  chatFullOpen=true;genieNotif=false;
+  if(f==='genie'){genieFace=null;renderGenieFull();}
+  else if(f==='email'){genieFace='email';renderMailFull();}
+  else if(f==='scratch'){genieFace='scratch';renderScratchFull();}
+  else {genieFace='chat';chatFullId=chatFullId||chatThreadId||CONVOS[0]?.id||null;chatFullRec=null;renderChatFull();}
+  if(section==='genie')syncGenie();else openSection('genie');
+}
 /* full-page Mail — same two-pane shell as chat */
 let mailFullId=null;
 function mailExpand(){mailFullId=null;renderMailFull();}
 function mailFullOpen(i){mailFullId=i;renderMailFull();}
-function renderMailFull(){const o=document.getElementById('chatFull');if(!o)return;o.innerHTML=mailFullHTML();o.classList.add('show');}
+function renderMailFull(){chatFullOpen=true;const o=document.getElementById('chatFull');if(!o)return;o.dataset.fullFace='email';o.innerHTML=mailFullHTML();o.classList.add('show');}
 function mailFullHTML(){
   const e=mailFullId!=null?CDATA.email[mailFullId]:null;
   const right=e?`<div class="cf-mailread"><div class="cf-mr-h">${e[0]}</div><div class="cf-mr-d">${svg(SVGMAIL,13)} ${e[2]}</div><div class="cf-mr-b">${e[1]}</div></div>`:`<div class="cf-empty"><div class="cf-empty-ic">${svg(DOCK_ICONS.email,26)}</div><h3>Select an email</h3><p>Pick an email from the list to read it.</p></div>`;
@@ -1136,6 +1147,32 @@ function mailFullHTML(){
       <div class="cf-rows">${CDATA.email.map((em,i)=>`<div class="cf-row ${i===mailFullId?'on':''}" onclick="mailFullOpen(${i})"><div class="cav mailav">${svg(SVGMAIL,17)}</div><div class="clcell"><div class="clname"><span class="cf-nm">${em[0]}</span><span class="cf-time">${em[2]}</span></div><div class="cf-snip">${em[1]}</div></div></div>`).join('')}</div>
     </aside>
     <main class="cf-main"><div class="cf-topbtns"><button class="cf-iconbtn" onclick="chatFullClose()" title="Close">${svg(SVS.x,18)}</button></div>${right}</main>
+  </div>`;
+}
+function renderScratchFull(){chatFullOpen=true;const o=document.getElementById('chatFull');if(!o)return;o.dataset.fullFace='scratch';o.innerHTML=scratchFullHTML();o.classList.add('show');}
+function scratchFullHTML(){
+  return `<div class="cf-shell cf-single">
+    <main class="cf-main"><div class="cf-topbtns"><button class="cf-iconbtn" onclick="chatFullClose()" title="Close">${svg(SVS.x,18)}</button></div>
+      <div class="cf-center">
+        <div class="cf-pagehead"><h2>Notes</h2><p>Quick notes, voice captures, and follow-ups.</p></div>
+        <div class="cf-notecomposer"><textarea id="scrInput" class="scr-ta" placeholder="Jot a quick note…" rows="4"></textarea><div class="scr-row"><button class="scr-voice" onclick="scrVoice()">${svg(MICICON,15)} Voice note</button><span class="tp-sp"></span><button class="scr-save" onclick="scrSave()">${svg(SVS.plus,14)} Save</button></div></div>
+        <div class="scr-list">${SCRATCH.map(scrItem).join('')||'<div class="scr-empty">No notes yet.</div>'}</div>
+      </div>
+    </main>
+  </div>`;
+}
+function renderGenieFull(){chatFullOpen=true;const o=document.getElementById('chatFull');if(!o)return;o.dataset.fullFace='genie';o.innerHTML=genieFullHTML();o.classList.add('show');}
+function genieFullHTML(){
+  return `<div class="cf-shell cf-single">
+    <main class="cf-main"><div class="cf-topbtns"><button class="cf-iconbtn" onclick="chatFullClose()" title="Close">${svg(SVS.x,18)}</button></div>
+      <div class="cf-genie">
+        <div class="cf-genie-title"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><h2>Ojo Genie</h2></div>
+        <div class="cf-genie-chat">
+          <div class="ga">Hello, Vinoth. Ask me anything about your workspace.</div>
+        </div>
+        <div class="cf-genie-compose"><input id="gFullIn" placeholder="Ask Ojo Genie…" onkeydown="if(event.key==='Enter')toast('Ojo Genie is thinking…')"><button class="ggo" onclick="toast('Ojo Genie is thinking…')">${svg('<path d="M12 19V5M5 12l7-7 7 7"/>',16)}</button></div>
+      </div>
+    </main>
   </div>`;
 }
 function chatFullHTML(){
@@ -1179,8 +1216,9 @@ function scrItem(s){return `<div class="scr-card">
    <div class="scr-c-top">${s.kind==='voice'?`<span class="scr-vchip">${svg(MICICON,13)} Voice note · ${s.dur}</span>`:`<div class="scr-text">${s.text}</div>`}<span class="scr-time">${s.time}</span></div>
    <div class="scr-c-acts"><button onclick="scrMakeTask('${s.id}')">${svg(HICON.check,13)} Make task</button><button onclick="scrAddProj('${s.id}')">${svg('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',13)} Add to project</button></div>
  </div>`;}
-function scrSave(){const i=document.getElementById('scrInput');if(!i||!i.value.trim())return;SCRATCH.unshift({id:'sc'+(SCRATCH.length+1),kind:'text',text:i.value.trim(),time:'Just now'});genieSel('scratch');toast('Note saved');}
-function scrVoice(){SCRATCH.unshift({id:'sc'+(SCRATCH.length+1),kind:'voice',dur:'0:0'+(3+SCRATCH.length%6),time:'Just now'});genieSel('scratch');toast('Voice note captured');}
+function scrRefresh(){const o=document.getElementById('chatFull');if(chatFullOpen&&o?.dataset.fullFace==='scratch')renderScratchFull();else genieSel('scratch');}
+function scrSave(){const i=document.getElementById('scrInput');if(!i||!i.value.trim())return;SCRATCH.unshift({id:'sc'+(SCRATCH.length+1),kind:'text',text:i.value.trim(),time:'Just now'});scrRefresh();toast('Note saved');}
+function scrVoice(){SCRATCH.unshift({id:'sc'+(SCRATCH.length+1),kind:'voice',dur:'0:0'+(3+SCRATCH.length%6),time:'Just now'});scrRefresh();toast('Voice note captured');}
 function scrMakeTask(id){toast('Added to your tasks');}
 function scrAddProj(id){toast('Pick a project to attach');}
 function genieBody(){const ctx=genieContext();const ask=s=>s.replace(/'/g,"\\'");
