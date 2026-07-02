@@ -255,7 +255,7 @@ const DOCK_ICONS={
 let genieFace=null,genieRegen=null;
 const GFACES=['chat','call','video','email','scratch']; /* call/video are valid faces but reached from inside Chat */
 const GFACE_LBL={chat:'Messages',call:'Calls',video:'Meetings',email:'Email',scratch:'Scratchpad',notif:'Notifications'};
-const GH_FACES=['chat','email','scratch','notif']; /* top cluster: Chat · Mail · Scratchpad · Alerts */
+const GH_FACES=['chat','email','scratch']; /* top cluster: Chat · Mail · Scratchpad (notifications live on the home header bell) */
 let notifRead=false,genieNotif=false;function notifUnread(){return notifRead?0:3;}
 /* short labels for the traveling tab — they ride beside the icon, room is tight */
 const GFACE_TAB={chat:'Chat',call:'Call',video:'Meet',email:'Mail',scratch:'Notes',notif:'Alerts'};
@@ -307,7 +307,7 @@ function renderDock(){
    panel is open, because the live cluster sits in the panel's notch at the same height. */
 function renderPanelTabs(){
   const el=document.getElementById('panelTabs'); if(!el)return;
-  const faces=GH_FACES.filter(f=>f!=='notif').map(f=>`<button class="gtab ptf" onclick="topFaceClick('${f}')" title="${GFACE_LBL[f]}">${svg(DOCK_ICONS[f],16)}</button>`).join('');
+  const faces=GH_FACES.map(f=>`<button class="gtab ptf" onclick="topFaceClick('${f}')" title="${GFACE_LBL[f]}">${svg(DOCK_ICONS[f],16)}</button>`).join('');
   el.innerHTML=`<button class="gtab on genie" onclick="topGenieClick()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span>Ojo Genie</span></button><span class="pt-faces">${faces}</span>`;
 }
 /* FIXED-POSITION cluster: the pill and the four circles never move (one mental model —
@@ -319,7 +319,7 @@ function ghActs(){
      pill + the comm face icons sit on the band; inactive faces are plain icons. */
   return `<span class="gh-band"></span><span class="gh-notch"></span>`+
     `<span class="gh-acts"><button class="gpill" onclick="topGenieClick()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span>Ojo Genie</span></button>`+
-    GH_FACES.map(f=>`<button class="gha ${genieFace===f||(f==='notif'&&genieNotif)?'on':''}" data-face="${f}" onclick="topFaceClick('${f}')" title="${GFACE_LBL[f]}">${svg(DOCK_ICONS[f],16)}</button>`).join('')+`</span>`;
+    GH_FACES.map(f=>`<button class="gha ${genieFace===f?'on':''}" data-face="${f}" onclick="topFaceClick('${f}')" title="${GFACE_LBL[f]}">${svg(DOCK_ICONS[f],16)}</button>`).join('')+`</span>`;
 }
 function topGenieClick(){if(chatFullOpen)openFullFace('genie');else geniePill();}
 function topFaceClick(f){if(chatFullOpen)openFullFace(f);else genieSel(f);}
@@ -333,12 +333,12 @@ function gnotchSync(){
   const root=cf||document.getElementById('flyBody');if(!root)return;
   const n=root.querySelector('.gh-notch');if(!n)return;
   const host=n.parentElement;if(!host)return;
-  const target=genieFace?host.querySelector('.gha.on'):genieNotif?host.querySelector('.gha[data-face="notif"]'):host.querySelector('.gpill');if(!target)return;
+  const target=genieFace?host.querySelector('.gha.on'):host.querySelector('.gpill');if(!target)return;
   const hr=host.getBoundingClientRect(),tr=target.getBoundingClientRect();
   /* label rides INSIDE the tab, to the LEFT of the fixed icon — the tab gets its breadth there */
   /* label sits at the head's base, centered under the icon; end flares are free to
      flow off the panel edges — no clamping, the silhouette merges with the sides */
-  n.innerHTML=genieFace?`<span class="gh-nlab">${GFACE_TAB[genieFace]}</span>`:genieNotif?`<span class="gh-nlab">${GFACE_TAB['notif']}</span>`:'';
+  n.innerHTML=genieFace?`<span class="gh-nlab">${GFACE_TAB[genieFace]}</span>`:'';
   host.querySelectorAll('.gha').forEach(x=>{x.style.transform='';});
   let left=tr.left-hr.left-14,width=tr.width+28;
   /* when the head hugs an edge, clamp it to the card edge, drop that fillet and square that
@@ -1004,6 +1004,10 @@ function switchWorkspaceFromGenie(name,initial,ac){
   if(wsName)wsName.textContent=name;
   if(wsAv){wsAv.textContent=(initial||name||'W').slice(0,2).toUpperCase();wsAv.style.background=ac||'';}
   document.querySelectorAll('.mg-workspaces').forEach(wrap=>{wrap.innerHTML=genieWorkspaceRows();});
+  /* home header chip mirrors the active workspace */
+  document.querySelectorAll('.mh-wsi').forEach(el=>{el.textContent=initial;el.style.background=ac;});
+  document.querySelectorAll('.mh-wsn').forEach(el=>el.textContent=name);
+  closeApps();
   toast(`Switched to ${name}`);
 }
 function genieWorkspaceRows(){return GENIE_HUB_WS.map(w=>`<button class="mg-ws ${w[4]?'on':''}" onclick="switchWorkspaceFromGenie('${w[2]}','${w[0]}','${w[1]}')"><span class="mg-wsi" style="background:${w[1]}">${w[0]}</span><div class="mg-ws-meta"><div class="mg-wsn">${w[2]}</div><div>${w[3]}</div></div>${w[4]?'<span class="mg-ws-check">'+svg('<path d="M20 6 9 17l-5-5"/>',15)+'</span>':''}</button>`).join('');}
@@ -1043,13 +1047,17 @@ function appsBundleBody(){
         <button onclick="mApp('account')" aria-label="Accounts">${svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16"/>',18)}<span>Accounts</span></button>
         <button onclick="mApp('vendor')" aria-label="Vendors">${svg('<path d="M3 9 5 4h14l2 5M4 9v11h16V9M4 9h16M9 13h6"/>',18)}<span>Vendors</span></button>
       </div>
-    </div>
-    <div class="app-section app-section--tight">
-      <div class="apps-head">Profile</div>
-      <button class="apps-profile" onclick="openProfileFromGenie()">${svg('<path d="M20 21v-2a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v2"/><circle cx="12" cy="7" r="4"/>',16)}<span class="apps-profile-meta"><span>Vinoth V V</span><span>Org Admin · ${activeGenieWorkspace}</span></span>${svg('<path d="M9 18l6-6-6-6"/>',16)}</button>
-      <div class="apps-subhead">Workspace</div>
-      <div class="mg-workspaces">${genieWorkspaceRows()}</div>
     </div>`;
+}
+/* Workspace switcher = quick action from the home header chip (awareness of the current
+   workspace lives on the homepage, not buried in the App bundle). */
+function openWsSheet(){
+  openMobileSheet('Workspace',`<div class="mg-workspaces">${genieWorkspaceRows()}</div>`,'ws',false);
+}
+/* Notifications live on the home header bell (top right, like a native iPhone app) —
+   NOT inside the Ojo Genie panel on phone. */
+function openNotifSheet(){
+  openMobileSheet('Notifications',`<div class="mh-nact"><button class="vlink" onclick="markAllRead()">${svg('<path d="m1 13 4 4 7-8"/><path d="m9 13 3 3 9-10"/>',14)} Mark all read</button></div><div class="mh-notifs">${notifBody()}</div>`,'notif',false);
 }
 function openGeniePanel(){const fly=document.getElementById('flyout');if(section==='genie'&&fly?.classList.contains('show'))collapsePanel();else openSection('genie','genie');}
 function mbarActive(key){document.querySelectorAll('#mbar .mb').forEach(b=>b.classList.toggle('on',b.dataset.k===key));}
@@ -1059,6 +1067,7 @@ function chatShortcut(face){
 }
 function mTab(kind){
   if(kind==='home'){mCloseAll();go('home');mbarActive('home');return;}
+  if(kind==='profile'){mCloseAll();go('profile');mbarActive('profile');return;}
   if(kind==='genie') return openGeniePanel();
   if(kind==='chat') return openGenieFace('chat');
   if(kind==='call') return openGenieFace('call');
@@ -1084,7 +1093,6 @@ function homeGeniePlan(){if(typeof homeStats!=='function')return '';const st=hom
     <button class="g-plan-cta" onclick="tFocusMode()">${svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',14)} Start focus block</button></div>`;}
 /* Comm faces inside the Genie surface: the topbar cluster is the switcher. genieFace=null → chat. */
 function genieSel(f){
-  if(f==='notif'){openNotif();return;}
   genieNotif=false;genieFace=f;
   const fly=document.getElementById('flyout');
   const b=document.getElementById('flyBody');
@@ -1344,8 +1352,7 @@ function genieAsk(q){if(!q||!q.trim())return;const m=document.getElementById('gm
 function nIcon(t){const m={bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>',people:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6"/>',check:'<circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',brief:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',person:'<circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/>'};return svg(m[t]||m.bell,17);}
 function notifBody(){const N=[['bell','New Message','You have a new message','8 hours ago',1],['people','Employee Updated','Employee information has been updated','14 hours ago',1],['check','Comment Resolved','Vinotham resolved a comment on BRO: “i will…”','1 day ago',1],['clock','Checked In','You checked in at 10:42 AM','4 days ago',0],['brief','Project Created Successfully','Your project is ready for review.','5 days ago',0],['brief','Project Generation In Progress','Generating project: 35% complete','5 days ago',0],['doc','Requirements Generated','Requirements have been generated for a lead','5 days ago',0],['person','Lead Updated','Lead has been updated','5 days ago',0]];
   return `<div class="notif-ai">${svg(SPARK,12)} OJO can turn any update into a task — just hit <b>+ Task</b>.</div>`+N.map(n=>`<div class="nrow ${n[4]?'unread':''}"><div class="nic">${nIcon(n[0])}</div><div style="flex:1;min-width:0"><div class="nt">${n[1]}</div><div class="ns">${n[2]}</div><div class="nm">${n[3]}</div></div><button class="nrow-task" onclick="notifTask(event,'${n[1].replace(/'/g,"")}')" title="Add as task">${svg('<path d="M12 5v14M5 12h14"/>',13)} Task</button>${n[4]?'<span class="ndot"></span>':''}</div>`).join('')+`<div class="nfoot">Showing ${N.length} of ${N.length}</div>`;}
-function syncMbarBadge(){const b=document.querySelector('.mb.ojo');if(b)b.classList.toggle('has-badge',notifUnread()>0);}
-function markAllRead(){notifRead=true;document.querySelectorAll('#flyBody .nrow').forEach(r=>{r.classList.remove('unread');r.querySelector('.ndot')?.remove();});document.querySelector('#u-notif .ubadge')?.remove();document.querySelector('.tb-badge')?.remove();document.querySelector('.mb.ojo')?.classList.remove('has-badge');toast('All marked read');}
+function markAllRead(){notifRead=true;document.querySelectorAll('.nrow').forEach(r=>{r.classList.remove('unread');r.querySelector('.ndot')?.remove();});document.querySelector('#u-notif .ubadge')?.remove();document.querySelector('.tb-badge')?.remove();document.querySelector('.mh-dot')?.remove();toast('All marked read');}
 
 const MOBILE_MSG_THREADS=[
   ['AB','#7C53E6','Apparel Brand Launch','lead','10:24 AM','Scope approved — send timeline by Friday'],
@@ -2874,15 +2881,20 @@ function mountHome(){setRail('navHome');
   const dayLabel=homeSelDay===11?'today':WD[wdOf(homeSelDay)]+', Jun '+homeSelDay;
   const fLbl=homeFilterMod?SRC[homeFilterMod][0]:'All';
   const body=homeBody();
+  const mws=GENIE_HUB_WS.find(w=>w[4])||GENIE_HUB_WS[0];
   document.getElementById('screen').innerHTML=`<div class="homebox ${homeActCollapsed?'collapsed':''}" id="homebox">
     <div class="dmain hfeed"><div class="hfeed-scroll">
+      <div class="mhome-top">
+        <button class="mh-ws" onclick="openWsSheet()" title="Switch workspace"><span class="mh-wsi" style="background:${mws[1]}">${mws[0]}</span><span class="mh-wsn">${mws[2]}</span>${svg('<path d="m6 9 6 6 6-6"/>',14)}</button>
+        <button class="mh-bell" onclick="openNotifSheet()" title="Notifications">${svg(DOCK_ICONS.bell,19)}${notifUnread()?'<span class="mh-dot"></span>':''}</button>
+      </div>
       <header class="hero"><div class="hero-l"><h1>${greet}, Vinoth.</h1><p class="hero-sub">${dstr}</p></div>
         <button class="ptog-ic hero-act ${homeActCollapsed?'':'on'}" id="homActBtn" onclick="homeToggleAct()" title="${homeActCollapsed?'Show activity':'Hide activity'}">${svg('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>',17)}</button></header>
       <div class="home-controls"><span class="seg viewseg big">${HVIEWS.map(([k,l,ic])=>`<button class="${homeOutlook===k?'on':''}" onclick="homeSetOutlook('${k}')">${svg(ic,15)} ${l}</button>`).join('')}</span><span class="tp-sp"></span>${(homeSearchOpen||homeQuery)?`<span class="home-search has"><span class="hs-ic">${svg(SVS.search,15)}</span><input id="homeSearchInput" placeholder="Search tasks" value="${(homeQuery||'').replace(/"/g,'&quot;')}" oninput="homeSearch(this.value)" onblur="homeSearchBlur()"><button id="homeSearchClear" class="hs-clear" style="display:${homeQuery?'grid':'none'}" onmousedown="event.preventDefault()" onclick="homeSearchReset()" title="Clear">${svg(SVS.x,13)}</button></span>`:`<button class="ptog-ic hctrl-sic" onclick="homeSearchOpenBox()" title="Search tasks">${svg(SVS.search,17)}</button>`}<button class="ptog-ic hctrl-fic ${homeFilterMod?'on':''}" onclick="openHomeFilter(event)" title="${homeFilterMod?'Showing '+SRC[homeFilterMod][0]:'Filter'}">${svg(FILTER_IC,17)}</button><button class="hctrl-add hot" onclick="homeQuickOpen(event)">${svg(HICON.plus,16)}<span>Add task</span></button></div>
       <div class="feed-list" id="feedList">${body}</div>
     </div></div>
     <aside class="dpanel hact-panel">
-      <div class="dpanel-head"><span class="nm">Recent activity</span><button class="ed" onclick="toast('All activity')">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button></div>
+      <div class="dpanel-head"><span class="nm">Recent activity</span><button class="ed" onclick="toast('All activity')">${svg('<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',15)}</button><button class="hact-close" onclick="homeToggleAct()" title="Close">${svg(SVS.x,15)}</button></div>
       <div class="dpanel-body">${activityFeed()}</div>
     </aside>
   </div>`;
@@ -2959,7 +2971,6 @@ try{if(localStorage.getItem('ojo-theme')==='dark')document.documentElement.setAt
 let _shell='hybrid';try{_shell=localStorage.getItem('ojo-shell')||'hybrid';}catch(e){}
 setShell(_shell);
 go('home');
-syncMbarBadge();
 /* Ojo Genie is the prominent, persistent anchor of the dock — open by default on
    desktop, contextual to the current screen, and reachable in one click anywhere. */
 if(window.matchMedia('(min-width:701px)').matches)openSection('genie');

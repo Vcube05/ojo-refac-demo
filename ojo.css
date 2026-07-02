@@ -582,6 +582,7 @@ tr.svcgrp{background:var(--surface-2)}tr.svcgrp td{font-weight:var(--weight-semi
 .homebox .dpanel{flex:0 0 320px;width:320px;border-left:1px solid var(--line);background:var(--surface);transition:flex-basis .3s var(--ease),width .3s var(--ease),opacity .2s}
 .homebox.collapsed .dpanel{flex-basis:0;width:0;border-left-color:transparent;opacity:0;overflow:hidden}
 .hact-panel .dpanel-body{padding:8px 8px 16px}
+.hact-close{display:none}   /* mobile-only dismiss for the activity slide-over */
 .feed-sub{font-size:var(--size-body);color:var(--muted);margin-top:5px}.feed-sub b{color:var(--ink);font-weight:var(--weight-semibold)}.feed-sub .over{color:var(--coral-ink);font-weight:var(--weight-semibold)}
 .streak-chip{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;padding:6px 13px;background:var(--coral-soft);border:1px solid var(--coral-line);border-radius:999px;color:var(--coral-ink);font-weight:var(--weight-semibold);font-size:var(--size-body)}.streak-chip svg{color:var(--coral);width:15px;height:15px}
 .feed-tabs{display:flex;align-items:center;gap:6px;padding:0 22px 14px;border-bottom:1px solid var(--line)}
@@ -1578,6 +1579,7 @@ body:has(.chatfull-overlay.show) .rdock{visibility:hidden}
 .gask .ggo:hover{filter:brightness(.94)}
 .gnote{font-size:var(--size-caption);color:var(--g-faint);text-align:center;margin-top:10px;line-height:1.4}
 .nrow{display:flex;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line);cursor:pointer}.nrow:hover{background:var(--surface-2)}.nrow.unread{background:#F6F9FE}
+:root[data-theme="dark"] .nrow.unread{background:#20242C}
 .nrow .nic{width:34px;height:34px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;color:var(--muted);flex:0 0 34px}
 .nrow .nt{font-weight:var(--weight-semibold);font-size:var(--size-body);color:var(--navy)}.nrow .ns{font-size:var(--size-caption);color:var(--muted);margin-top:2px;line-height:1.4}.nrow .nm{font-size:var(--size-caption);color:var(--ghost);margin-top:3px}
 .nrow .ndot{width:7px;height:7px;border-radius:50%;background:var(--info);flex:0 0 7px;margin-top:6px}
@@ -2155,7 +2157,7 @@ body:has(.chatfull-overlay.show) .rdock{visibility:hidden}
 /* ============================================================
    MOBILE — bottom tab bar + bottom sheets (base, all viewports)
    ============================================================ */
-.mbar{display:none}
+.mbar,.mgenie,.mhome-top{display:none}
 .mscrim{position:fixed;inset:0;background:rgba(11,22,39,.42);opacity:0;pointer-events:none;transition:opacity .25s var(--ease);z-index:48}
 .mscrim.show{opacity:1;pointer-events:auto}
 /* the dimming backdrop is only for mobile bottom-sheets; on desktop the dock flyout is a
@@ -2163,7 +2165,9 @@ body:has(.chatfull-overlay.show) .rdock{visibility:hidden}
 @media (min-width:701px){.mscrim{display:none!important}}
 .msheet{position:fixed;left:0;right:0;bottom:0;z-index:49;transform:translateY(101%);transition:transform .32s var(--ease);pointer-events:none}
 .msheet.show{transform:none;pointer-events:auto}
-.msheet-card{background:var(--surface);border-radius:24px 24px 0 0;box-shadow:0 -10px 30px rgba(16,24,40,.18);padding:6px 18px calc(22px + env(safe-area-inset-bottom));max-height:88dvh;overflow:auto}
+.msheet-card{background:var(--surface);border:1px solid var(--line-2);border-bottom:none;border-radius:24px 24px 0 0;box-shadow:0 -18px 50px rgba(16,24,40,.28);padding:6px 18px calc(22px + env(safe-area-inset-bottom));max-height:88dvh;overflow:auto}
+/* dark: lift the sheet a full step above the canvas — surface alone doesn't separate on black */
+:root[data-theme="dark"] .msheet-card{background:#1D1F25;border-color:var(--line-3);box-shadow:0 -18px 50px rgba(0,0,0,.6)}
 .msheet .grip{width:42px;height:5px;border-radius:999px;background:var(--line-3);margin:7px auto 4px}
 .ms-h{display:flex;align-items:center;font-size:var(--size-subheading);font-weight:var(--weight-semibold);color:var(--navy);padding:6px 2px 14px}
 .ms-x{margin-left:auto;width:34px;height:34px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;color:var(--muted)}
@@ -2263,20 +2267,33 @@ body:has(.chatfull-overlay.show) .rdock{visibility:hidden}
   .metrics::-webkit-scrollbar{display:none}
   .metrics .mcard{flex:0 0 auto;min-width:128px}
   .metrics .madd{flex:0 0 auto;padding:11px 15px}
-  /* bottom tab bar → floating, rounded "Substack" pill detached from the edges */
-  .mbar{display:flex;align-items:center;position:fixed;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom) + 12px);
+  /* bottom nav → TWO floating surfaces (the Zomato pattern): a left pill with the three
+     app-level destinations (Home · Profile · Apps), and a detached Ojo Genie disc on the
+     right — same dark pill + ringed logo as the web topbar, so the anchor reads identically */
+  .mbar{display:flex;align-items:center;position:fixed;left:16px;right:90px;bottom:calc(env(safe-area-inset-bottom) + 12px);
     height:58px;padding:0 6px;background:var(--surface);border:1px solid var(--line-2);
     border-radius:30px;box-shadow:0 12px 34px rgba(16,24,40,.18);z-index:47}
   .mb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--faint)}
   .mb svg{width:23px;height:23px}
   .mb span{display:none}                 /* icon-only, like Substack */
   .mb.on{color:var(--coral-ink)}.mb.on svg{color:var(--coral)}
-  .mb.ojo{justify-content:center;position:relative}
-  .mb.ojo .ojomark{width:44px;height:44px;border-radius:50%;overflow:hidden;background:#0E0E10;display:grid;place-items:center;margin-top:-20px;box-shadow:0 10px 22px rgba(0,0,0,.4);border:3px solid var(--surface)}
-  .mb.ojo .ojomark img{width:100%;height:100%;object-fit:cover}
-  .mb.on .ojomark{border-color:var(--ink-bg)}
-  /* notification badge dot on the OJO mbar button — global signal, always visible */
-  .mb.ojo.has-badge::after{content:'';position:absolute;top:0;left:calc(50% + 12px);width:10px;height:10px;border-radius:50%;background:#FF4655;border:2px solid var(--surface);z-index:48;pointer-events:none}
+  .mgenie{display:grid;place-items:center;position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom) + 12px);
+    width:58px;height:58px;border-radius:50%;background:#1b0f12;border:1px solid var(--line-2);
+    box-shadow:0 12px 34px rgba(16,24,40,.28);z-index:47}
+  .mgenie img{width:34px;height:34px;border-radius:50%;box-shadow:0 0 0 1.5px rgba(255,255,255,.9)}
+  /* home header — workspace awareness (left chip) + notifications (right bell), Zomato-style */
+  .mhome-top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px 0}
+  .mh-ws{display:flex;align-items:center;gap:8px;height:40px;min-width:0;padding:0 12px 0 6px;background:var(--surface);border:1px solid var(--line-2);border-radius:999px;color:var(--ink);font-size:var(--size-body);font-weight:var(--weight-semibold)}
+  .mh-ws svg{flex:0 0 auto;color:var(--muted)}
+  .mh-wsi{width:28px;height:28px;flex:0 0 28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:var(--size-caption);font-weight:var(--weight-semibold)}
+  .mh-wsn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mh-bell{position:relative;width:40px;height:40px;flex:0 0 40px;border-radius:50%;background:var(--surface);border:1px solid var(--line-2);display:grid;place-items:center;color:var(--ink)}
+  .mh-dot{position:absolute;top:7px;right:8px;width:9px;height:9px;border-radius:50%;background:var(--coral);border:2px solid var(--surface)}
+  /* notifications sheet: mark-all-read action row above the list */
+  .mh-nact{display:flex;justify-content:flex-end;padding:0 2px 8px}
+  .mh-nact .vlink{display:inline-flex;align-items:center;gap:6px;font-size:var(--size-caption);font-weight:var(--weight-semibold);color:var(--coral-ink)}
+  .mh-notifs .nrow{padding:13px 4px}
+  .mh-notifs .nrow-task{opacity:1;align-self:center}  /* no hover on touch — always visible, pill-sized */
 
   .chat-subtabs{padding:0 10px 9px;gap:5px}
   .chat-subtab{font-size:10px;padding:6px 7px;border-radius:999px}
@@ -2284,17 +2301,9 @@ body:has(.chatfull-overlay.show) .rdock{visibility:hidden}
   .gcomm .chat-subtabs{padding:0 10px 9px}
   .gcomm .chat-subtab{background:#1f2024;color:rgba(255,255,255,.84);border-color:rgba(255,255,255,.15)}
   .gcomm .chat-subtab.on{background:#fff;color:#C9303C}
-  /* floating info/comm bar — sits above the floating nav pill */
-  .commdock{display:flex;position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 92px);
-    transform:translateX(-50%) translateY(10px);align-items:center;gap:2px;padding:5px 7px;
-    background:var(--surface);border:1px solid var(--line-2);border-radius:999px;box-shadow:0 12px 30px rgba(16,24,40,.20);
-    z-index:46;opacity:0;pointer-events:none;transition:opacity .22s var(--ease),transform .22s var(--ease)}
-  .commdock.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
-  .cdf{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;color:var(--faint);transition:.14s}
-  .cdf.on{color:var(--coral);background:var(--coral-soft)}
-  .cdf:active{transform:scale(.9)}
-  /* the stacked side info/comm panel is replaced by the floating bar on these pages */
-  body.comm-host .dpanel{display:none!important}
+  /* NO floating info/comm bar on phone — chat/call/meet/email all live in the Ojo Genie
+     panel; the record's info panel stacks in the page flow like every other section */
+  .commdock{display:none!important}
   .commsheet-body{padding:4px 18px calc(28px + env(safe-area-inset-bottom));max-height:74dvh;overflow:auto}
   /* assorted desktop multi-column blocks → single column */
   .pgrid{grid-template-columns:1fr;padding:16px 16px 30px}
@@ -2307,8 +2316,13 @@ body:has(.chatfull-overlay.show) .rdock{visibility:hidden}
      as a column (else the collapsed activity panel splits the row 50/50) */
   .homebox{flex-direction:column}
   .homebox .dmain.hfeed{width:100%!important;flex:1 1 auto!important}
-  .homebox.collapsed .dpanel{display:none!important}
-  .homebox .dpanel{border-left:none;border-top:8px solid var(--surface-2)}
+  /* Recent activity = right slide-over panel, same mental model as the web's right panel */
+  .homebox .dpanel.hact-panel{position:fixed;top:0;right:0;bottom:0;width:min(340px,88vw)!important;flex:none!important;
+    border-top:none;border-left:1px solid var(--line-2);background:var(--surface);box-shadow:-18px 0 50px rgba(16,24,40,.25);
+    z-index:48;transform:translateX(102%);transition:transform .32s var(--ease);opacity:1;overflow:auto}
+  .homebox:not(.collapsed) .dpanel.hact-panel{transform:none}
+  .hact-panel .dpanel-head{min-width:0}
+  .hact-close{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--surface-2);color:var(--muted);margin-left:6px}
   .hero{padding:20px 16px 2px;gap:12px}
   .hero h1{font-size:var(--size-heading)}
   .hero-sub{font-size:var(--size-body);margin-top:8px}
