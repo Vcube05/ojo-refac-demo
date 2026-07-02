@@ -255,10 +255,21 @@ const DOCK_ICONS={
 let genieFace=null,genieRegen=null;
 const GFACES=['chat','call','video','email','scratch']; /* call/video are valid faces but reached from inside Chat */
 const GFACE_LBL={chat:'Messages',call:'Calls',video:'Meetings',email:'Email',scratch:'Scratchpad',notif:'Notifications'};
-const GH_FACES=['chat','email','scratch']; /* top cluster: Chat · Mail · Scratchpad */
+const GH_FACES=['chat','email','scratch','notif']; /* top cluster: Chat · Mail · Scratchpad · Alerts */
 let notifRead=false,genieNotif=false;function notifUnread(){return notifRead?0:3;}
 /* short labels for the traveling tab — they ride beside the icon, room is tight */
 const GFACE_TAB={chat:'Chat',call:'Call',video:'Meet',email:'Mail',scratch:'Notes',notif:'Alerts'};
+const MOBILE_SHEET_NAV=[
+  ['chat',DOCK_ICONS.chat,'Chat'],
+  ['email',DOCK_ICONS.email,'Mail'],
+  ['scratch',DOCK_ICONS.scratch,'Scratchpad']
+];
+const GENIE_HUB_WS=[
+  ['R','#C92F3A','Reliance','13 members · Org Admin',1],
+  ['N','#E08A1E','Nova Dental','24 members · Product Team',0],
+  ['L','#7C53E6','Life Designer','22 members · Sales Admin',0]
+];
+let activeGenieWorkspace='Reliance';
 /* Single-sheet tabs: comm channels + Genie. (Search lives on Home, Notifications in the rail.) */
 const DOCK_CELLS=[
   {id:'ui-dock-genie',  type:'UICell', owner:'ui-dock', group:'assist', values:{name:'Ojo Genie', render:'anchor', bind:'capability:genie',    click:'open', icon:'genie'}, links:{target:'genie'}},
@@ -296,16 +307,19 @@ function renderDock(){
    panel is open, because the live cluster sits in the panel's notch at the same height. */
 function renderPanelTabs(){
   const el=document.getElementById('panelTabs'); if(!el)return;
-  const faces=GH_FACES.map(f=>`<button class="gtab ptf" onclick="topFaceClick('${f}')" title="${GFACE_LBL[f]}">${svg(DOCK_ICONS[f],16)}</button>`).join('');
+  const faces=GH_FACES.filter(f=>f!=='notif').map(f=>`<button class="gtab ptf" onclick="topFaceClick('${f}')" title="${GFACE_LBL[f]}">${svg(DOCK_ICONS[f],16)}</button>`).join('');
   el.innerHTML=`<button class="gtab on genie" onclick="topGenieClick()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span>Ojo Genie</span></button><span class="pt-faces">${faces}</span>`;
 }
 /* FIXED-POSITION cluster: the pill and the four circles never move (one mental model —
    the same control always lives in the same place). The NOTCH travels: the dark cut
    slides along the top edge to wrap whichever item is active. */
 function ghActs(){
+  /* RISING-TAB notch: a panel-colored tab (.gh-notch) pokes up through the band and travels
+     to wrap whichever item is active (gnotchSync), showing that item's label. The Ojo Genie
+     pill + the comm face icons sit on the band; inactive faces are plain icons. */
   return `<span class="gh-band"></span><span class="gh-notch"></span>`+
-    `<span class="gh-pill"><button class="gpill" onclick="topGenieClick()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span>Ojo Genie</span></button></span>`+
-    `<span class="gh-acts">`+GH_FACES.map(f=>`<button class="gha ${genieFace===f?'on':''}" data-face="${f}" onclick="topFaceClick('${f}')" title="${GFACE_LBL[f]}">${svg(DOCK_ICONS[f],16)}</button>`).join('')+`</span>`;
+    `<span class="gh-acts"><button class="gpill" onclick="topGenieClick()" title="Ojo Genie"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><span>Ojo Genie</span></button>`+
+    GH_FACES.map(f=>`<button class="gha ${genieFace===f||(f==='notif'&&genieNotif)?'on':''}" data-face="${f}" onclick="topFaceClick('${f}')" title="${GFACE_LBL[f]}">${svg(DOCK_ICONS[f],16)}</button>`).join('')+`</span>`;
 }
 function topGenieClick(){if(chatFullOpen)openFullFace('genie');else geniePill();}
 function topFaceClick(f){if(chatFullOpen)openFullFace(f);else genieSel(f);}
@@ -314,15 +328,18 @@ function geniePill(){if(genieFace||genieNotif)genieHome();else genieToggle();}
 /* place the traveling tab under the active item (with its label); slides from its previous spot */
 let gnPrev=null;
 function gnotchSync(){
-  const b=document.getElementById('flyBody');if(!b)return;
-  const n=b.querySelector('.gh-notch'),host=b.querySelector('.gmsgs');if(!n||!host)return;
-  const target=genieFace?b.querySelector('.gha.on'):b.querySelector('.gh-pill');if(!target)return;
+  /* the notch lives in the panel (.gmsgs) OR the expanded full view (.cf-notch) — sync whichever is showing */
+  const cf=chatFullOpen?document.querySelector('#chatFull.show'):null;
+  const root=cf||document.getElementById('flyBody');if(!root)return;
+  const n=root.querySelector('.gh-notch');if(!n)return;
+  const host=n.parentElement;if(!host)return;
+  const target=genieFace?host.querySelector('.gha.on'):genieNotif?host.querySelector('.gha[data-face="notif"]'):host.querySelector('.gpill');if(!target)return;
   const hr=host.getBoundingClientRect(),tr=target.getBoundingClientRect();
   /* label rides INSIDE the tab, to the LEFT of the fixed icon — the tab gets its breadth there */
   /* label sits at the head's base, centered under the icon; end flares are free to
      flow off the panel edges — no clamping, the silhouette merges with the sides */
-  n.innerHTML=genieFace?`<span class="gh-nlab">${GFACE_TAB[genieFace]}</span>`:'';
-  b.querySelectorAll('.gha').forEach(x=>{x.style.transform='';});
+  n.innerHTML=genieFace?`<span class="gh-nlab">${GFACE_TAB[genieFace]}</span>`:genieNotif?`<span class="gh-nlab">${GFACE_TAB['notif']}</span>`:'';
+  host.querySelectorAll('.gha').forEach(x=>{x.style.transform='';});
   let left=tr.left-hr.left-14,width=tr.width+28;
   /* when the head hugs an edge, clamp it to the card edge, drop that fillet and square that
      card corner so the notch merges into the rounded panel instead of overhanging it */
@@ -330,11 +347,12 @@ function gnotchSync(){
   if(noL){width+=left;left=0;}
   if(noR){width=hwc-left;}
   n.classList.toggle('noL',noL);n.classList.toggle('noR',noR);
-  b.classList.toggle('gh-sqL',noL);b.classList.toggle('gh-sqR',noR);
-  const apply=()=>{n.style.left=left+'px';n.style.width=width+'px';};
-  if(gnPrev){n.style.left=gnPrev.left+'px';n.style.width=gnPrev.width+'px';
-    requestAnimationFrame(()=>requestAnimationFrame(apply));}
-  else apply();
+  const fb=document.getElementById('flyBody');
+  if(fb&&!cf){fb.classList.toggle('gh-sqL',noL);fb.classList.toggle('gh-sqR',noR);}
+  /* set directly — the notch element persists across face switches, so the CSS transition on
+     left/width animates from its current (previous) spot to the new one. The old double-rAF
+     dance failed to apply on some mobile viewports, leaving the tab one step behind. */
+  n.style.left=left+'px';n.style.width=width+'px';
   gnPrev={left,width};
 }
 /* Contextual awareness: Genie + the comms group read whatever record/module is open. */
@@ -943,17 +961,21 @@ const SECT={
   profile:{title:'Profile',body:accountBody}
 };
 function panelTabsClear(){document.querySelectorAll('.paneltabs .di, .dock .di').forEach(b=>b.classList.remove('on'));}
-function openSection(s){section=s; /* persistent context window — re-clicking a tab never collapses it */
+function openSection(s,activeKey){
+  let showKey=activeKey||s;
+  if(s==='scratch'){genieSel('scratch');showKey='scratch';s='genie';}
+  section=s; /* persistent context window — re-clicking a tab never collapses it */
   panelTabsClear();
   document.querySelectorAll('#dockComm .dcf').forEach(b=>b.classList.remove('on'));
   document.getElementById('d-'+s)?.classList.add('on');
   const fly=document.getElementById('flyout');fly.classList.toggle('genie',s==='genie');
-  const c=SECT[s];document.getElementById('flyTitle').textContent=c.title;
+  const c=SECT[s];if(!c)return;
+  document.getElementById('flyTitle').textContent=c.title;
   document.getElementById('flyExtra').innerHTML=c.extra||'';
   const body=document.getElementById('flyBody');body.className='fly-body'+(s==='genie'?' genie':'');
   body.innerHTML=c.body();
   document.body.classList.remove('panel-collapsed');
-  flySize(flyW);document.getElementById('rdock')?.classList.add('open');fly.classList.add('show');closeApps();mScrim(true);mbarActive(s);renderPanelTabs();
+  flySize(flyW);document.getElementById('rdock')?.classList.add('open');fly.classList.add('show');closeApps();mScrim(true);mbarActive(showKey);renderPanelTabs();
   /* the panel width animates open (.26s) — place the head now AND once settled */
   if(s==='genie'){gnotchSync();setTimeout(()=>{gnPrev=null;gnotchSync();},340);}}
 /* contextual communication (call / video / email) — a tab in the single panel; shows the active record's content or a generic empty state */
@@ -974,9 +996,81 @@ function genieToggle(){const f=document.getElementById('flyout');
 function mScrim(on){const s=document.getElementById('mscrim');if(!s)return;
   const mobile=window.matchMedia('(max-width:700px)').matches;
   s.classList.toggle('show',!!on&&mobile&&(document.querySelector('.flyout.show')||document.querySelector('.msheet.show')));}
+function switchWorkspaceFromGenie(name,initial,ac){
+  GENIE_HUB_WS.forEach(w=>w[4]=w[2]===name?1:0);
+  activeGenieWorkspace=name;
+  const wsName=document.querySelector('#tbWs .ws-name');
+  const wsAv=document.querySelector('#tbWs .ws-av');
+  if(wsName)wsName.textContent=name;
+  if(wsAv){wsAv.textContent=(initial||name||'W').slice(0,2).toUpperCase();wsAv.style.background=ac||'';}
+  document.querySelectorAll('.mg-workspaces').forEach(wrap=>{wrap.innerHTML=genieWorkspaceRows();});
+  toast(`Switched to ${name}`);
+}
+function genieWorkspaceRows(){return GENIE_HUB_WS.map(w=>`<button class="mg-ws ${w[4]?'on':''}" onclick="switchWorkspaceFromGenie('${w[2]}','${w[0]}','${w[1]}')"><span class="mg-wsi" style="background:${w[1]}">${w[0]}</span><div class="mg-ws-meta"><div class="mg-wsn">${w[2]}</div><div>${w[3]}</div></div>${w[4]?'<span class="mg-ws-check">'+svg('<path d="M20 6 9 17l-5-5"/>',15)+'</span>':''}</button>`).join('');}
+function openProfileFromGenie(){closeApps();closeSection();go('profile');}
+function openGenieFace(face){
+  if(section==='genie') return genieSel(face);
+  openSection('genie','genie');
+  genieSel(face);
+}
+function openMobileSheet(title, bodyHtml, activeKey='apps', showRail=true){
+  closeSection();
+  const holder=document.getElementById('appsBody');
+  const head=document.getElementById('appsSheetTitle');
+  if(head){
+    head.textContent=title||'';
+    head.style.display='';
+  }
+  if(holder)holder.innerHTML=showRail?`<div class="apps-shell">
+      ${mobileSheetNav(activeKey)}
+      <div class="apps-content">${bodyHtml||''}</div>
+    </div>`:`<div class="apps-content">${bodyHtml||''}</div>`;
+  document.getElementById('appsSheet')?.classList.add('show');
+  mScrim(true);
+  mbarActive(activeKey);
+}
+function mobileSheetNav(activeKey='apps'){
+  return `<aside class="ms-nav">${MOBILE_SHEET_NAV.map(([k,p,l])=>`<button class="ms-nav-btn ${k===activeKey?'on':''}" onclick="mTab('${k}')" title="${l}" aria-label="${l}">${svg(p,18)}<span>${l}</span></button>`).join('')}</aside>`;
+}
+function appsBundleBody(){
+  return `<div class="app-section">
+      <div class="apps-head">Apps</div>
+      <div class="appgrid">
+        <button onclick="toast('Contacts — demo')" aria-label="Contacts">${svg('<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6"/>',18)}<span>Contacts</span></button>
+        <button onclick="mApp('leads')" aria-label="Leads">${svg('<path d="M3 17 9 11l4 3 7-8"/><path d="M21 6v5M16 6h5"/>',18)}<span>Leads</span></button>
+        <button onclick="mApp('projectsDash')" aria-label="Projects">${svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/>',18)}<span>Projects</span></button>
+        <button onclick="mApp('hr')" aria-label="HR">${svg('<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M21 20a5 5 0 0 0-4-4.9"/>',18)}<span>HR</span></button>
+        <button onclick="mApp('account')" aria-label="Accounts">${svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16"/>',18)}<span>Accounts</span></button>
+        <button onclick="mApp('vendor')" aria-label="Vendors">${svg('<path d="M3 9 5 4h14l2 5M4 9v11h16V9M4 9h16M9 13h6"/>',18)}<span>Vendors</span></button>
+      </div>
+    </div>
+    <div class="app-section app-section--tight">
+      <div class="apps-head">Profile</div>
+      <button class="apps-profile" onclick="openProfileFromGenie()">${svg('<path d="M20 21v-2a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v2"/><circle cx="12" cy="7" r="4"/>',16)}<span class="apps-profile-meta"><span>Vinoth V V</span><span>Org Admin · ${activeGenieWorkspace}</span></span>${svg('<path d="M9 18l6-6-6-6"/>',16)}</button>
+      <div class="apps-subhead">Workspace</div>
+      <div class="mg-workspaces">${genieWorkspaceRows()}</div>
+    </div>`;
+}
+function openGeniePanel(){const fly=document.getElementById('flyout');if(section==='genie'&&fly?.classList.contains('show'))collapsePanel();else openSection('genie','genie');}
 function mbarActive(key){document.querySelectorAll('#mbar .mb').forEach(b=>b.classList.toggle('on',b.dataset.k===key));}
-function mTab(kind){if(kind==='home'){mCloseAll();go('home');mbarActive('home');return;}openSection(kind);}
-function openApps(){closeSection();document.getElementById('appsSheet')?.classList.add('show');mScrim(true);mbarActive('apps');}
+function chatShortcut(face){
+  if(face==='chat') return openGenieFace('chat');
+  if(face==='call'||face==='video'||face==='email') return openGenieFace(face);
+}
+function mTab(kind){
+  if(kind==='home'){mCloseAll();go('home');mbarActive('home');return;}
+  if(kind==='genie') return openGeniePanel();
+  if(kind==='chat') return openGenieFace('chat');
+  if(kind==='call') return openGenieFace('call');
+  if(kind==='video') return openGenieFace('video');
+  if(kind==='email') return openGenieFace('email');
+  if(kind==='scratch') return openGenieFace('scratch');
+  if(kind==='apps') return openApps();
+  return openSection(kind,kind);
+}
+function openApps(){
+  openMobileSheet('App bundle',appsBundleBody(),'apps',false);
+}
 function closeApps(){document.getElementById('appsSheet')?.classList.remove('show');mScrim(false);}
 function mApp(route){closeApps();mbarActive('apps');go(route);}
 function mCloseAll(){closeApps();closeSection();closeCommSheet();if(typeof closePeek==='function')closePeek();const s=document.getElementById('mscrim');if(s)s.classList.remove('show');}
@@ -990,6 +1084,7 @@ function homeGeniePlan(){if(typeof homeStats!=='function')return '';const st=hom
     <button class="g-plan-cta" onclick="tFocusMode()">${svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',14)} Start focus block</button></div>`;}
 /* Comm faces inside the Genie surface: the topbar cluster is the switcher. genieFace=null → chat. */
 function genieSel(f){
+  if(f==='notif'){openNotif();return;}
   genieNotif=false;genieFace=f;
   const fly=document.getElementById('flyout');
   const b=document.getElementById('flyBody');
@@ -1123,7 +1218,7 @@ function chatFullClose(){chatFullOpen=false;const o=document.getElementById('cha
 function chatFullOpenConv(id){chatFullId=id;chatFullRec=null;renderChatFull();}
 function chatFullOpenRec(rid){chatFullRec=rid;renderChatFull();}
 function chatFullBack(){chatFullRec=null;renderChatFull();}
-function renderChatFull(){const o=document.getElementById('chatFull');if(!o)return;o.dataset.fullFace='chat';o.innerHTML=chatFullHTML();o.classList.add('show');}
+function renderChatFull(){const o=document.getElementById('chatFull');if(!o)return;o.dataset.fullFace='chat';o.innerHTML=chatFullHTML();o.classList.add('show');gnotchSync();}
 function openFullFace(f){
   chatFullOpen=true;genieNotif=false;
   if(f==='genie'){genieFace=null;renderGenieFull();}
@@ -1136,35 +1231,35 @@ function openFullFace(f){
 let mailFullId=null;
 function mailExpand(){mailFullId=null;renderMailFull();}
 function mailFullOpen(i){mailFullId=i;renderMailFull();}
-function renderMailFull(){chatFullOpen=true;const o=document.getElementById('chatFull');if(!o)return;o.dataset.fullFace='email';o.innerHTML=mailFullHTML();o.classList.add('show');}
+function renderMailFull(){chatFullOpen=true;const o=document.getElementById('chatFull');if(!o)return;o.dataset.fullFace='email';o.innerHTML=mailFullHTML();o.classList.add('show');gnotchSync();}
 function mailFullHTML(){
   const e=mailFullId!=null?CDATA.email[mailFullId]:null;
   const right=e?`<div class="cf-mailread"><div class="cf-mr-h">${e[0]}</div><div class="cf-mr-d">${svg(SVGMAIL,13)} ${e[2]}</div><div class="cf-mr-b">${e[1]}</div></div>`:`<div class="cf-empty"><div class="cf-empty-ic">${svg(DOCK_ICONS.email,26)}</div><h3>Select an email</h3><p>Pick an email from the list to read it.</p></div>`;
-  return `<div class="cf-shell">
+  return `<div class="cf-frame">${cfNotch()}<div class="cf-shell">
     <aside class="cf-list">
       <div class="cf-lhead"><h2>Mail</h2><button class="cf-new" onclick="toast('New mail')" title="New">${svg(SVS.plus,16)}</button></div>
       <div class="cf-search">${svg(SVS.search,15)}<input placeholder="Search mail…"></div>
       <div class="cf-rows">${CDATA.email.map((em,i)=>`<div class="cf-row ${i===mailFullId?'on':''}" onclick="mailFullOpen(${i})"><div class="cav mailav">${svg(SVGMAIL,17)}</div><div class="clcell"><div class="clname"><span class="cf-nm">${em[0]}</span><span class="cf-time">${em[2]}</span></div><div class="cf-snip">${em[1]}</div></div></div>`).join('')}</div>
     </aside>
-    <main class="cf-main"><div class="cf-topbtns"><button class="cf-iconbtn" onclick="chatFullClose()" title="Close">${svg(SVS.x,18)}</button></div>${right}</main>
-  </div>`;
+    <main class="cf-main">${right}</main>
+  </div></div>`;
 }
-function renderScratchFull(){chatFullOpen=true;const o=document.getElementById('chatFull');if(!o)return;o.dataset.fullFace='scratch';o.innerHTML=scratchFullHTML();o.classList.add('show');}
+function renderScratchFull(){chatFullOpen=true;const o=document.getElementById('chatFull');if(!o)return;o.dataset.fullFace='scratch';o.innerHTML=scratchFullHTML();o.classList.add('show');gnotchSync();}
 function scratchFullHTML(){
-  return `<div class="cf-shell cf-single">
-    <main class="cf-main"><div class="cf-topbtns"><button class="cf-iconbtn" onclick="chatFullClose()" title="Close">${svg(SVS.x,18)}</button></div>
+  return `<div class="cf-frame cf-single">${cfNotch()}<div class="cf-shell cf-single">
+    <main class="cf-main">
       <div class="cf-center">
         <div class="cf-pagehead"><h2>Notes</h2><p>Quick notes, voice captures, and follow-ups.</p></div>
         <div class="cf-notecomposer"><textarea id="scrInput" class="scr-ta" placeholder="Jot a quick note…" rows="4"></textarea><div class="scr-row"><button class="scr-voice" onclick="scrVoice()">${svg(MICICON,15)} Voice note</button><span class="tp-sp"></span><button class="scr-save" onclick="scrSave()">${svg(SVS.plus,14)} Save</button></div></div>
         <div class="scr-list">${SCRATCH.map(scrItem).join('')||'<div class="scr-empty">No notes yet.</div>'}</div>
       </div>
     </main>
-  </div>`;
+  </div></div>`;
 }
-function renderGenieFull(){chatFullOpen=true;const o=document.getElementById('chatFull');if(!o)return;o.dataset.fullFace='genie';o.innerHTML=genieFullHTML();o.classList.add('show');}
+function renderGenieFull(){chatFullOpen=true;const o=document.getElementById('chatFull');if(!o)return;o.dataset.fullFace='genie';o.innerHTML=genieFullHTML();o.classList.add('show');gnotchSync();}
 function genieFullHTML(){
-  return `<div class="cf-shell cf-single">
-    <main class="cf-main"><div class="cf-topbtns"><button class="cf-iconbtn" onclick="chatFullClose()" title="Close">${svg(SVS.x,18)}</button></div>
+  return `<div class="cf-frame cf-single">${cfNotch()}<div class="cf-shell cf-single">
+    <main class="cf-main">
       <div class="cf-genie">
         <div class="cf-genie-title"><img class="ojo-logo" src="assets/ojo-logo.png" alt="OJO"><h2>Ojo Genie</h2></div>
         <div class="cf-genie-chat">
@@ -1173,8 +1268,11 @@ function genieFullHTML(){
         <div class="cf-genie-compose"><input id="gFullIn" placeholder="Ask Ojo Genie…" onkeydown="if(event.key==='Enter')toast('Ojo Genie is thinking…')"><button class="ggo" onclick="toast('Ojo Genie is thinking…')">${svg('<path d="M12 19V5M5 12l7-7 7 7"/>',16)}</button></div>
       </div>
     </main>
-  </div>`;
+  </div></div>`;
 }
+/* the SAME rising-tab notch as the panel, for the top of every full-page view — clicks route
+   to openFullFace (topFaceClick/topGenieClick detect chatFullOpen); close sits at the far right */
+function cfNotch(){return `<div class="cf-notch">${ghActs()}<button class="cf-close" onclick="chatFullClose()" title="Close">${svg(SVS.x,18)}</button></div>`;}
 function chatFullHTML(){
   const c=chatFullId?chatFindConv(chatFullId):null;
   let right;
@@ -1188,14 +1286,14 @@ function chatFullHTML(){
   }else{
     right=`<div class="cf-empty"><div class="cf-empty-ic">${svg(DOCK_ICONS.chat,26)}</div><h3>Select a conversation</h3><p>Pick a chat from the list or start a new one to begin messaging.</p></div>`;
   }
-  return `<div class="cf-shell">
+  return `<div class="cf-frame">${cfNotch()}<div class="cf-shell">
     <aside class="cf-list">
       <div class="cf-lhead"><h2>Messages</h2><button class="cf-new" onclick="toast('New chat')" title="New">${svg(SVS.plus,16)}</button></div>
       <div class="cf-search">${svg(SVS.search,15)}<input placeholder="Search conversations…"></div>
       <div class="cf-rows">${CONVOS.map(cv=>`<div class="cf-row ${cv.id===chatFullId&&!chatFullRec?'on':''}" onclick="chatFullOpenConv('${cv.id}')"><div class="cav" style="--ac:${cv.color}">${cv.av}</div><div class="clcell"><div class="clname"><span class="cf-nm">${cv.name}</span><span class="cf-time">${chatLastTime(cv)}</span></div><div class="cf-snip">${chatLastSnip(cv)}</div></div></div>`).join('')}</div>
     </aside>
-    <main class="cf-main"><div class="cf-topbtns"><button class="cf-iconbtn" onclick="chatFullClose()" title="Collapse">${svg('<path d="M9 9 4 4M9 9V5M9 9H5M15 15l5 5M15 15v4M15 15h4"/>',16)}</button><button class="cf-iconbtn" onclick="chatFullClose()" title="Close">${svg(SVS.x,18)}</button></div>${right}</main>
-  </div>`;
+    <main class="cf-main">${right}</main>
+  </div></div>`;
 }
 function recCloseFull(){const o=document.getElementById('recFull');if(o){o.classList.remove('show');o.innerHTML='';}}
 /* Scratchpad — quick text/voice note → make task or add to project */
@@ -1246,13 +1344,20 @@ function genieAsk(q){if(!q||!q.trim())return;const m=document.getElementById('gm
 function nIcon(t){const m={bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>',people:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6"/>',check:'<circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',brief:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',person:'<circle cx="12" cy="8" r="3.2"/><path d="M5 20a7 7 0 0 1 14 0"/>'};return svg(m[t]||m.bell,17);}
 function notifBody(){const N=[['bell','New Message','You have a new message','8 hours ago',1],['people','Employee Updated','Employee information has been updated','14 hours ago',1],['check','Comment Resolved','Vinotham resolved a comment on BRO: “i will…”','1 day ago',1],['clock','Checked In','You checked in at 10:42 AM','4 days ago',0],['brief','Project Created Successfully','Your project is ready for review.','5 days ago',0],['brief','Project Generation In Progress','Generating project: 35% complete','5 days ago',0],['doc','Requirements Generated','Requirements have been generated for a lead','5 days ago',0],['person','Lead Updated','Lead has been updated','5 days ago',0]];
   return `<div class="notif-ai">${svg(SPARK,12)} OJO can turn any update into a task — just hit <b>+ Task</b>.</div>`+N.map(n=>`<div class="nrow ${n[4]?'unread':''}"><div class="nic">${nIcon(n[0])}</div><div style="flex:1;min-width:0"><div class="nt">${n[1]}</div><div class="ns">${n[2]}</div><div class="nm">${n[3]}</div></div><button class="nrow-task" onclick="notifTask(event,'${n[1].replace(/'/g,"")}')" title="Add as task">${svg('<path d="M12 5v14M5 12h14"/>',13)} Task</button>${n[4]?'<span class="ndot"></span>':''}</div>`).join('')+`<div class="nfoot">Showing ${N.length} of ${N.length}</div>`;}
-function markAllRead(){notifRead=true;document.querySelectorAll('#flyBody .nrow').forEach(r=>{r.classList.remove('unread');r.querySelector('.ndot')?.remove();});document.querySelector('#u-notif .ubadge')?.remove();document.querySelector('.tb-badge')?.remove();toast('All marked read');}
+function syncMbarBadge(){const b=document.querySelector('.mb.ojo');if(b)b.classList.toggle('has-badge',notifUnread()>0);}
+function markAllRead(){notifRead=true;document.querySelectorAll('#flyBody .nrow').forEach(r=>{r.classList.remove('unread');r.querySelector('.ndot')?.remove();});document.querySelector('#u-notif .ubadge')?.remove();document.querySelector('.tb-badge')?.remove();document.querySelector('.mb.ojo')?.classList.remove('has-badge');toast('All marked read');}
 
+const MOBILE_MSG_THREADS=[
+  ['AB','#7C53E6','Apparel Brand Launch','lead','10:24 AM','Scope approved — send timeline by Friday'],
+  ['AM','#E08A1E','Amanuay','dm','09:12 AM','Can you confirm if demo time is still good?'],
+  ['RF','#7C53E6','Ravi Fuel App requirement','vendor','Tue','Recording available · 1m call summary'],
+  ['PN','#F04D56','Priya Nair','lead','Mon','Let\'s pick this up in the next slot'],
+  ['SV','#2F6FED','Nova Dental','lead','Yesterday','Client asked for revised quote with revised milestones']
+];
 function msgBody(){const F=['All','Unread','DMs','Groups','Leads','Projects','Vendors','Clients'];
-  const C=[['AB','#7C53E6','Apparel Brand Launch','lead','10:59 AM','hi'],['AM','#E08A1E','Amanuay','dm','Tue','ojo-meet://join/81715855-b0bb-498…'],['MM','#7C53E6','move marketing — Brand','vendor','12 May','what about marketing.'],['RE','#2F6FED','Real estate Performance','vendor','04 May','jhfhj'],['PA','#15A06A','Palpxvinoth','dm','03 May','cool'],['RF','#7C53E6','requirement for fuel app','lead','01 May','whatsup? are we doing this today?'],['LG','#7C53E6','legal req to trade mark','lead','28 Apr','whatsup']];
   return `<div class="msrch">${svg('<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',15)} Search conversations…</div>
    <div class="mfilters">${F.map((f,i)=>`<span class="mchip ${i===0?'on':''}">${f}</span>`).join('')}</div>
-   ${C.map(c=>`<div class="mrow" onclick="toast('Open chat: ${c[2]}')"><div class="mav" style="--ac:${c[1]}">${c[0]}</div><div class="mcell"><div class="mname"><span class="nm2">${c[2]}</span><span class="mtag ${c[3]}">${c[3]==='dm'?'DM':c[3]==='vendor'?'Vendor':'Lead'}</span><span class="mtime">${c[4]}</span></div><div class="msnip">${c[5]}</div></div></div>`).join('')}`;}
+   <div class="mrows">${MOBILE_MSG_THREADS.map(c=>`<div class="mrow" onclick="toast('Open chat: ${c[2]}')"><div class="mav" style="--ac:${c[1]}">${c[0]}</div><div class="mcell"><div class="mname"><span class="nm2">${c[2]}</span><span class="mtag ${c[3]}">${c[3]==='dm'?'DM':c[3]==='vendor'?'Vendor':'Lead'}</span><span class="mtime">${c[4]}</span></div><div class="msnip">${c[5]}</div></div></div>`).join('')}</div>}`;}
 
 function searchBody(){const R=[['Life Designer','Lead · Proposal'],['Apollo — Website Revamp','Project'],['Wireframes','Task · Design'],['Sunrise Pharma','Lead · Won']];
   return `<div class="ssrch">${svg('<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',16)}<input placeholder="Search leads, projects, tasks…"></div><div class="slabel">Recent</div>${R.map(r=>`<div class="srow" onclick="toast('Open: ${r[0]}')"><div class="si">${svg(ICONS.List,15)}</div><div><div class="st">${r[0]}</div><div class="sk">${r[1]}</div></div></div>`).join('')}`;}
@@ -2854,6 +2959,7 @@ try{if(localStorage.getItem('ojo-theme')==='dark')document.documentElement.setAt
 let _shell='hybrid';try{_shell=localStorage.getItem('ojo-shell')||'hybrid';}catch(e){}
 setShell(_shell);
 go('home');
+syncMbarBadge();
 /* Ojo Genie is the prominent, persistent anchor of the dock — open by default on
    desktop, contextual to the current screen, and reachable in one click anywhere. */
 if(window.matchMedia('(min-width:701px)').matches)openSection('genie');

@@ -80,16 +80,8 @@
 <div class="msheet" id="appsSheet">
   <div class="msheet-card">
     <div class="grip"></div>
-    <div class="ms-h">Apps<button class="ms-x" onclick="closeApps()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
-    <div class="appgrid">
-      <button onclick="toast('Contacts — demo')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6"/></svg>Contacts</button>
-      <button onclick="mApp('leads')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17 9 11l4 3 7-8"/><path d="M21 6v5M16 6h5"/></svg>Leads</button>
-      <button onclick="mApp('projectsDash')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg>Projects</button>
-      <button onclick="mApp('hr')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5a3 3 0 0 1 0 6M21 20a5 5 0 0 0-4-4.9"/></svg>HR</button>
-      <button onclick="mApp('account')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16"/></svg>Accounts</button>
-      <button onclick="mApp('vendor')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9 5 4h14l2 5M4 9v11h16V9M4 9h16M9 13h6"/></svg>Vendors</button>
-      <button onclick="toast('Org Admin — demo')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="7" r="3"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>Org Admin</button>
-    </div>
+    <div class="ms-h"><span id="appsSheetTitle">App bundle</span><button class="ms-x" onclick="closeApps()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div id="appsBody" class="apps-body"></div>
   </div>
 </div>
 <!-- floating info/comm bar — only shown on the project Overview page (mobile) -->
@@ -103,9 +95,7 @@
 </div>
 <nav class="mbar" id="mbar">
   <button class="mb" data-k="home" onclick="mTab('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11 12 3l9 8"/><path d="M5 9.5V20h14V9.5"/></svg><span>Home</span></button>
-  <button class="mb" data-k="chat" onclick="mTab('chat')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Chat</span></button>
   <button class="mb ojo" data-k="genie" onclick="mTab('genie')"><span class="ojomark"><img src="assets/ojo-logo.png" alt="OJO"></span><span>OJO</span></button>
-  <button class="mb" data-k="profile" onclick="mTab('profile')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Profile</span></button>
   <button class="mb" data-k="apps" onclick="openApps()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Apps</span></button>
 </nav>
 <div id="recFull" class="recfull-overlay"></div>

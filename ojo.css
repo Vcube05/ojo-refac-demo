@@ -1156,6 +1156,8 @@ td .nm,td .tt{font-weight:var(--weight-semibold);color:var(--navy)}td .co{color:
   --g-card:rgba(0,0,0,.9); --g-line:rgba(255,255,255,.10);
   --g-text:#fff; --g-mut:rgba(255,255,255,.80); --g-faint:rgba(255,255,255,.55);
   --g-elec:var(--elec); --g-elec-ink:var(--elec-ink);
+  /* the rising notch tab is the PANEL colour poking up (red in light) with contrasting ink */
+  --gh-tab:var(--elec); --gh-tab-ink:#fff;
 }
 /* ===== Genie skin follows the app theme: LIGHT → C (default brand gradient), DARK → B (softened rose). ===== */
 :root[data-theme="dark"] .fly-body.genie::before{background:#f3d8da}
@@ -1164,16 +1166,14 @@ td .nm,td .tt{font-weight:var(--weight-semibold);color:var(--navy)}td .co{color:
   --g-card:#ffffff; --g-line:#eccccf;
   --g-text:#3a1418; --g-mut:#8a3036; --g-faint:#b07a7e;
   --g-elec-ink:#5e1219;
+  --gh-tab:#f3d8da; --gh-tab-ink:#3a1418;
 }
 :root[data-theme="dark"] .gctx{color:#8a3036}
 :root[data-theme="dark"] .gctx b{color:#5e1219}
 :root[data-theme="dark"] .g-plan-h,:root[data-theme="dark"] .g-plan-h svg{color:#5e1219}
 :root[data-theme="dark"] .g-plan-cta{background:var(--coral);color:#fff}
 :root[data-theme="dark"] .gask .ggo{background:var(--coral);color:#fff}
-/* notch matches the rose panel in dark mode (light mode keeps --elec, which already matches skin C) */
-:root[data-theme="dark"] .gh-notch{background:#f3d8da}
-:root[data-theme="dark"] .gh-notch::before{background:radial-gradient(circle 22px at 0 0,transparent 21px,#f3d8da 21.8px)}
-:root[data-theme="dark"] .gh-notch::after{background:radial-gradient(circle 22px at 100% 0,transparent 21px,#f3d8da 21.8px)}
+/* dark-theme notch tab colour is driven by --gh-tab (rose panel) on the genie scope above */
 /* mobile drawer keeps the full red fill; desktop flyout is transparent (red is the ::before body) */
 #drawer.genie{background:linear-gradient(178deg,var(--elec) 0%,#EE414E 46%,#D03A47 100%)}
 .flyout.genie{background:transparent;overflow:visible}
@@ -1245,9 +1245,6 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .gmsgs{flex:1;overflow-y:auto;padding:10px 16px 6px;position:relative}
 /* notch cluster — circles "cut into" the hero's top-right corner; the active item lives
    as the labeled pill on the hero's top-left. Both survive the greeting being replaced. */
-/* fixed control band: a canvas strip across the panel top — the red sheet starts below
-   it with rounded shoulders; controls never move */
-/* grey shelf removed — the icon strip is now the transparent page; the red notch is the only boundary */
 .gh-band{display:none}
 .gh-band::before{content:'';position:absolute;top:100%;left:0;width:24px;height:24px;background:radial-gradient(circle 24px at 100% 100%,transparent 23px,var(--g-cut) 23.6px);transition:opacity .25s var(--ease)}
 .gh-band::after{content:'';position:absolute;top:100%;right:0;width:24px;height:24px;background:radial-gradient(circle 24px at 0 100%,transparent 23px,var(--g-cut) 23.6px);transition:opacity .25s var(--ease)}
@@ -1255,27 +1252,39 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
    would bite into the head's flow, so it yields */
 .gh-band.noL::before{opacity:0}
 .gh-band.noR::after{opacity:0}
-.gh-acts{position:absolute;top:12px;left:auto;right:18px;z-index:2;display:flex;gap:14px}
-/* the TRAVELING HEAD: ONE continuous curve — a domed crown (large top radius), clean
-   vertical sides, and S-flares only at the base where it melts into the sheet. No
-   bottom rounding, so nothing fights the flares (that pinch made stray edges). */
-.gh-notch{position:absolute;top:4px;left:0;width:0;height:60px;z-index:1;background:var(--elec);border-radius:34px 34px 0 0;transition:left .32s var(--ease),width .32s var(--ease)}
-.gh-notch::before{content:'';position:absolute;bottom:0;right:100%;width:22px;height:22px;background:radial-gradient(circle 22px at 0 0,transparent 21px,var(--elec) 21.8px)}
-.gh-notch::after{content:'';position:absolute;bottom:0;left:100%;width:22px;height:22px;background:radial-gradient(circle 22px at 100% 0,transparent 21px,var(--elec) 21.8px)}
-/* edge-hugging: drop the outer fillet and square that card corner so the notch fuses with the panel edge */
+/* ONE cluster across the panel top-right: the Ojo Genie pill + the comm icons sit together
+   (tight, even gap — no dead space between "Ojo Genie" and the first icon). The rising tab
+   travels within this cluster to wrap the active item. */
+.gh-acts{position:absolute;top:12px;right:16px;z-index:2;display:flex;align-items:center;gap:12px}
+/* the RISING TAB: the panel surface (--gh-tab) projecting UP through the band — a domed crown
+   (large top radius), clean sides, S-flares at the base where it melts into the sheet. It
+   travels (left/width) to wrap whichever item is active, carrying that item's label. */
+.gh-notch{position:absolute;top:4px;left:0;width:0;height:60px;z-index:1;background:var(--gh-tab);border-radius:34px 34px 0 0;transition:left .32s var(--ease),width .32s var(--ease)}
+.gh-notch::before{content:'';position:absolute;bottom:0;right:100%;width:22px;height:22px;background:radial-gradient(circle 22px at 0 0,transparent 21px,var(--gh-tab) 21.8px)}
+.gh-notch::after{content:'';position:absolute;bottom:0;left:100%;width:22px;height:22px;background:radial-gradient(circle 22px at 100% 0,transparent 21px,var(--gh-tab) 21.8px)}
+.gh-band::before,.gh-band::after{display:none}
+/* edge-hugging: drop the outer flare and square that panel corner so the tab fuses with the edge */
 .gh-notch.noL::before{display:none}
 .gh-notch.noR::after{display:none}
 .fly-body.genie.gh-sqL::before{border-top-left-radius:0}
 .fly-body.genie.gh-sqR::before{border-top-right-radius:0}
-.gh-nlab{position:absolute;left:0;right:0;bottom:4px;text-align:center;font-size:var(--size-caption);font-weight:var(--weight-semibold);color:#fff;white-space:nowrap}
+/* active item's label sits at the base of the tab, in ink that contrasts the tab colour */
+.gh-nlab{position:absolute;left:0;right:0;bottom:4px;text-align:center;font-size:var(--size-caption);font-weight:var(--weight-semibold);color:var(--gh-tab-ink);white-space:nowrap}
 /* no mouse focus rings on the head controls (keyboard focus keeps its ring) */
 .gha:focus:not(:focus-visible),.gpill:focus:not(:focus-visible),.gtab:focus:not(:focus-visible){outline:none}
-/* comm faces: subtle by default (just icons), filled only when active or the Ojo logo */
-.gha{width:36px;height:36px;border-radius:50%;background:transparent;border:1px solid transparent;color:var(--muted);display:grid;place-items:center;flex:0 0 36px;padding:0;overflow:hidden;transition:transform .32s var(--ease),background .14s,color .14s}
-.gha:hover{background:var(--surface-2);color:var(--ink);filter:none}
-.gha.on{background:var(--ink-bg);color:#fff;border-color:transparent}
+/* comm face icons sit flat on the band; the active one is wrapped by the rising tab and its
+   icon flips to the tab ink (label prints in the tab) */
+.gha{width:36px;height:36px;border-radius:50%;background:transparent;border:1px solid transparent;color:var(--muted);display:grid;place-items:center;flex:0 0 36px;padding:0;overflow:hidden;transition:transform .32s var(--ease),color .14s}
+.gha:hover{color:var(--ink)}
+.gha.on{color:var(--gh-tab-ink)}
 .gha.glogo{background:var(--ink-bg);border-color:transparent;animation:gswapin .24s var(--ease)}
 .gha.glogo .ojo-logo{width:28px;height:28px;border-radius:50%;object-fit:cover;display:block}
+/* the Ojo Genie home pill: when a comm face is active it collapses to just its logo; clicking
+   it reopens Genie (the tab wraps it and shows the "Ojo Genie" label again) */
+.gmsgs:has(.gha.on) .gh-acts .gpill{padding:0;width:36px;justify-content:center}
+.gmsgs:has(.gha.on) .gh-acts .gpill span{display:none}
+.gmsgs:has(.gha.on) .gh-acts .gpill .ojo-logo{margin-left:0}
+.gha-lbl{display:none}
 /* ===== Chat hub ===== */
 .gmsgs:has(.chatfull){padding:0;overflow:hidden}
 .gswap.chatfull{position:absolute;inset:0;display:flex;flex-direction:column;padding:0}
@@ -1411,12 +1420,28 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .cl-nm{font-weight:var(--weight-semibold);color:var(--ink);font-size:var(--size-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cl-time{margin-left:auto;font-size:var(--size-caption);color:var(--muted);flex:0 0 auto}
 .cl-snip{font-size:var(--size-caption);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
-/* ===== Full-page two-pane chat (covers the window except the nav rail) ===== */
-.chatfull-overlay{position:fixed;top:58px;right:0;bottom:0;left:96px;z-index:180;background:transparent;display:none;padding:0}
+/* ===== Full-page two-pane chat — a rounded floating card (matches the carded panel) ===== */
+.chatfull-overlay{position:fixed;top:50px;right:0;bottom:0;left:96px;z-index:180;background:transparent;display:none;padding:10px 14px 14px 6px}
 .chatfull-overlay.show{display:flex}
-.cf-shell{flex:1;display:flex;min-height:0;border-radius:0;overflow:hidden;box-shadow:none;
+/* while the full view is open, hide the collapsed side panel so its notch tab doesn't poke
+   through the topbar behind the overlay */
+body:has(.chatfull-overlay.show) .rdock{visibility:hidden}
+/* the full view = a top notch band (transparent, over the canvas) + the card below — the SAME
+   rising-tab notch as the panel, so the tab pokes up out of the card just like the collapsed panel */
+.cf-frame{position:relative;display:flex;flex-direction:column;flex:1;min-height:0;--gh-tab:#F7E5E7;--gh-tab-ink:#3a1418}
+.cf-notch{position:relative;flex:0 0 56px;height:56px}
+.cf-notch .gh-acts{top:11px;right:58px}
+/* Ojo Genie collapses to its logo when a comm face is active — same as the panel */
+.cf-notch:has(.gha.on) .gpill{padding:0;width:36px;justify-content:center}
+.cf-notch:has(.gha.on) .gpill span{display:none}
+.cf-notch:has(.gha.on) .gpill .ojo-logo{margin-left:0}
+.cf-close{position:absolute;top:10px;right:12px;z-index:4;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--muted);background:var(--glass-strong,rgba(255,255,255,.72));-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid var(--line-2);cursor:pointer}
+.cf-close:hover{color:var(--ink);background:#fff}
+.cf-shell{flex:1;display:flex;min-height:0;border-radius:20px;overflow:hidden;box-shadow:0 14px 38px rgba(0,0,0,.16);
   --surface:#FFF7F8;--canvas:#F3DDDF;--surface-2:#F8E9EB;--surface-3:#EBD3D6;--ink:#332024;--muted:#8A5860;--ghost:#B78B91;--line:rgba(136,49,57,.14);--coral-soft:#FFF;--coral-line:rgba(136,49,57,.16);--coral-ink:#9A323C;
-  background:#F3DDDF;border:0;border-top:1px solid rgba(136,49,57,.12)}
+  /* map the genie g-tokens so shared scratch and comm components read correctly in the full view */
+  --g-text:#332024;--g-mut:#8A5860;--g-faint:#B78B91;--g-card:#fff;--g-line:rgba(136,49,57,.14);--g-elec-ink:#9A323C;
+  background:#F3DDDF;border:1px solid rgba(136,49,57,.14)}
 .cf-list{width:340px;flex:0 0 340px;border-right:1px solid rgba(136,49,57,.12);display:flex;flex-direction:column;min-height:0;background:linear-gradient(180deg,#FFF8F9 0%,#F9ECEE 100%)}
 .cf-lhead{display:flex;align-items:center;justify-content:space-between;padding:18px 18px 12px}
 .cf-lhead h2{font-size:var(--size-heading);font-weight:var(--weight-semibold);color:var(--ink);letter-spacing:-.01em}
@@ -1483,10 +1508,12 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .cf-genie-compose input::placeholder{color:var(--muted)}
 .cf-genie-compose .ggo{position:static;transform:none;flex:0 0 38px}
 @media(max-width:760px){.chatfull-overlay{top:0;left:0;padding:0}.cf-shell{border-radius:0}.cf-list{width:100%;flex-basis:100%}.cf-main{display:none}}
-/* the anchor pill — placed so its head's left flare flows off the panel edge */
-.gh-pill{position:absolute;top:12px;left:auto;right:168px;z-index:2;animation:gswapin .24s var(--ease)}
-.gpill{display:inline-flex;align-items:center;gap:8px;height:36px;background:rgba(24,12,14,.62);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fff;border-radius:999px;padding:0 15px 0 12px;font-size:var(--size-body);font-weight:var(--weight-semibold)}
-.gpill .ojo-logo{width:28px;height:28px;border-radius:50%;flex:0 0 28px;object-fit:cover;display:block;margin-left:-8px}
+.gh-pill{position:absolute;top:12px;left:66px;right:auto;z-index:2;animation:gswapin .24s var(--ease)}
+/* solid dark pill (was a muddy .62 translucent that lost the logo on the pink/red tab) */
+.gpill{display:inline-flex;align-items:center;gap:8px;height:36px;background:#1b0f12;color:#fff;border-radius:999px;padding:0 15px 0 11px;font-size:var(--size-body);font-weight:var(--weight-semibold)}
+/* the OJO logo is a red mark on a BLACK disc — give it a light ring so its edge separates
+   from the dark pill and it reads clearly (esp. dark theme, on the rose tab) */
+.gpill .ojo-logo{width:28px;height:28px;border-radius:50%;flex:0 0 28px;object-fit:cover;display:block;margin-left:-6px;box-shadow:0 0 0 1.5px rgba(255,255,255,.9)}
 .gpill:hover{filter:brightness(1.15)}
 /* face content slides up as it arrives */
 .gswap{animation:gswapin .26s var(--ease)}
@@ -1525,6 +1552,9 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .gcomm .mrow .mname{color:#fff}
 .gcomm .msnip{color:rgba(255,255,255,.62)}
 .gcomm .mtime{color:rgba(255,255,255,.55)}
+.fly-body.genie .mg-ws{background:#17181C;border-color:rgba(255,255,255,.16)}
+.fly-body.genie .mg-ws.on{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.48)}
+.fly-body.genie .mg-ws-meta div,.fly-body.genie .mg-wsn{color:rgba(255,255,255,.75)}
 /* hero greeting = the one electric-filled card (Stockify hero), dark text on accent,
    decorative hatch + dot "pills" tucked into the corner */
 /* the greeting sits straight on the electric surface, below the control band */
@@ -1553,6 +1583,11 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .nrow .ndot{width:7px;height:7px;border-radius:50%;background:var(--info);flex:0 0 7px;margin-top:6px}
 .nfoot{text-align:center;font-size:var(--size-caption);color:var(--ghost);padding:12px}
 .msrch{margin:12px 16px;display:flex;align-items:center;gap:9px;background:var(--surface-2);border-radius:10px;padding:9px 12px;color:var(--faint);font-size:var(--size-body)}
+.chat-subtabs{display:flex;gap:6px;padding:0 16px 10px;overflow-x:auto;scrollbar-width:none}
+.chat-subtabs::-webkit-scrollbar{display:none}
+.chat-subtab{flex:1;min-width:0;display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:7px 8px;font-size:var(--size-caption);font-weight:var(--weight-semibold);color:var(--muted);background:var(--surface-2);border:1px solid var(--line);white-space:nowrap}
+.chat-subtab svg{width:13px;height:13px;flex:0 0 13px;color:currentColor}
+.chat-subtab.on{color:#fff;background:var(--ink-bg);border-color:transparent}
 .mfilters{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px 10px;border-bottom:1px solid var(--line)}
 .mchip{font-size:var(--size-caption);font-weight:var(--weight-semibold);color:var(--muted);background:var(--surface-2);border-radius:999px;padding:5px 11px;cursor:pointer}.mchip.on{background:var(--ink-bg);color:#fff}
 .mrow{display:flex;gap:11px;padding:12px 16px;border-bottom:1px solid var(--line);cursor:pointer;align-items:center}.mrow:hover{background:var(--surface-2)}
@@ -1563,6 +1598,29 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .mtag{font-size:var(--size-caption);font-weight:var(--weight-semibold);border-radius:5px;padding:1px 5px;flex:0 0 auto}.mtag.lead{color:#B45309;background:#FEF3C7}.mtag.vendor{color:#6D28D9;background:#EDE9FE}.mtag.dm{color:var(--muted);background:var(--surface-2)}
 .mrow .mtime{margin-left:auto;font-size:var(--size-caption);color:var(--ghost);flex:0 0 auto}
 .mrow .msnip{font-size:var(--size-caption);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+.app-section{margin-top:10px}
+.app-section--tight{margin-top:14px}
+.app-section:first-child{margin-top:0}
+.apps-head{font-size:var(--size-caption);font-weight:var(--weight-semibold);color:var(--faint);margin-bottom:6px}
+.apps-profile{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);margin-bottom:8px;color:var(--ink);font-weight:var(--weight-semibold)}
+.apps-profile svg{width:18px;height:18px;flex:0 0 18px;color:var(--muted)}
+.apps-profile-meta{display:flex;flex-direction:column;align-items:flex-start;min-width:0;line-height:1.3}
+.apps-profile-meta span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.apps-profile-meta span:last-child{font-size:var(--size-caption);font-weight:var(--weight-medium);color:var(--muted);margin-top:2px}
+.apps-profile svg:last-child{margin-left:auto;color:var(--ghost)}
+.apps-subhead{font-size:var(--size-caption);font-weight:var(--weight-semibold);color:var(--faint);margin:2px 0 6px}
+.mg-id{display:flex;align-items:center;gap:10px;padding:9px 0}
+.mg-rav{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--coral);color:#fff;font-weight:var(--weight-semibold)}
+.mg-name{font-size:var(--size-body);font-weight:var(--weight-semibold);color:var(--navy)}
+.mg-role{font-size:var(--size-caption);color:var(--muted)}
+.mg-workspaces{display:flex;flex-direction:column;gap:6px}
+.mg-ws{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--surface-2);border-radius:10px;padding:8px 10px}
+.mg-ws .mg-wsi{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:var(--size-caption);font-weight:var(--weight-semibold);flex:0 0 29px}
+.mg-ws-meta{flex:1;min-width:0}
+.mg-ws-meta div{font-size:var(--size-caption);color:var(--muted);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mg-wsn{font-weight:var(--weight-semibold);font-size:var(--size-body);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mg-ws-check{color:var(--coral)}
+.mg-ws.on{border-color:var(--coral);background:var(--coral-soft)}
 .ssrch{margin:14px 16px;display:flex;align-items:center;gap:9px;background:var(--surface-2);border-radius:12px;padding:11px 14px;color:var(--ink);font-size:var(--size-body)}.ssrch input{flex:1;border:none;outline:none;background:transparent}
 .slabel{font-size:var(--size-caption);font-weight:var(--weight-semibold);color:var(--ghost);padding:6px 16px}
 .srow{display:flex;align-items:center;gap:11px;padding:10px 16px;cursor:pointer}.srow:hover{background:var(--surface-2)}.srow .si{width:30px;height:30px;border-radius:8px;background:var(--surface-2);display:grid;place-items:center;color:var(--coral)}.srow .st{font-weight:var(--weight-semibold);font-size:var(--size-body);color:var(--navy)}.srow .sk{font-size:var(--size-caption);color:var(--faint)}
@@ -2109,10 +2167,18 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .msheet .grip{width:42px;height:5px;border-radius:999px;background:var(--line-3);margin:7px auto 4px}
 .ms-h{display:flex;align-items:center;font-size:var(--size-subheading);font-weight:var(--weight-semibold);color:var(--navy);padding:6px 2px 14px}
 .ms-x{margin-left:auto;width:34px;height:34px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;color:var(--muted)}
-.appgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding-bottom:4px}
-.appgrid button{display:flex;flex-direction:column;align-items:center;gap:9px;padding:18px 8px;border-radius:16px;color:var(--ink);font-size:var(--size-caption);font-weight:var(--weight-semibold);text-align:center}
+.apps-body{padding:2px 0 6px}
+.apps-shell{display:grid;grid-template-columns:82px 1fr;gap:12px;align-items:start}
+.ms-nav{display:flex;flex-direction:column;gap:7px;padding:2px 4px 2px 0;border-right:1px solid var(--line-2)}
+.ms-nav-btn{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;min-height:54px;border-radius:12px;padding:7px 4px;width:64px;margin:0 auto;font-size:var(--size-caption);font-weight:var(--weight-semibold);line-height:1.1;color:var(--muted);transition:.14s}
+.ms-nav-btn svg{width:20px;height:20px}
+.ms-nav-btn.on{background:var(--coral-soft);color:var(--coral-ink)}
+.ms-nav-btn:active{transform:translateY(1px)}
+.apps-content{min-width:0}
+.appgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding-bottom:4px}
+.appgrid button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:76px;padding:10px 6px;border-radius:14px;color:var(--ink);font-size:var(--size-caption);font-weight:var(--weight-semibold);line-height:1.2;text-align:center;background:var(--surface-2);border:1px solid transparent}
 .appgrid button:active{background:var(--surface-2)}
-.appgrid button svg{width:24px;height:24px;color:var(--coral)}
+.appgrid button svg{width:22px;height:22px;color:var(--coral)}
 
 /* floating info/comm bar (project Overview page) — desktop keeps the side panel, so hidden here */
 .commdock{display:none}
@@ -2163,7 +2229,28 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
   .rdock{display:contents}
   .flyout{position:fixed;left:0;right:0;bottom:0;top:auto;margin:0!important;width:auto!important;flex-basis:auto!important;height:90dvh;max-height:90dvh;border-radius:24px 24px 0 0;transform:translateY(101%);opacity:1;pointer-events:none;z-index:49;transition:transform .32s var(--ease)}
   .flyout.show{transform:none;opacity:1;pointer-events:auto;margin-right:0!important}
-  .fly-head{padding:16px 18px}
+  /* ===== Genie mobile = EXACT desktop replica: theme-aware panel (red in light, rose in dark)
+     + the rising-tab notch, in the bottom sheet. NO "Ask Ojo Genie" header, NO expand. The
+     notch band sits at the sheet top; the panel body starts below and the tab pokes up. ===== */
+  .flyout.genie{background:transparent}                 /* panel colour comes from ::before */
+  .flyout.genie .fly-head{display:none!important}       /* kill the redundant header */
+  .fly-body.genie{overflow:visible;padding:0}
+  .fly-body.genie::before{display:block;top:54px;bottom:0;border-radius:24px 24px 0 0}
+  .gmsgs{padding:10px 18px 6px}
+  .genie-hi{padding-top:60px}                            /* clear the 54px band, no wasted space */
+  /* the notch cluster — ONE row, right-aligned, FIXED sizes so it is identical on every phone */
+  /* frosted glass surface for the transparent header band — dark blur over app content */
+  .gh-band{display:block;position:absolute;top:0;left:0;right:0;height:64px;border-radius:24px 24px 0 0;background:rgba(8,4,6,.46);backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5);z-index:0;pointer-events:none}
+  .gh-notch{display:block}
+  .gh-acts{position:absolute;top:11px;left:auto;right:16px;z-index:2;display:flex;flex-wrap:nowrap;align-items:center;gap:12px;padding:0;background:transparent}
+  .gha{width:40px;height:40px;flex:0 0 40px;min-height:0;border-radius:50%;padding:0;background:transparent;border:none;box-shadow:none;color:rgba(255,255,255,.72)}
+  .gha svg{width:18px;height:18px;flex:0 0 18px}
+  .gha-lbl{display:none}                                 /* label lives in the tab, not under the icon */
+  .gha.on{color:var(--gh-tab-ink);background:transparent;border:none;box-shadow:none}
+  .gpill{height:40px;background:#1b0f12;color:#fff;border:none;box-shadow:none;padding:0 15px 0 11px}
+  .gpill .ojo-logo{width:30px;height:30px;flex:0 0 30px;box-shadow:0 0 0 1.5px rgba(255,255,255,.9)}
+  /* no expand-to-full-page on phone — the sheet is already full screen */
+  .cl-expand,.rec-expand,[title="Expand to full view"]{display:none!important}
   /* side peek (a cell preview) → bottom sheet */
   .peek{width:auto;max-width:none;left:0;right:0;bottom:0;top:auto;height:92dvh;border-radius:24px 24px 0 0;border-left:none;transform:translateY(101%)}
   .peek.show{transform:none}
@@ -2178,15 +2265,25 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
   .metrics .madd{flex:0 0 auto;padding:11px 15px}
   /* bottom tab bar → floating, rounded "Substack" pill detached from the edges */
   .mbar{display:flex;align-items:center;position:fixed;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom) + 12px);
-    height:60px;padding:0 8px;background:var(--surface);border:1px solid var(--line-2);
+    height:58px;padding:0 6px;background:var(--surface);border:1px solid var(--line-2);
     border-radius:30px;box-shadow:0 12px 34px rgba(16,24,40,.18);z-index:47}
   .mb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--faint)}
-  .mb svg{width:25px;height:25px}
+  .mb svg{width:23px;height:23px}
   .mb span{display:none}                 /* icon-only, like Substack */
   .mb.on{color:var(--coral-ink)}.mb.on svg{color:var(--coral)}
-  .mb.ojo{justify-content:center}
-  .mb.ojo .ojomark{width:52px;height:52px;border-radius:50%;overflow:hidden;background:#0E0E10;display:grid;place-items:center;margin-top:-26px;box-shadow:0 10px 22px rgba(0,0,0,.4);border:4px solid var(--surface)}
+  .mb.ojo{justify-content:center;position:relative}
+  .mb.ojo .ojomark{width:44px;height:44px;border-radius:50%;overflow:hidden;background:#0E0E10;display:grid;place-items:center;margin-top:-20px;box-shadow:0 10px 22px rgba(0,0,0,.4);border:3px solid var(--surface)}
   .mb.ojo .ojomark img{width:100%;height:100%;object-fit:cover}
+  .mb.on .ojomark{border-color:var(--ink-bg)}
+  /* notification badge dot on the OJO mbar button — global signal, always visible */
+  .mb.ojo.has-badge::after{content:'';position:absolute;top:0;left:calc(50% + 12px);width:10px;height:10px;border-radius:50%;background:#FF4655;border:2px solid var(--surface);z-index:48;pointer-events:none}
+
+  .chat-subtabs{padding:0 10px 9px;gap:5px}
+  .chat-subtab{font-size:10px;padding:6px 7px;border-radius:999px}
+  .chat-subtab svg{width:12px;height:12px}
+  .gcomm .chat-subtabs{padding:0 10px 9px}
+  .gcomm .chat-subtab{background:#1f2024;color:rgba(255,255,255,.84);border-color:rgba(255,255,255,.15)}
+  .gcomm .chat-subtab.on{background:#fff;color:#C9303C}
   /* floating info/comm bar — sits above the floating nav pill */
   .commdock{display:flex;position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 92px);
     transform:translateX(-50%) translateY(10px);align-items:center;gap:2px;padding:5px 7px;
@@ -2453,7 +2550,8 @@ body[data-shell="merged"].panel-collapsed .rdock-reopen{display:grid}
 .ojr-prose{font-size:var(--size-body);line-height:1.65;color:var(--ink);margin:2px 0 2px}
 .ojr-prose b{font-weight:var(--weight-semibold);color:var(--navy)}
 /* ===== Notifications as a Genie face — dark-on-red, mirrors .gcomm theming ===== */
-.gnotif-mark{color:#fff;font-weight:var(--weight-semibold);text-decoration:underline;cursor:pointer}
+/* theme-aware so it reads on the panel surface (white was invisible on the rose/dark-theme panel) */
+.gnotif-mark{color:var(--g-elec-ink);font-weight:var(--weight-semibold);text-decoration:underline;cursor:pointer}
 .gnotif{display:flex;flex-direction:column;gap:9px;margin-bottom:14px}
 .gnotif .notif-ai{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.9);margin:0}
 .gnotif .notif-ai b,.gnotif .notif-ai svg{color:#fff}
